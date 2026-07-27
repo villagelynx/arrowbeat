@@ -157,10 +157,18 @@ function nyseHolidaySet(year: number): Set<string> {
   return set;
 }
 
+function isNyseHoliday(ymd: Ymd): boolean {
+  // Observed New Year's can land on Dec 31 of the prior year.
+  for (const y of [ymd.year - 1, ymd.year, ymd.year + 1]) {
+    if (nyseHolidaySet(y).has(ymdKey(ymd))) return true;
+  }
+  return false;
+}
+
 function isTradingDay(ymd: Ymd): boolean {
   const dow = weekdayIndex(ymd.year, ymd.month, ymd.day);
   if (dow === 0 || dow === 6) return false;
-  return !nyseHolidaySet(ymd.year).has(ymdKey(ymd));
+  return !isNyseHoliday(ymd);
 }
 
 /** Next trading day at/after `start` (inclusive) whose regular open is still in the future. */

@@ -45,7 +45,7 @@ export type MarketSnapshotPayload = {
   };
 };
 
-const FETCH_MS = 4500;
+const FETCH_MS = 2800;
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
@@ -59,28 +59,24 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Re
 
 async function fetchYahooChart(symbol: string, range: string, interval = "1d"): Promise<YahooChart> {
   const hosts = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"];
-  let lastError: Error | null = null;
-  for (const host of hosts) {
-    try {
-      const url = new URL(`https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`);
-      url.searchParams.set("interval", interval);
-      url.searchParams.set("range", range);
-      const res = await fetchWithTimeout(url.toString(), {
-        headers: {
-          "User-Agent": "Mozilla/5.0 ArrowBeat/1.0",
-          Accept: "application/json",
-        },
-      });
-      if (!res.ok) {
-        lastError = new Error(`Yahoo ${symbol} HTTP ${res.status}`);
-        continue;
-      }
-      return (await res.json()) as YahooChart;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-    }
+  const attempts = hosts.map(async (host) => {
+    const url = new URL(`https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`);
+    url.searchParams.set("interval", interval);
+    url.searchParams.set("range", range);
+    const res = await fetchWithTimeout(url.toString(), {
+      headers: {
+        "User-Agent": "Mozilla/5.0 ArrowBeat/1.0",
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) throw new Error(`Yahoo ${symbol} HTTP ${res.status}`);
+    return (await res.json()) as YahooChart;
+  });
+  try {
+    return await Promise.any(attempts);
+  } catch {
+    throw new Error(`Yahoo ${symbol} failed`);
   }
-  throw lastError || new Error(`Yahoo ${symbol} failed`);
 }
 
 /** Free FRED CSV (no API key) — used for TIPS real yield + 10Y breakeven. */

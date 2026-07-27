@@ -6,14 +6,18 @@ import {
 
 const SITE = "https://sportsin60.com";
 
+/** Format bulletin show date (YYYY-MM-DD) without UTC-midnight → prior local day. */
 function formatBulletinDate(iso: string) {
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!match) return iso;
+  const [, y, m, d] = match;
+  // Noon America/New_York keeps the calendar day stable across US zones.
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
-  }).format(new Date(Date.UTC(y, m - 1, d)));
+    timeZone: "America/New_York",
+  }).format(new Date(`${y}-${m}-${d}T12:00:00-04:00`));
 }
 
 /**

@@ -26,6 +26,10 @@ import {
 } from "./lib/signal";
 import { applySignalFavicon } from "./lib/favicon";
 import { getMarketClock, type MarketClock } from "./lib/market-hours";
+import {
+  resolveDisplayedTomorrowLean,
+  type DisplayedTomorrowLean,
+} from "./lib/tomorrow-lean-publish";
 import { emptyScorecard, syncScorecard, type ScorecardSummary } from "./lib/scorecard";
 import { yearFromIso } from "./lib/spy-ytd";
 import "./App.css";
@@ -40,6 +44,18 @@ function useMarketClock(): MarketClock {
     return () => window.clearInterval(id);
   }, []);
   return clock;
+}
+
+/** Re-resolve when the live signal changes or we cross the 1:15 ET publish boundary. */
+function useDisplayedTomorrowLean(
+  live: DailySignal["tomorrow"],
+): DisplayedTomorrowLean | null {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return resolveDisplayedTomorrowLean(live, new Date(nowMs));
 }
 
 function edgeLabel(pts: number) {
@@ -102,7 +118,7 @@ export default function App() {
       try {
         const snap = await fetchMarketSnapshot();
         if (cancelled) return;
-        const live = buildLiveSignal(snap);
+        const live = applyTomorrowLeanPublish(buildLiveSignal(snap));
         const bars = snap.spy.bars.length ? snap.spy.bars : snap.spy.recentBars;
         setSignal(live);
         setSpyBars(bars);
@@ -115,7 +131,7 @@ export default function App() {
         if (cancelled) return;
         if (!silent) {
           setError(e instanceof Error ? e.message : "Could not load market data.");
-          const demo = buildDemoSignal();
+          const demo = applyTomorrowLeanPublish(buildDemoSignal());
           setSignal(demo);
           setSpyBars([]);
           setDayBars([]);
@@ -199,7 +215,8 @@ export default function App() {
   const up = signal.bias === "up";
   const leadPct = up ? signal.probabilityHigher : signal.probabilityLower;
   const pillBusy = loading || refreshing;
-  const tomorrow = signal.tomorrow;
+  const tomorrowDisplay = useDisplayedTomorrowLean(signal.tomorrow);
+  const tomorrow = tomorrowDisplay?.lean ?? null;
   const tmrUp = tomorrow?.bias === "up";
   const tmrLeadPct = tomorrow
     ? tmrUp
@@ -492,7 +509,7 @@ export default function App() {
                 </div>
               </div>
 
-              {tomorrow && tmrLeadPct != null ? (
+              {tomorrowDisplay && tomorrow && tmrLeadPct != null ? (
                 <div
                   className={`tomorrow-lean ${tmrUp ? "is-up" : "is-down"}`}
                   aria-labelledby="tomorrow-lean-title"
@@ -504,6 +521,13 @@ export default function App() {
                   <p className="tomorrow-lean__lede">
                     Calendar &amp; historical stats known now — thinner than today&apos;s live
                     signal (no tomorrow quotes yet).
+                  </p>
+                  <p
+                    className={`tomorrow-lean__asof${
+                      tomorrowDisplay.phase === "preview" ? " is-preview" : ""
+                    }`}
+                  >
+                    {tomorrowDisplay.stamp}
                   </p>
                   <div className="tomorrow-lean__row">
                     <span className="tomorrow-lean__arrow" aria-hidden="true">
@@ -534,6 +558,9 @@ export default function App() {
                     </div>
                   </div>
                   <p className="tomorrow-lean__session">{tomorrow.sessionLabel}</p>
+                  {tomorrow.publishStamp ? (
+                    <p className="tomorrow-lean__stamp">{tomorrow.publishStamp}</p>
+                  ) : null}
                 </div>
               ) : null}
             </div>

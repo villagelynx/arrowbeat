@@ -170,11 +170,15 @@ export default function App() {
     };
   }, []);
 
-  // Live bias only — loading/demo keep neutral or last-known so the tab never flashes wrong.
+  // Favicon follows the hero lean (tomorrow after regular close; else today).
   useEffect(() => {
     if (!signal || signal.dataMode !== "live") return;
-    applySignalFavicon(signal.bias);
-  }, [signal]);
+    const heroBias =
+      marketClock.phase === "closed" && tomorrowDisplay?.lean
+        ? tomorrowDisplay.lean.bias
+        : signal.bias;
+    applySignalFavicon(heroBias);
+  }, [signal, marketClock.phase, tomorrowDisplay]);
 
   async function lookupQuote(ticker: string) {
     const symbol = ticker.trim().toUpperCase();
@@ -215,8 +219,6 @@ export default function App() {
     );
   }
 
-  const up = signal.bias === "up";
-  const leadPct = up ? signal.probabilityHigher : signal.probabilityLower;
   const pillBusy = loading || refreshing;
   const tomorrow = tomorrowDisplay?.lean ?? null;
   const tmrUp = tomorrow?.bias === "up";
@@ -225,6 +227,39 @@ export default function App() {
       ? tomorrow.probabilityHigher
       : tomorrow.probabilityLower
     : null;
+  /** After regular close, promote locked next-session lean into the hero. */
+  const tomorrowAsPrimary =
+    marketClock.phase === "closed" && tomorrow != null && tmrLeadPct != null;
+
+  const primary = tomorrowAsPrimary
+    ? {
+        bias: tomorrow.bias,
+        probabilityHigher: tomorrow.probabilityHigher,
+        probabilityLower: tomorrow.probabilityLower,
+        confidence: tomorrow.confidence,
+        confidenceLabel: tomorrow.confidenceLabel,
+        sessionLabel: tomorrow.sessionLabel,
+        factors: tomorrow.factors,
+        calendarEdge: tomorrow.calendarEdge,
+        title: tomorrow.skippedWeekend ? "Next session lean" : "Tomorrow's market bias",
+        kicker: tomorrow.kicker,
+      }
+    : {
+        bias: signal.bias,
+        probabilityHigher: signal.probabilityHigher,
+        probabilityLower: signal.probabilityLower,
+        confidence: signal.confidence,
+        confidenceLabel: signal.confidenceLabel,
+        sessionLabel: signal.sessionLabel,
+        factors: signal.factors,
+        calendarEdge: signal.calendarEdge,
+        title: "Today's market bias",
+        kicker: null as string | null,
+      };
+  const up = primary.bias === "up";
+  const leadPct = up ? primary.probabilityHigher : primary.probabilityLower;
+  const todayUp = signal.bias === "up";
+  const todayLeadPct = todayUp ? signal.probabilityHigher : signal.probabilityLower;
 
   return (
     <div className={`app ${up ? "theme-up" : "theme-down"}${view === "about" ? " app--about" : ""}`}>
@@ -429,7 +464,17 @@ export default function App() {
           <section className="hero" aria-labelledby="bias-title">
             <div className="hero-head">
               <div className="hero-session">
-                <p className="hero-kicker">{signal.sessionLabel}</p>
+                <p className="hero-kicker">
+                  {primary.kicker ? (
+                    <>
+                      <span className="hero-kicker__into">{primary.kicker}</span>
+                      <span className="hero-kicker__sep" aria-hidden="true">
+                        ·
+                      </span>
+                    </>
+                  ) : null}
+                  {primary.sessionLabel}
+                </p>
                 <p
                   className={`market-clock is-${marketClock.phase}`}
                   aria-live="polite"
@@ -443,13 +488,13 @@ export default function App() {
                 </p>
               </div>
               <h1 id="bias-title" className="hero-title">
-                Today&apos;s market bias
+                {primary.title}
               </h1>
             </div>
 
             <div className="hero-signal">
               <div className="arrow-stage">
-                <MarketArrow bias={signal.bias} />
+                <MarketArrow bias={primary.bias} />
               </div>
 
               <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
@@ -469,8 +514,8 @@ export default function App() {
                   />
                 </div>
                 <p className="prob-split">
-                  Higher {signal.probabilityHigher.toFixed(1)}% · Lower{" "}
-                  {signal.probabilityLower.toFixed(1)}%
+                  Higher {primary.probabilityHigher.toFixed(1)}% · Lower{" "}
+                  {primary.probabilityLower.toFixed(1)}%
                 </p>
               </div>
 
@@ -485,22 +530,38 @@ export default function App() {
                     ?
                   </span>
                 </p>
-                <p className="confidence-stars" aria-label={`${signal.confidence} of 5 stars`}>
-                  {stars(signal.confidence)}
+                <p className="confidence-stars" aria-label={`${primary.confidence} of 5 stars`}>
+                  {stars(primary.confidence)}
                 </p>
-                <p className="confidence-text">{signal.confidenceLabel}</p>
+                <p className="confidence-text">{primary.confidenceLabel}</p>
                 <div id="confidence-tip" className="confidence-tip" role="tooltip">
-                  <p>
-                    Confidence is how settled today&apos;s lean looks — not a guarantee, and not
-                    the same as the probability %.
-                  </p>
-                  <p>
-                    Stars come from two live checks in the scorer:{" "}
-                    <strong>edge</strong> (|P(higher close) − 50|), and{" "}
-                    <strong>agreement</strong> (how many of today&apos;s listed factors point the
-                    same way as the lean — ES, VIX, breadth, seasonality/calendar, streaks, yields,
-                    CPI window, and similar items when they fire).
-                  </p>
+                  {tomorrowAsPrimary ? (
+                    <>
+                      <p>
+                        Confidence is how settled the next-session lean looks — thinner than a live
+                        session signal (calendar &amp; history only). Not a guarantee.
+                      </p>
+                      <p>
+                        Stars come from edge (|P(higher close) − 50|) and agreement among the listed
+                        next-session factors (weekday, month, day-of-month, cashflow/tax/CPI windows,
+                        streaks when they fire).
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        Confidence is how settled today&apos;s lean looks — not a guarantee, and not
+                        the same as the probability %.
+                      </p>
+                      <p>
+                        Stars come from two live checks in the scorer:{" "}
+                        <strong>edge</strong> (|P(higher close) − 50|), and{" "}
+                        <strong>agreement</strong> (how many of today&apos;s listed factors point the
+                        same way as the lean — ES, VIX, breadth, seasonality/calendar, streaks, yields,
+                        CPI window, and similar items when they fire).
+                      </p>
+                    </>
+                  )}
                   <ul>
                     <li>5★ Very high — edge &gt; 12 pts and ≥5 factors agree</li>
                     <li>4★ High — edge &gt; 8 pts and ≥4 agree</li>
@@ -511,7 +572,49 @@ export default function App() {
                 </div>
               </div>
 
-              {tomorrowDisplay && tomorrow && tmrLeadPct != null ? (
+              {tomorrowAsPrimary ? (
+                <div
+                  className={`tomorrow-lean tomorrow-lean--settled ${todayUp ? "is-up" : "is-down"}`}
+                  aria-labelledby="today-close-lean-title"
+                >
+                  <p className="tomorrow-lean__kicker">Session closed</p>
+                  <p id="today-close-lean-title" className="tomorrow-lean__title">
+                    Today&apos;s close lean
+                  </p>
+                  <p className="tomorrow-lean__lede">
+                    Settled lean for {signal.sessionLabel} — demoted after the regular close.
+                  </p>
+                  <div className="tomorrow-lean__row">
+                    <span className="tomorrow-lean__arrow" aria-hidden="true">
+                      {todayUp ? "▲" : "▼"}
+                    </span>
+                    <div className="tomorrow-lean__prob">
+                      <p className="tomorrow-lean__chip">
+                        {todayUp ? "Higher-close lean" : "Lower-close lean"}
+                      </p>
+                      <p className="tomorrow-lean__value">
+                        {todayLeadPct.toFixed(1)}
+                        <span>%</span>
+                      </p>
+                      <p className="tomorrow-lean__split">
+                        Higher {signal.probabilityHigher.toFixed(1)}% · Lower{" "}
+                        {signal.probabilityLower.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="tomorrow-lean__conf">
+                      <p className="tomorrow-lean__conf-label">Confidence</p>
+                      <p
+                        className="tomorrow-lean__stars"
+                        aria-label={`${signal.confidence} of 5 stars`}
+                      >
+                        {stars(signal.confidence)}
+                      </p>
+                      <p className="tomorrow-lean__conf-text">{signal.confidenceLabel}</p>
+                    </div>
+                  </div>
+                  <p className="tomorrow-lean__session">{signal.sessionLabel}</p>
+                </div>
+              ) : tomorrowDisplay && tomorrow && tmrLeadPct != null ? (
                 <div
                   className={`tomorrow-lean ${tmrUp ? "is-up" : "is-down"}`}
                   aria-labelledby="tomorrow-lean-title"
@@ -565,29 +668,36 @@ export default function App() {
             </div>
 
             <aside className="hero-rail">
-              {signal.calendarEdge ? (
-                <div className="cal-edge" aria-label="Today's calendar edge versus coin flip">
+              {primary.calendarEdge ? (
+                <div
+                  className="cal-edge"
+                  aria-label={
+                    tomorrowAsPrimary
+                      ? "Next session calendar edge versus coin flip"
+                      : "Today's calendar edge versus coin flip"
+                  }
+                >
                   <p className="cal-edge__title">
-                    Today&apos;s calendar edge{" "}
+                    {tomorrowAsPrimary ? "Next session calendar edge" : "Today's calendar edge"}{" "}
                     <span
                       className={
-                        (signal.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
+                        (primary.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
                       }
                     >
-                      {signal.calendarEdge.blendPts != null
-                        ? `${edgeLabel(signal.calendarEdge.blendPts)} pts vs 50%`
+                      {primary.calendarEdge.blendPts != null
+                        ? `${edgeLabel(primary.calendarEdge.blendPts)} pts vs 50%`
                         : ""}
                     </span>
                   </p>
                   <ul className="cal-edge__list">
-                    {signal.calendarEdge.weekday ? (
-                      <CalendarEdgeChip slice={signal.calendarEdge.weekday} kind="Weekday" />
+                    {primary.calendarEdge.weekday ? (
+                      <CalendarEdgeChip slice={primary.calendarEdge.weekday} kind="Weekday" />
                     ) : null}
-                    {signal.calendarEdge.month ? (
-                      <CalendarEdgeChip slice={signal.calendarEdge.month} kind="Month" />
+                    {primary.calendarEdge.month ? (
+                      <CalendarEdgeChip slice={primary.calendarEdge.month} kind="Month" />
                     ) : null}
-                    {signal.calendarEdge.dayOfMonth ? (
-                      <CalendarEdgeChip slice={signal.calendarEdge.dayOfMonth} kind="Day" />
+                    {primary.calendarEdge.dayOfMonth ? (
+                      <CalendarEdgeChip slice={primary.calendarEdge.dayOfMonth} kind="Day" />
                     ) : null}
                   </ul>
                 </div>
@@ -658,12 +768,13 @@ export default function App() {
           <section className="panel panel--factors" aria-labelledby="factors-title">
             <h2 id="factors-title">Why this signal</h2>
             <p className="panel-lede">
-              Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they
-              move) oil &amp; gold — still a probability lean, not a crystal ball.
+              {tomorrowAsPrimary
+                ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
+                : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
             </p>
             <ul className="factor-list">
-              {signal.factors.map((f) => {
-                const good = f.supports === signal.bias;
+              {primary.factors.map((f) => {
+                const good = f.supports === primary.bias;
                 return (
                   <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
                     <span className="factor-mark" aria-hidden="true">

@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+# Market API before the SPA fallback
+[[redirects]]
+  from = "/api/market/snapshot"
+  to = "/.netlify/functions/market-snapshot"
+  status = 200
+  force = true
+
+# SPA / PWA client routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

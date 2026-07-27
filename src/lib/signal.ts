@@ -180,7 +180,7 @@ export type DailySignal = {
   };
   /** Magnificent 7 per-name ArrowBeat leans (always 7; soft-fail → available:false). */
   mag7: Mag7Signal[];
-  /** Oil / gold / BTC / silver compact leans. */
+  /** Oil / gold / BTC / silver / ETH compact leans. */
   alts: AltAssetSignal[];
 };
 
@@ -1097,16 +1097,17 @@ const ALT_ASSET_META: {
   id: string;
   symbol: string;
   name: string;
-  key: "oil" | "gold" | "btc" | "silver";
+  key: "oil" | "gold" | "btc" | "silver" | "eth";
 }[] = [
   { id: "oil", symbol: "CL=F", name: "Oil", key: "oil" },
   { id: "gold", symbol: "GC=F", name: "Gold", key: "gold" },
   { id: "btc", symbol: "BTC-USD", name: "Bitcoin", key: "btc" },
   { id: "silver", symbol: "SI=F", name: "Silver", key: "silver" },
+  { id: "eth", symbol: "ETH-USD", name: "ETH", key: "eth" },
 ];
 
 /**
- * Compact momentum lean for oil / gold / BTC / silver.
+ * Compact momentum lean for oil / gold / BTC / silver / ETH.
  * Lighter than Mag7 — day change + short momentum + mild ES tone.
  */
 export function buildAltAssetSignals(snapshot: MarketSnapshot): AltAssetSignal[] {
@@ -1182,7 +1183,7 @@ export function buildAltAssetSignals(snapshot: MarketSnapshot): AltAssetSignal[]
     if (mom5 > 0.02) score += 0.025;
     else if (mom5 < -0.02) score -= 0.02;
     if (futuresChg != null) {
-      // Risk-on (ES up) mildly helps oil/BTC; gold/silver get a softer opposite nudge.
+      // Risk-on (ES up) mildly helps oil/crypto; gold/silver get a softer opposite nudge.
       if (meta.key === "gold" || meta.key === "silver") {
         if (futuresPositive) score -= 0.01;
         else score += 0.015;

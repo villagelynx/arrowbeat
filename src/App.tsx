@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { AboutPage } from "./components/AboutPage";
+import { AppNav, type AppView } from "./components/AppNav";
 import { MarketArrow } from "./components/MarketArrow";
 import { SpyDayChart } from "./components/SpyDayChart";
 import { SpyYearChart } from "./components/SpyYearChart";
@@ -68,6 +70,7 @@ export default function App() {
   const [quoteResult, setQuoteResult] = useState<StockQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [view, setView] = useState<AppView>("home");
   const lastFetchAt = useRef(0);
   const loadInFlight = useRef(false);
 
@@ -157,11 +160,19 @@ export default function App() {
       <div className="app theme-up">
         <div className="atmosphere" aria-hidden="true" />
         <header className="topbar">
-          <p className="brand">
-            Arrow<span>Beat</span>
-          </p>
-          <p className="brand-tag">Loading market data…</p>
+          <div className="topbar__brand">
+            <p className="brand">
+              Arrow<span>Beat</span>
+            </p>
+            <p className="brand-tag">Loading market data…</p>
+          </div>
+          <AppNav view={view} onNavigate={setView} />
         </header>
+        {view === "about" ? (
+          <main>
+            <AboutPage />
+          </main>
+        ) : null}
       </div>
     );
   }
@@ -175,19 +186,31 @@ export default function App() {
       <div className="atmosphere" aria-hidden="true" />
 
       <header className="topbar">
-        <p className="brand">
-          Arrow<span>Beat</span>
-        </p>
-        <p className="brand-tag">Daily market probability</p>
-        <p className={`data-pill ${signal.dataMode === "live" ? "is-live" : "is-demo"}`}>
-          {pillBusy
-            ? "Refreshing…"
-            : signal.dataMode === "live"
-              ? "Live · SPY · Mag7 · ES · VIX"
-              : "Demo fallback"}
-        </p>
+        <div className="topbar__brand">
+          <button type="button" className="brand brand--btn" onClick={() => setView("home")}>
+            Arrow<span>Beat</span>
+          </button>
+          <p className="brand-tag">
+            {view === "about" ? "About" : "Daily market probability"}
+          </p>
+          {view === "home" ? (
+            <p className={`data-pill ${signal.dataMode === "live" ? "is-live" : "is-demo"}`}>
+              {pillBusy
+                ? "Refreshing…"
+                : signal.dataMode === "live"
+                  ? "Live · SPY · Mag7 · ES · VIX"
+                  : "Demo fallback"}
+            </p>
+          ) : null}
+        </div>
+        <AppNav view={view} onNavigate={setView} />
       </header>
 
+      {view === "about" ? (
+        <main>
+          <AboutPage />
+        </main>
+      ) : (
       <main>
         {error ? <p className="banner-error">{error}</p> : null}
 
@@ -242,6 +265,14 @@ export default function App() {
                 disabled={quoteLoading}
               >
                 SPY
+              </button>
+              <button
+                type="button"
+                className="quote-chip"
+                onClick={() => void lookupQuote("BTC-USD")}
+                disabled={quoteLoading}
+              >
+                BTC
               </button>
             </div>
           </div>
@@ -592,7 +623,7 @@ export default function App() {
           <section className="panel panel--alts desk-row desk-row--alts" aria-labelledby="alts-title">
             <h2 id="alts-title">Commodities &amp; crypto</h2>
             <p className="panel-lede">
-              Oil, gold, Bitcoin, silver — compact momentum lean · ~15m delayed (crypto may differ).
+              Oil, gold, Bitcoin, silver, ETH — compact momentum lean · ~15m delayed.
             </p>
             <ul className="mag7-grid mag7-grid--alts">
               {signal.alts.map((row) => {
@@ -602,9 +633,11 @@ export default function App() {
                     ? "—"
                     : row.id === "btc"
                       ? row.last.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                      : row.last >= 100
-                        ? row.last.toFixed(1)
-                        : row.last.toFixed(2);
+                      : row.id === "eth"
+                        ? row.last.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                        : row.last >= 100
+                          ? row.last.toFixed(1)
+                          : row.last.toFixed(2);
                 return (
                   <li
                     key={row.id}
@@ -1132,6 +1165,7 @@ export default function App() {
 
         <p className="disclaimer">{signal.disclaimer}</p>
       </main>
+      )}
 
       <footer className="footer">
         <p>ArrowBeat · Free Yahoo Finance quotes · Before the opening bell</p>

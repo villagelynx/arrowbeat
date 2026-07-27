@@ -42,6 +42,8 @@ async function main() {
         commodities: {
           oil: { last: null, previousClose: null, bars: [] },
           gold: { last: null, previousClose: null, bars: [] },
+          btc: { last: null, previousClose: null, bars: [] },
+          silver: { last: null, previousClose: null, bars: [] },
         },
         mag7: {},
       })}\n`,

@@ -47,8 +47,9 @@ function writeLocked(publishDateKey: string, lean: TomorrowSignal) {
 
 /**
  * Resolve the tomorrow card lean + stamp.
- * After 1:15 ET on a trading day, snapshot into sessionStorage so 15-min market
- * refreshes do not twitch the displayed %.
+ * After the active 1:15 ET publish (through the next trading day's 1:15),
+ * snapshot into sessionStorage so 15-min market refreshes do not twitch the %.
+ * If past publish with no lock yet, compute from live and lock immediately.
  */
 export function resolveDisplayedTomorrowLean(
   live: TomorrowSignal | null,
@@ -58,25 +59,16 @@ export function resolveDisplayedTomorrowLean(
 
   const publish = getTomorrowLeanPublishInfo(now);
 
-  if (publish.phase === "preview") {
+  if (publish.phase === "preview" || !publish.shouldLock) {
     return { lean: live, stamp: publish.stamp, phase: publish.phase, publish };
   }
 
-  if (publish.phase === "published") {
-    const locked = readLocked(publish.publishDateKey);
-    if (locked) {
-      return { lean: locked, stamp: publish.stamp, phase: publish.phase, publish };
-    }
-    writeLocked(publish.publishDateKey, live);
-    return { lean: live, stamp: publish.stamp, phase: publish.phase, publish };
-  }
-
-  // Weekend / holiday: keep last trading day's published lean when it still
-  // targets the same next session; otherwise show live calendar lean.
+  // Published / off-session: prefer the locked snapshot for this publish slot.
   const locked = readLocked(publish.publishDateKey);
-  if (locked && locked.asOfDate === live.asOfDate) {
+  if (locked) {
     return { lean: locked, stamp: publish.stamp, phase: publish.phase, publish };
   }
 
+  writeLocked(publish.publishDateKey, live);
   return { lean: live, stamp: publish.stamp, phase: publish.phase, publish };
 }

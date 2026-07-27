@@ -31,6 +31,8 @@ function partNum(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPart
 }
 
 function nyParts(date: Date): NyParts {
+  // hour12: false + hourCycle h23 — some engines ignore hourCycle alone and
+  // return 1–12 hours, which breaks "past 1:15 ET" checks in the afternoon.
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: TZ,
     year: "numeric",
@@ -39,6 +41,7 @@ function nyParts(date: Date): NyParts {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hour12: false,
     hourCycle: "h23",
   }).formatToParts(date);
 
@@ -258,33 +261,30 @@ function nextTradingDayExclusive(start: Ymd): Ymd {
   return cur;
 }
 
+/** True when the America/New_York wall clock is at/after 1:15 on `p`'s calendar day. */
+function isAtOrPastTomorrowLeanPublish(p: NyParts): boolean {
+  return (
+    p.hour > TOMORROW_LEAN_PUBLISH_H ||
+    (p.hour === TOMORROW_LEAN_PUBLISH_H && p.minute >= TOMORROW_LEAN_PUBLISH_M)
+  );
+}
+
 /**
  * Tomorrow-lean publish schedule at 1:15pm America/New_York on trading days.
- * Before 1:15: live preview. At/after 1:15: lock for the rest of the day.
- * Weekends / holidays: next-session lean; stamp points at the next 1:15.
+ *
+ * Publish window runs from a trading day's 1:15 ET until the next trading day's
+ * 1:15 ET (through the close, evening, overnight, and next morning).
+ * Weekends / holidays keep the prior trading day's publish; stamp points at the
+ * next 1:15.
  */
 export function getTomorrowLeanPublishInfo(now: Date = new Date()): TomorrowLeanPublishInfo {
   const p = nyParts(now);
   const today: Ymd = { year: p.year, month: p.month, day: p.day };
   const trading = isTradingDay(today);
-  const publishAt = nyLocalToDate(
-    p.year,
-    p.month,
-    p.day,
-    TOMORROW_LEAN_PUBLISH_H,
-    TOMORROW_LEAN_PUBLISH_M,
-  );
+  const pastPublishToday = isAtOrPastTomorrowLeanPublish(p);
 
-  if (trading && now.getTime() < publishAt.getTime()) {
-    return {
-      phase: "preview",
-      publishDateKey: ymdKey(today),
-      shouldLock: false,
-      stamp: "Preview · updates at 1:15 ET",
-    };
-  }
-
-  if (trading) {
+  // Fresh publish for today's session day at/after 1:15 ET.
+  if (trading && pastPublishToday) {
     return {
       phase: "published",
       publishDateKey: ymdKey(today),
@@ -293,7 +293,19 @@ export function getTomorrowLeanPublishInfo(now: Date = new Date()): TomorrowLean
     };
   }
 
+  // Before today's 1:15, or a non-session day: stay on the prior trading day's
+  // 1:15 publish (locked "Updated 1:15 ET" overnight / through the weekend).
   const prev = previousTradingDay(today);
+
+  if (trading) {
+    return {
+      phase: "published",
+      publishDateKey: ymdKey(prev),
+      shouldLock: true,
+      stamp: "Updated 1:15 ET",
+    };
+  }
+
   const next = nextTradingDayExclusive(today);
   return {
     phase: "offsession",

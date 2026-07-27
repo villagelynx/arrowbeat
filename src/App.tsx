@@ -46,7 +46,7 @@ function useMarketClock(): MarketClock {
   return clock;
 }
 
-/** Re-resolve when the live signal changes or we cross the 1:15 ET publish boundary. */
+/** Re-resolve when the live signal changes or we cross a 1:15 ET publish boundary. */
 function useDisplayedTomorrowLean(
   live: DailySignal["tomorrow"],
 ): DisplayedTomorrowLean | null {
@@ -102,15 +102,17 @@ export default function App() {
   const marketClock = useMarketClock();
   const tomorrowDisplay = useDisplayedTomorrowLean(signal?.tomorrow ?? null);
   const lastFetchAt = useRef(0);
-  const loadInFlight = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    // Local to this effect instance so React Strict Mode remounts can still load
+    // (a shared ref + cancelled first mount used to leave the UI stuck on loading).
+    let inFlight = false;
 
     async function load(opts: { silent?: boolean } = {}) {
       const silent = opts.silent === true;
-      if (loadInFlight.current) return;
-      loadInFlight.current = true;
+      if (inFlight) return;
+      inFlight = true;
       if (silent) setRefreshing(true);
       else {
         setLoading(true);
@@ -140,7 +142,7 @@ export default function App() {
           setScorecard(syncScorecard(demo, []));
         }
       } finally {
-        loadInFlight.current = false;
+        inFlight = false;
         if (!cancelled) {
           if (silent) setRefreshing(false);
           else setLoading(false);

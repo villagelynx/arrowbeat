@@ -18,7 +18,7 @@ export type SignalShareOutcome = "shared" | "copied" | "preview" | "aborted" | "
 
 export const SIGNAL_SHARE_ORIGIN = SCORE_SHARE_ORIGIN;
 
-/** Visible name for the hero / share-card arrow. */
+/** Visible name for the hero / share-card probability score. */
 export const ARROW_SCORE_LABEL = "ArrowBeat Score";
 
 /** Portrait share card — close to phone / Stories aspect (not OG landscape). */
@@ -197,14 +197,34 @@ export async function renderSignalSharePng(
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText("Daily market probability", cx, 158);
 
-  // Arrow + score label (hero center)
-  drawShareArrow(ctx, up, signalHi, signal, signalLo, cx, 430, 1.45);
-
+  // Score → big % → arrow → lean / details
   ctx.font = '800 34px Syne, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#e8eef5";
-  ctx.fillText(ARROW_SCORE_LABEL, cx, 640);
+  ctx.fillText(ARROW_SCORE_LABEL, cx, 230);
+
+  // Big probability — Manrope tabular (Syne 8 sits high)
+  const pctFont = '800 168px Manrope, "Avenir Next", ui-rounded, system-ui, sans-serif';
+  const pctMarkFont = '700 72px Manrope, "Avenir Next", ui-rounded, system-ui, sans-serif';
+  ctx.font = pctFont;
+  ctx.fillStyle = "#e8eef5";
+  const pct = payload.probability.toFixed(1);
+  const pctW = ctx.measureText(pct).width;
+  ctx.font = pctMarkFont;
+  const pctMarkW = ctx.measureText("%").width;
+  const blockW = pctW + 12 + pctMarkW;
+  const pctLeft = cx - blockW / 2;
+  ctx.textAlign = "left";
+  ctx.font = pctFont;
+  ctx.fillStyle = "#e8eef5";
+  ctx.fillText(pct, pctLeft, 400);
+  ctx.font = pctMarkFont;
+  ctx.fillStyle = signal;
+  ctx.fillText("%", pctLeft + pctW + 12, 375);
+
+  drawShareArrow(ctx, up, signalHi, signal, signalLo, cx, 620, 1.35);
 
   // Lean pill
+  ctx.textAlign = "center";
   const lean = leanChipLabel(payload.bias).toUpperCase();
   ctx.font = '700 24px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   const leanMetrics = ctx.measureText(lean);
@@ -212,7 +232,7 @@ export async function renderSignalSharePng(
   const pillW = leanMetrics.width + pillPadX * 2;
   const pillH = 48;
   const pillX = cx - pillW / 2;
-  const pillY = 690;
+  const pillY = 820;
   roundRect(ctx, pillX, pillY, pillW, pillH, 24);
   ctx.fillStyle = `rgba(${glow}, 0.14)`;
   ctx.fill();
@@ -225,38 +245,21 @@ export async function renderSignalSharePng(
   // Session label
   ctx.font = '700 28px Syne, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText(payload.label, cx, 790);
+  ctx.fillText(payload.label, cx, 920);
 
   ctx.font = '500 24px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText(
     `Probability of ${up ? "higher" : "lower"} close`,
     cx,
-    840,
+    965,
   );
-
-  // Big probability
-  ctx.font = '800 168px Syne, "Avenir Next", "Segoe UI", sans-serif';
-  ctx.fillStyle = "#e8eef5";
-  const pct = payload.probability.toFixed(1);
-  const pctW = ctx.measureText(pct).width;
-  ctx.font = '700 72px Syne, "Avenir Next", "Segoe UI", sans-serif';
-  const pctMarkW = ctx.measureText("%").width;
-  const blockW = pctW + 12 + pctMarkW;
-  const pctLeft = cx - blockW / 2;
-  ctx.textAlign = "left";
-  ctx.font = '800 168px Syne, "Avenir Next", "Segoe UI", sans-serif';
-  ctx.fillStyle = "#e8eef5";
-  ctx.fillText(pct, pctLeft, 1000);
-  ctx.font = '700 72px Syne, "Avenir Next", "Segoe UI", sans-serif';
-  ctx.fillStyle = signal;
-  ctx.fillText("%", pctLeft + pctW + 12, 975);
 
   // Confidence
   ctx.textAlign = "center";
   ctx.font = '600 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText("Confidence", cx, 1085);
+  ctx.fillText("Confidence", cx, 1045);
 
   const starGap = 52;
   const starsW = starGap * 4;
@@ -265,7 +268,7 @@ export async function renderSignalSharePng(
   ctx.textAlign = "left";
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i < payload.confidence ? "#f0c24b" : "rgba(143, 163, 184, 0.35)";
-    ctx.fillText("★", starLeft + i * starGap, 1145);
+    ctx.fillText("★", starLeft + i * starGap, 1105);
   }
 
   // Footer

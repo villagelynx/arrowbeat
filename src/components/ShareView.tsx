@@ -91,19 +91,21 @@ export function ShareView({ payload, onClose }: Props) {
         <p className="share-view__tag">Daily market probability</p>
 
         <div className="share-view__body">
+          <div className="share-view__score">
+            <p className="arrow-score-label">ArrowBeat Score</p>
+            <p className="share-view__prob">
+              {payload.probability.toFixed(1)}
+              <span>%</span>
+            </p>
+          </div>
           <div className="share-view__arrow">
             <MarketArrow bias={payload.bias} idSuffix="share" />
-            <p className="arrow-score-label">ArrowBeat Score</p>
           </div>
           <div className="share-view__stats">
             <p className="bias-chip">{leanChipLabel(payload.bias)}</p>
             <p className="share-view__label">{payload.label}</p>
             <p className="share-view__prob-sub">
               Probability of {up ? "higher" : "lower"} close
-            </p>
-            <p className="share-view__prob">
-              {payload.probability.toFixed(1)}
-              <span>%</span>
             </p>
             <div className="share-view__confidence">
               <p className="share-view__conf-label">Confidence</p>

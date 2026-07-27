@@ -392,7 +392,7 @@ main.about-main {
 
 .hero-quotes {
   width: 100%;
-  order: 10;
+  order: 11;
 }
 
 .quote-strip li {
@@ -1062,7 +1062,7 @@ main {
   order: 1;
 }
 
-/* Unwrap on mobile so order stacks: chip+share → prob → confidence → cal-edge */
+/* Unwrap on mobile so order stacks: score label → prob → arrow → lean/share → confidence */
 .hero-head,
 .hero-signal,
 .hero-rail {
@@ -1151,19 +1151,8 @@ main {
   opacity: 0.9;
 }
 
-.arrow-stage {
-  width: min(78vw, 17rem);
-  margin: 0.85rem 0 0.35rem;
-  animation: pulse-glow 3.2s ease-in-out infinite;
-  order: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-
 .arrow-score-label {
-  margin: 0;
+  margin: 0.85rem 0 0;
   color: var(--paper);
   font-family: var(--font-display);
   font-size: clamp(0.95rem, 3.6vw, 1.15rem);
@@ -1172,6 +1161,24 @@ main {
   line-height: 1.2;
   text-transform: none;
   text-align: center;
+  order: 3;
+}
+
+/* Big % sits under Score label (mobile display:contents stack). */
+.hero-signal > .prob-value {
+  margin: 0.2rem 0 0;
+  order: 4;
+}
+
+.arrow-stage {
+  width: min(78vw, 17rem);
+  margin: 0.55rem 0 0.35rem;
+  animation: pulse-glow 3.2s ease-in-out infinite;
+  order: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .market-arrow {
@@ -1494,7 +1501,7 @@ main {
   justify-content: center;
   gap: 0.45rem;
   margin: 0.4rem 0 0;
-  order: 4;
+  order: 6;
 }
 
 .bias-chip {
@@ -1518,7 +1525,7 @@ main {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
-  order: 8;
+  order: 9;
 }
 
 .cal-edge__title {
@@ -1700,8 +1707,9 @@ main {
 
 .prob-block {
   width: 100%;
-  margin-top: 1.15rem;
-  order: 5;
+  margin-top: 0.55rem;
+  /* After lean/share; Score → % → arrow come first. */
+  order: 7;
 }
 
 .prob-label {
@@ -1712,10 +1720,12 @@ main {
 
 .prob-value {
   margin: 0.15rem 0 0;
-  font-family: var(--font-display);
+  /* Tabular/neutral face — Syne numerals (esp. 8) sit on uneven baselines. */
+  font-family: var(--font-body), ui-rounded, system-ui, sans-serif;
   font-size: clamp(3.4rem, 16vw, 4.6rem);
   font-weight: 800;
-  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
   line-height: 1;
   color: var(--signal);
 }
@@ -1723,6 +1733,7 @@ main {
 .prob-value span {
   font-size: 0.45em;
   margin-left: 0.08em;
+  font-variant-numeric: tabular-nums;
 }
 
 .prob-meter {
@@ -1750,7 +1761,7 @@ main {
 .confidence {
   position: relative;
   margin-top: 1rem;
-  order: 6;
+  order: 8;
   display: inline-block;
   max-width: 100%;
   padding: 0.15rem 0.2rem;
@@ -1797,7 +1808,7 @@ main {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
-  order: 9;
+  order: 10;
 }
 
 .tomorrow-lean.is-up {
@@ -2460,6 +2471,8 @@ main {
   .market-clock,
   .hero-title,
   .hero-asof,
+  .arrow-score-label,
+  .hero-signal > .prob-value,
   .arrow-stage,
   .bias-share-row,
   .bias-chip,
@@ -2478,17 +2491,22 @@ main {
     font-size: 1.25rem;
   }
 
+  .arrow-score-label {
+    margin: 0.35rem 0 0;
+    font-size: 0.88rem;
+  }
+
+  .hero-signal > .prob-value {
+    margin: 0.15rem 0 0;
+  }
+
   .arrow-stage {
     width: min(100%, 11.5rem);
     margin: 0.45rem 0 0.2rem;
   }
 
-  .arrow-stage .arrow-score-label {
-    font-size: 0.88rem;
-  }
-
   .prob-block {
-    margin-top: 0.55rem;
+    margin-top: 0.35rem;
     max-width: 100%;
   }
 
@@ -2730,7 +2748,7 @@ main {
   text-transform: uppercase;
 }
 
-/* Portrait / hero stack — matches share PNG */
+/* Portrait / hero stack — Score → % → arrow → lean/details */
 .share-view__body {
   display: flex;
   flex-direction: column;
@@ -2740,17 +2758,26 @@ main {
   text-align: center;
 }
 
+.share-view__score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.share-view__score .arrow-score-label {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+}
+
 .share-view__arrow {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-}
-
-.share-view__arrow .arrow-score-label {
-  font-size: 1.05rem;
-  letter-spacing: 0.03em;
+  margin-top: 0.1rem;
 }
 
 .share-view__arrow .market-arrow {
@@ -2776,10 +2803,11 @@ main {
 }
 
 .share-view__prob {
-  margin: 0.15rem 0 0;
-  font-family: var(--font-display);
+  margin: 0;
+  font-family: var(--font-body), ui-rounded, system-ui, sans-serif;
   font-size: clamp(3rem, 14vw, 4rem);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   line-height: 1;
 }
@@ -2788,6 +2816,7 @@ main {
   margin-left: 0.1em;
   color: var(--signal);
   font-size: 0.45em;
+  font-variant-numeric: tabular-nums;
 }
 
 .share-view__prob-sub {

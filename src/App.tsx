@@ -694,8 +694,13 @@ export default function App() {
             </div>
 
             <div className="hero-signal">
+              <p className="arrow-score-label">ArrowBeat Score</p>
+              <p className="prob-value">
+                {leadPct.toFixed(1)}
+                <span>%</span>
+              </p>
+
               <div className="arrow-stage">
-                <p className="arrow-score-label">ArrowBeat Score</p>
                 <MarketArrow bias={primary.bias} />
               </div>
 
@@ -718,10 +723,6 @@ export default function App() {
               <div className="prob-block">
                 <p className="prob-label">
                   Probability of {up ? "higher" : "lower"} close
-                </p>
-                <p className="prob-value">
-                  {leadPct.toFixed(1)}
-                  <span>%</span>
                 </p>
                 <div className="prob-meter" role="presentation">
                   <div

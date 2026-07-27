@@ -39,6 +39,16 @@ The UI shows a **Live · SPY · ES · VIX** pill when quotes load.
 
 Shared snapshot logic lives in `server/market-snapshot.ts` (Vite middleware + Netlify function).
 
+## Sharing (ArrowBeat Score)
+
+The purple **Share** pill beside the lean chip shares the current **ArrowBeat Score** card (arrow, lean, probability, confidence) as a PNG when the browser supports Web Share with files, plus a reconstructable link:
+
+`https://arrowbeat.com/?view=share&bias=up&p=58.2&c=4&label=Tomorrow`
+
+Recipients land on an in-app share view with the same card and can **Share** again. Scorecard share remains on the score panel (`?view=score`).
+
+`index.html` ships a default `og:image` (`/og-default.svg`). Dynamic crawler previews per signal would need a Netlify `/api/og` PNG function (not required for in-app file share).
+
 ## Notes
 
 - Browser apps can't call Yahoo directly (CORS), so quotes go through `/api/market/snapshot` (local Vite middleware or Netlify Function).

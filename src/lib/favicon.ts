@@ -3,7 +3,7 @@ import type { Bias } from "./signal";
 const UP = "#12d46b";
 const DOWN = "#ef3340";
 const NEUTRAL = "#8fa3b5";
-const BG = "#071018";
+const BG = "#ffffff";
 const STORAGE_KEY = "arrowbeat-favicon-bias";
 
 type FaviconTone = Bias | "neutral";

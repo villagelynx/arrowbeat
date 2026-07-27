@@ -53,10 +53,7 @@ export function SportsBulletinPromo() {
   const dateLabel = bulletin ? formatBulletinDate(bulletin.date) : null;
 
   return (
-    <section
-      className="panel panel--bulletin desk-row desk-row--bulletin"
-      aria-labelledby="bulletin-title"
-    >
+    <section className="panel panel--bulletin" aria-labelledby="bulletin-title">
       <div className="bulletin__head">
         <h2 id="bulletin-title">Sports in 60 · Daily bulletin</h2>
         <p className="panel-lede">

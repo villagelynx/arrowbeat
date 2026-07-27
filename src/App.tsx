@@ -813,155 +813,164 @@ export default function App() {
 
         {signal.weekdayOdds.length || signal.monthOdds.length ? (
           <div className="desk-grid desk-grid--pair desk-row desk-row--weekday">
-        {signal.weekdayOdds.length ? (
-          <section className="panel" aria-labelledby="weekday-title">
-            <h2 id="weekday-title">Weekday odds ranked</h2>
-            <p className="panel-lede">
-              ~10y SPY: how often each weekday closed higher — ranked best historical edge first.
-            </p>
-            <ol className="odds-rank">
-              {signal.weekdayOdds.map((row) => {
-                const leanUp = row.upPct >= 50;
-                const isToday = weekdayIndexForIso(signal.asOfDate) === row.weekdayIndex;
-                return (
-                  <li
-                    key={row.weekday}
-                    className={`${leanUp ? "is-up" : "is-down"}${isToday ? " is-today" : ""}`}
-                  >
-                    <span className="odds-rank__n">#{row.rank}</span>
-                    <div className="odds-rank__body">
-                      <p className="odds-rank__name">
-                        {row.weekday}
-                        {isToday ? <span className="odds-rank__tag"> today</span> : null}
-                      </p>
-                      <p className="odds-rank__meta">
-                        Higher {row.upPct.toFixed(1)}% · Lower {row.downPct.toFixed(1)}% · n=
-                        {row.n.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="odds-rank__stats">
-                      <span className="odds-rank__up">{row.upPct.toFixed(1)}%</span>
-                      <span className="odds-rank__avg">
-                        avg {row.avgMovePct >= 0 ? "+" : ""}
-                        {row.avgMovePct.toFixed(2)}%
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ) : null}
-
-        {signal.monthOdds.length ? (
-          <section className="panel" aria-labelledby="month-title">
-            <h2 id="month-title">Month odds ranked</h2>
-            <p className="panel-lede">
-              ~10y SPY by calendar month. Watch the tax window: March run-up into April 15.
-            </p>
-
-            {signal.taxSeason ? (
-              <div className="cashflow tax-season">
-                <p className="cashflow__title">Tax season · March → April</p>
-                <div className="cashflow__grid">
-                  <div className="cashflow__card is-rent">
-                    <p className="cashflow__kicker">March · tax run-up</p>
-                    <p className="cashflow__num">
-                      {signal.taxSeason.march.upPct.toFixed(1)}%
-                    </p>
-                    <p className="cashflow__note">
-                      higher-close · rank #{signal.taxSeason.march.rank}/12
-                    </p>
-                    <p className="cashflow__days">
-                      avg {signal.taxSeason.march.avgMovePct >= 0 ? "+" : ""}
-                      {signal.taxSeason.march.avgMovePct.toFixed(2)}% · n=
-                      {signal.taxSeason.march.n.toLocaleString()}
-                    </p>
-                  </div>
-                  <div
-                    className={`cashflow__card ${
-                      signal.taxSeason.april.upPct >= signal.taxSeason.march.upPct
-                        ? "is-payday"
-                        : "is-rent"
-                    }`}
-                  >
-                    <p className="cashflow__kicker">April · tax due</p>
-                    <p className="cashflow__num">
-                      {signal.taxSeason.april.upPct.toFixed(1)}%
-                    </p>
-                    <p className="cashflow__note">
-                      higher-close · rank #{signal.taxSeason.april.rank}/12
-                    </p>
-                    <p className="cashflow__days">
-                      avg {signal.taxSeason.april.avgMovePct >= 0 ? "+" : ""}
-                      {signal.taxSeason.april.avgMovePct.toFixed(2)}% · n=
-                      {signal.taxSeason.april.n.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <p className="cashflow__spread">
-                  March vs April:{" "}
-                  <strong>
-                    {signal.taxSeason.spreadPts >= 0 ? "+" : ""}
-                    {signal.taxSeason.spreadPts.toFixed(1)} pts
-                  </strong>{" "}
-                  (negative = March softer — the cash-for-taxes story)
-                  {signal.taxSeason.todayKind === "march"
-                    ? " — you are in the tax run-up month."
-                    : signal.taxSeason.todayKind === "april"
-                      ? " — you are in tax-deadline month."
-                      : "."}{" "}
-                  History, not destiny.
-                </p>
+            {signal.weekdayOdds.length ? (
+              <div className="desk-stack desk-stack--weekday">
+                <section className="panel" aria-labelledby="weekday-title">
+                  <h2 id="weekday-title">Weekday odds ranked</h2>
+                  <p className="panel-lede">
+                    ~10y SPY: how often each weekday closed higher — ranked best historical edge
+                    first.
+                  </p>
+                  <ol className="odds-rank">
+                    {signal.weekdayOdds.map((row) => {
+                      const leanUp = row.upPct >= 50;
+                      const isToday =
+                        weekdayIndexForIso(signal.asOfDate) === row.weekdayIndex;
+                      return (
+                        <li
+                          key={row.weekday}
+                          className={`${leanUp ? "is-up" : "is-down"}${isToday ? " is-today" : ""}`}
+                        >
+                          <span className="odds-rank__n">#{row.rank}</span>
+                          <div className="odds-rank__body">
+                            <p className="odds-rank__name">
+                              {row.weekday}
+                              {isToday ? <span className="odds-rank__tag"> today</span> : null}
+                            </p>
+                            <p className="odds-rank__meta">
+                              Higher {row.upPct.toFixed(1)}% · Lower {row.downPct.toFixed(1)}% · n=
+                              {row.n.toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="odds-rank__stats">
+                            <span className="odds-rank__up">{row.upPct.toFixed(1)}%</span>
+                            <span className="odds-rank__avg">
+                              avg {row.avgMovePct >= 0 ? "+" : ""}
+                              {row.avgMovePct.toFixed(2)}%
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </section>
+                <SportsBulletinPromo />
               </div>
             ) : null}
 
-            <ol className="odds-rank">
-              {signal.monthOdds.map((row) => {
-                const leanUp = row.upPct >= 50;
-                const isToday = monthIndexForIso(signal.asOfDate) === row.monthIndex;
-                const taxKind = taxSeasonKindForMonth(row.monthIndex);
-                return (
-                  <li
-                    key={row.monthIndex}
-                    className={`${leanUp ? "is-up" : "is-down"}${isToday ? " is-today" : ""}${
-                      taxKind === "march" ? " is-rent" : taxKind === "april" ? " is-payday" : ""
-                    }`}
-                  >
-                    <span className="odds-rank__n">#{row.rank}</span>
-                    <div className="odds-rank__body">
-                      <p className="odds-rank__name">
-                        {row.month}
-                        {isToday ? <span className="odds-rank__tag"> now</span> : null}
-                        {taxKind === "march" ? (
-                          <span className="odds-rank__tag is-rent"> tax run-up</span>
-                        ) : null}
-                        {taxKind === "april" ? (
-                          <span className="odds-rank__tag is-payday"> tax due</span>
-                        ) : null}
-                      </p>
-                      <p className="odds-rank__meta">
-                        Higher {row.upPct.toFixed(1)}% · Lower {row.downPct.toFixed(1)}% · n=
-                        {row.n.toLocaleString()}
-                      </p>
+            {signal.monthOdds.length ? (
+              <section className="panel" aria-labelledby="month-title">
+                <h2 id="month-title">Month odds ranked</h2>
+                <p className="panel-lede">
+                  ~10y SPY by calendar month. Watch the tax window: March run-up into April 15.
+                </p>
+
+                {signal.taxSeason ? (
+                  <div className="cashflow tax-season">
+                    <p className="cashflow__title">Tax season · March → April</p>
+                    <div className="cashflow__grid">
+                      <div className="cashflow__card is-rent">
+                        <p className="cashflow__kicker">March · tax run-up</p>
+                        <p className="cashflow__num">
+                          {signal.taxSeason.march.upPct.toFixed(1)}%
+                        </p>
+                        <p className="cashflow__note">
+                          higher-close · rank #{signal.taxSeason.march.rank}/12
+                        </p>
+                        <p className="cashflow__days">
+                          avg {signal.taxSeason.march.avgMovePct >= 0 ? "+" : ""}
+                          {signal.taxSeason.march.avgMovePct.toFixed(2)}% · n=
+                          {signal.taxSeason.march.n.toLocaleString()}
+                        </p>
+                      </div>
+                      <div
+                        className={`cashflow__card ${
+                          signal.taxSeason.april.upPct >= signal.taxSeason.march.upPct
+                            ? "is-payday"
+                            : "is-rent"
+                        }`}
+                      >
+                        <p className="cashflow__kicker">April · tax due</p>
+                        <p className="cashflow__num">
+                          {signal.taxSeason.april.upPct.toFixed(1)}%
+                        </p>
+                        <p className="cashflow__note">
+                          higher-close · rank #{signal.taxSeason.april.rank}/12
+                        </p>
+                        <p className="cashflow__days">
+                          avg {signal.taxSeason.april.avgMovePct >= 0 ? "+" : ""}
+                          {signal.taxSeason.april.avgMovePct.toFixed(2)}% · n=
+                          {signal.taxSeason.april.n.toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="odds-rank__stats">
-                      <span className="odds-rank__up">{row.upPct.toFixed(1)}%</span>
-                      <span className="odds-rank__avg">
-                        avg {row.avgMovePct >= 0 ? "+" : ""}
-                        {row.avgMovePct.toFixed(2)}%
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ) : null}
+                    <p className="cashflow__spread">
+                      March vs April:{" "}
+                      <strong>
+                        {signal.taxSeason.spreadPts >= 0 ? "+" : ""}
+                        {signal.taxSeason.spreadPts.toFixed(1)} pts
+                      </strong>{" "}
+                      (negative = March softer — the cash-for-taxes story)
+                      {signal.taxSeason.todayKind === "march"
+                        ? " — you are in the tax run-up month."
+                        : signal.taxSeason.todayKind === "april"
+                          ? " — you are in tax-deadline month."
+                          : "."}{" "}
+                      History, not destiny.
+                    </p>
+                  </div>
+                ) : null}
+
+                <ol className="odds-rank">
+                  {signal.monthOdds.map((row) => {
+                    const leanUp = row.upPct >= 50;
+                    const isToday = monthIndexForIso(signal.asOfDate) === row.monthIndex;
+                    const taxKind = taxSeasonKindForMonth(row.monthIndex);
+                    return (
+                      <li
+                        key={row.monthIndex}
+                        className={`${leanUp ? "is-up" : "is-down"}${isToday ? " is-today" : ""}${
+                          taxKind === "march"
+                            ? " is-rent"
+                            : taxKind === "april"
+                              ? " is-payday"
+                              : ""
+                        }`}
+                      >
+                        <span className="odds-rank__n">#{row.rank}</span>
+                        <div className="odds-rank__body">
+                          <p className="odds-rank__name">
+                            {row.month}
+                            {isToday ? <span className="odds-rank__tag"> now</span> : null}
+                            {taxKind === "march" ? (
+                              <span className="odds-rank__tag is-rent"> tax run-up</span>
+                            ) : null}
+                            {taxKind === "april" ? (
+                              <span className="odds-rank__tag is-payday"> tax due</span>
+                            ) : null}
+                          </p>
+                          <p className="odds-rank__meta">
+                            Higher {row.upPct.toFixed(1)}% · Lower {row.downPct.toFixed(1)}% · n=
+                            {row.n.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="odds-rank__stats">
+                          <span className="odds-rank__up">{row.upPct.toFixed(1)}%</span>
+                          <span className="odds-rank__avg">
+                            avg {row.avgMovePct >= 0 ? "+" : ""}
+                            {row.avgMovePct.toFixed(2)}%
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            ) : null}
           </div>
         ) : null}
 
-        <SportsBulletinPromo />
+        {!signal.weekdayOdds.length ? <SportsBulletinPromo /> : null}
 
         {signal.dayOfMonthOdds.length || signal.cpiWindow?.odds.length ? (
           <div className="desk-grid desk-grid--pair desk-row desk-row--cashflow">

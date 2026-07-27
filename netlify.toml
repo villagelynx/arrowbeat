@@ -14,6 +14,9 @@
 [functions."market-quote"]
   timeout = 6
 
+[functions."sports-bulletin"]
+  timeout = 8
+
 # Market API before the SPA fallback
 [[redirects]]
   from = "/api/market/snapshot"
@@ -24,6 +27,12 @@
 [[redirects]]
   from = "/api/market/quote"
   to = "/.netlify/functions/market-quote"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/sports/bulletin"
+  to = "/.netlify/functions/sports-bulletin"
   status = 200
   force = true
 

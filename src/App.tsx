@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AboutPage } from "./components/AboutPage";
 import { AppNav, type AppView } from "./components/AppNav";
 import { MarketArrow } from "./components/MarketArrow";
+import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
 import { SpyYearChart } from "./components/SpyYearChart";
 import {
@@ -959,6 +960,8 @@ export default function App() {
         ) : null}
           </div>
         ) : null}
+
+        <SportsBulletinPromo />
 
         {signal.dayOfMonthOdds.length || signal.cpiWindow?.odds.length ? (
           <div className="desk-grid desk-grid--pair desk-row desk-row--cashflow">

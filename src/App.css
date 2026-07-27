@@ -798,20 +798,68 @@ main {
   order: 5;
 }
 
-.desk-row--cashflow {
+.desk-row--bulletin {
   order: 6;
 }
 
-.panel--factors {
+.desk-row--cashflow {
   order: 7;
 }
 
-.desk-row--stats {
+.panel--factors {
   order: 8;
 }
 
-.disclaimer {
+.desk-row--stats {
   order: 9;
+}
+
+.disclaimer {
+  order: 10;
+}
+
+.panel--bulletin {
+  margin-top: 1.15rem;
+}
+
+.bulletin__player {
+  margin-top: 0.15rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.bulletin__video {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 28rem);
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #000;
+  vertical-align: middle;
+}
+
+.bulletin__fallback {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.bulletin__cta {
+  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.bulletin__cta a {
+  color: rgba(var(--glow), 1);
+  text-decoration: none;
+}
+
+.bulletin__cta a:hover {
+  text-decoration: underline;
 }
 
 .hero {
@@ -1811,6 +1859,7 @@ main {
   .panel--alts,
   .panel--quote,
   .desk-row--weekday,
+  .desk-row--bulletin,
   .desk-row--cashflow,
   .desk-row--stats,
   .disclaimer {

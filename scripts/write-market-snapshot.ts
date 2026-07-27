@@ -15,8 +15,9 @@ async function main() {
   try {
     const snapshot = await buildMarketSnapshot();
     writeFileSync(outPath, `${JSON.stringify(snapshot)}\n`);
+    const mag7Count = Object.keys(snapshot.mag7 ?? {}).length;
     console.log(
-      `[market-snapshot] wrote ${outPath} (SPY last=${snapshot.spy.last}, bars=${snapshot.spy.bars.length}, dayBars=${snapshot.spy.dayBars?.length ?? 0})`,
+      `[market-snapshot] wrote ${outPath} (SPY last=${snapshot.spy.last}, bars=${snapshot.spy.bars.length}, dayBars=${snapshot.spy.dayBars?.length ?? 0}, mag7=${mag7Count}/7)`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -42,6 +43,7 @@ async function main() {
           oil: { last: null, bars: [] },
           gold: { last: null, bars: [] },
         },
+        mag7: {},
       })}\n`,
     );
   }

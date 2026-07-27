@@ -1,7 +1,32 @@
-import type { MarketSnapshot, Bar } from "./market-data";
+import type { MarketSnapshot, Bar, Mag7Symbol } from "./market-data";
 import { buildCpiWindowInsight, type CpiWindowInsight } from "./cpi-calendar";
 
 export type Bias = "up" | "down";
+
+export const MAG7_META: { symbol: Mag7Symbol; name: string }[] = [
+  { symbol: "AAPL", name: "Apple" },
+  { symbol: "MSFT", name: "Microsoft" },
+  { symbol: "NVDA", name: "NVIDIA" },
+  { symbol: "AMZN", name: "Amazon" },
+  { symbol: "META", name: "Meta" },
+  { symbol: "GOOGL", name: "Alphabet" },
+  { symbol: "TSLA", name: "Tesla" },
+];
+
+export type Mag7Signal = {
+  symbol: Mag7Symbol;
+  name: string;
+  bias: Bias;
+  probabilityHigher: number;
+  probabilityLower: number;
+  confidence: 1 | 2 | 3 | 4 | 5;
+  confidenceLabel: string;
+  last: number | null;
+  /** Day change vs prior close, in percent points (e.g. 1.25 = +1.25%). */
+  changePct: number | null;
+  /** False when Yahoo soft-failed or history is too thin. */
+  available: boolean;
+};
 
 export type Factor = {
   id: string;
@@ -142,6 +167,8 @@ export type DailySignal = {
     oil: number | null;
     gold: number | null;
   };
+  /** Magnificent 7 per-name ArrowBeat leans (always 7; soft-fail → available:false). */
+  mag7: Mag7Signal[];
 };
 
 function nyDateIso(d = new Date()): string {
@@ -847,6 +874,7 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
       oil: snapshot.commodities?.oil.last ?? null,
       gold: snapshot.commodities?.gold.last ?? null,
     },
+    mag7: buildMag7Signals(snapshot, dateIso),
   };
 }
 
@@ -896,6 +924,108 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
       "Demo mode — not live quotes. ArrowBeat is educational only, not investment advice.",
     dataMode: "demo",
   };
+}
+
+/**
+ * Per-ticker ArrowBeat lean for Mag7 — lighter cousin of buildLiveSignal:
+ * own price action + streaks + relative vs SPY, plus a mild shared risk tone
+ * (ES / VIX) from the market snapshot.
+ */
+export function buildMag7Signals(
+  snapshot: MarketSnapshot,
+  dateIso = nyDateIso(),
+): Mag7Signal[] {
+  const dow = weekdayInNy(dateIso);
+  const spyBars = snapshot.spy.bars.length ? snapshot.spy.bars : snapshot.spy.recentBars;
+  const spyRets = spyBars.length >= 6 ? dailyReturns(spyBars) : [];
+  const spy5 =
+    spyRets.length >= 5
+      ? (spyBars[spyBars.length - 1].close - spyBars[spyBars.length - 6].close) /
+        spyBars[spyBars.length - 6].close
+      : 0;
+
+  const esPrev =
+    snapshot.futures.previousClose ??
+    (snapshot.futures.bars.length > 1
+      ? snapshot.futures.bars[snapshot.futures.bars.length - 2].close
+      : null);
+  const futuresChg = pctChange(snapshot.futures.last, esPrev);
+  const futuresPositive = (futuresChg ?? 0) > 0;
+
+  const vixBars = snapshot.vix.bars;
+  const vixPrev = vixBars.length > 1 ? vixBars[vixBars.length - 2].close : null;
+  const vixChg = pctChange(snapshot.vix.last, vixPrev);
+  const vixFalling = (vixChg ?? 0) < 0;
+
+  const out: Mag7Signal[] = [];
+
+  for (const meta of MAG7_META) {
+    const series = snapshot.mag7?.[meta.symbol];
+    if (!series || series.bars.length < 20) continue;
+
+    const bars = series.bars;
+    const rets = dailyReturns(bars);
+    if (rets.length < 15) continue;
+
+    const sample = rets.slice(-252);
+    const upShare = sample.filter((r) => r.ret > 0).length / (sample.length || 1);
+    const streaks = streakFromReturns(rets);
+    const afterDown = afterDownDayStats(bars);
+
+    const tip = bars[bars.length - 1].close;
+    const fiveAgo = bars.length >= 6 ? bars[bars.length - 6].close : null;
+    const mom5 = fiveAgo && fiveAgo > 0 ? (tip - fiveAgo) / fiveAgo : 0;
+    const vsSpy = mom5 - spy5;
+
+    let score = upShare;
+    if (dow === 1) score -= 0.02;
+    if (dow === 5) score += 0.01;
+    if (streaks.down >= 3) score += 0.055;
+    else if (streaks.down === 2) score += 0.03;
+    if (streaks.up >= 4) score -= 0.035;
+    // Mild momentum: short-term strength helps slightly; overheat fades
+    if (mom5 > 0.02) score += 0.02;
+    else if (mom5 < -0.02) score += 0.015; // mild mean-reversion after a soft week
+    if (vsSpy > 0.01) score += 0.015;
+    else if (vsSpy < -0.01) score -= 0.015;
+    // Shared market tone (lighter weight than SPY hero signal)
+    if (futuresPositive) score += 0.02;
+    else score -= 0.02;
+    if (vixFalling) score += 0.015;
+    else score -= 0.012;
+
+    score = Math.min(0.78, Math.max(0.28, score));
+    const bias: Bias = score >= 0.5 ? "up" : "down";
+    const probabilityHigher = Math.round(score * 1000) / 10;
+    const probabilityLower = Math.round((100 - probabilityHigher) * 10) / 10;
+
+    let aligned = 0;
+    if ((streaks.down >= 2 && bias === "up") || (streaks.up >= 3 && bias === "down")) aligned += 1;
+    if ((mom5 >= 0 && bias === "up") || (mom5 < 0 && bias === "down")) aligned += 1;
+    if ((vsSpy >= 0 && bias === "up") || (vsSpy < 0 && bias === "down")) aligned += 1;
+    if ((futuresPositive && bias === "up") || (!futuresPositive && bias === "down")) aligned += 1;
+    if ((vixFalling && bias === "up") || (!vixFalling && bias === "down")) aligned += 1;
+    if (streaks.down >= 2 && afterDown.winRate >= 52 && bias === "up") aligned += 1;
+
+    const edge = Math.abs(probabilityHigher - 50);
+    const { confidence, confidenceLabel } = confidenceFrom(edge, aligned);
+
+    const changePct = pctChange(series.last, series.previousClose);
+
+    out.push({
+      symbol: meta.symbol,
+      name: meta.name,
+      bias,
+      probabilityHigher,
+      probabilityLower,
+      confidence,
+      confidenceLabel,
+      last: series.last,
+      changePct: changePct != null ? Math.round(changePct * 10000) / 100 : null,
+    });
+  }
+
+  return out;
 }
 
 export function nyTradingDateIso(): string {

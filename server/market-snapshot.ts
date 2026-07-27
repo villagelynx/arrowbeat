@@ -259,6 +259,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   // Soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
   // Use 5y SPY history (fits free-tier time limits better than 10y).
   // SPY 15m/1d is free delayed (~15 min) intraday for the day chart.
+  // Mag7 1y daily runs in parallel (soft-fail) — same wall-clock budget as core.
   const [
     spyLong,
     spyShort,
@@ -271,6 +272,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
     gold,
     breakevenBars,
     realYieldBars,
+    mag7,
   ] = await Promise.all([
     softYahoo("SPY", "5y"),
     softYahoo("SPY", "3mo"),
@@ -283,6 +285,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
     softYahoo("GC=F", "1mo"),
     softFred("T10YIE"),
     softFred("DFII10"),
+    softFetchMag7(),
   ]);
 
   const dayBars = intradayBarsFromChart(spyDay);
@@ -314,9 +317,6 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   if (!spyBars.length && !spyRecent.length) {
     throw new Error("Yahoo Finance returned no SPY history from this host.");
   }
-
-  // Mag7 after core snapshot work so SPY still ships if these soft-fail.
-  const mag7 = await softFetchMag7();
 
   return {
     source: "yahoo-finance+fred",

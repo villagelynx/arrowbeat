@@ -9,14 +9,27 @@ export type IntradayBar = {
 
 export type Series = { last: number | null; bars: Bar[] };
 
-export type Mag7Symbol =
-  | "AAPL"
-  | "MSFT"
-  | "NVDA"
-  | "AMZN"
-  | "META"
-  | "GOOGL"
-  | "TSLA";
+export const MAG7_SYMBOLS = [
+  "AAPL",
+  "MSFT",
+  "NVDA",
+  "AMZN",
+  "META",
+  "GOOGL",
+  "TSLA",
+] as const;
+
+export type Mag7Symbol = (typeof MAG7_SYMBOLS)[number];
+
+export const MAG7_LABELS: Record<Mag7Symbol, string> = {
+  AAPL: "Apple",
+  MSFT: "Microsoft",
+  NVDA: "NVIDIA",
+  AMZN: "Amazon",
+  META: "Meta",
+  GOOGL: "Alphabet",
+  TSLA: "Tesla",
+};
 
 export type Mag7Series = {
   last: number | null;

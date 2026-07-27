@@ -1,27 +1,39 @@
 import { buildMarketSnapshot } from "../../server/market-snapshot";
 
-type NetlifyEvent = {
-  httpMethod?: string;
-};
-
 type NetlifyResult = {
   statusCode: number;
   headers: Record<string, string>;
   body: string;
 };
 
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Function deadline ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 /**
- * Production market API for Netlify.
- * Routed from /api/market/snapshot via netlify.toml.
+ * Live market API. Yahoo often stalls from Netlify function IPs — hard deadline
+ * so the client can fall back to /market-snapshot.json from the last build.
  */
-export async function handler(_event: NetlifyEvent): Promise<NetlifyResult> {
+export async function handler(): Promise<NetlifyResult> {
   try {
-    const payload = await buildMarketSnapshot();
+    const payload = await withDeadline(buildMarketSnapshot(), 8000);
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "public, max-age=120",
+        "Cache-Control": "public, max-age=60",
       },
       body: JSON.stringify(payload),
     };
@@ -34,6 +46,7 @@ export async function handler(_event: NetlifyEvent): Promise<NetlifyResult> {
       },
       body: JSON.stringify({
         error: error instanceof Error ? error.message : "Market fetch failed",
+        hint: "Client should use /market-snapshot.json build fallback",
       }),
     };
   }

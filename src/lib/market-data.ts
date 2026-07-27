@@ -21,17 +21,33 @@ export type MarketSnapshot = {
   };
 };
 
-export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
+async function fetchJson(url: string, timeoutMs: number): Promise<MarketSnapshot> {
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 20_000);
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch("/api/market/snapshot", { signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       throw new Error(`Market data unavailable (${res.status}). ${detail}`);
     }
-    return (await res.json()) as MarketSnapshot;
+    const data = (await res.json()) as MarketSnapshot & { error?: string };
+    if (!data?.spy || (!data.spy.bars?.length && !data.spy.recentBars?.length)) {
+      throw new Error(data.error || "Market snapshot missing SPY history.");
+    }
+    return data;
   } finally {
     window.clearTimeout(timer);
+  }
+}
+
+/**
+ * Prefer live Netlify function; fall back to build-time JSON if Yahoo is blocked
+ * from function IPs (common on free Netlify).
+ */
+export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
+  try {
+    return await fetchJson("/api/market/snapshot", 9000);
+  } catch {
+    return await fetchJson("/market-snapshot.json", 8000);
   }
 }

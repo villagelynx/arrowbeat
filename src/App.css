@@ -3,7 +3,10 @@
   --signal: var(--up);
   position: relative;
   min-height: 100dvh;
-  overflow-x: hidden;
+  /* clip (not hidden): keeps horizontal bleed cut without forcing overflow-y
+     to auto, which compositor-clips Syne descenders on animated children. */
+  overflow-x: clip;
+  overflow-y: visible;
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(var(--glow), 0.22), transparent 55%),
     linear-gradient(165deg, #050b12 0%, #0b1520 42%, #071018 100%);
@@ -175,7 +178,10 @@
   max-width: 40rem;
   margin: 0 auto;
   padding-bottom: 1rem;
-  animation: fade-up 0.45s ease both;
+  overflow: visible;
+  /* Opacity-only: a transform here promotes a compositor layer that clips
+     Syne’s deep “g”/“y” ink even when overflow is visible. */
+  animation: fade-in 0.45s ease both;
 }
 
 .about__hero {
@@ -195,13 +201,13 @@
 
 .about__title {
   margin: 0;
-  padding-bottom: 0.12em;
+  padding: 0.15em 0 0.25em;
   font-family: var(--font-display);
-  font-size: clamp(1.65rem, 4.5vw, 2.4rem);
+  font-size: clamp(1.55rem, 4.2vw, 2.25rem);
   font-weight: 700;
   font-stretch: normal;
   letter-spacing: -0.01em;
-  line-height: 1.4;
+  line-height: 1.55;
   overflow: visible;
   text-wrap: balance;
 }
@@ -1781,6 +1787,15 @@ main {
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes arrow-in {
   from {
     opacity: 0;
@@ -2151,6 +2166,7 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .about,
   .hero,
   .panel,
   .market-arrow,

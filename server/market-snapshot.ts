@@ -231,13 +231,19 @@ function lastFromBars(bars: Bar[]): number | null {
 function mag7FromChart(data: YahooChart): Mag7Series {
   const bars = barsFromChart(data);
   const last = lastPrice(data, bars);
+  // Prefer prior session close — NOT meta.chartPreviousClose (that is the close
+  // before the chart range starts, e.g. ~1y ago on a 1y request → bogus "day" %).
+  const metaPrev = Number(data.chart?.result?.[0]?.meta?.previousClose);
+  const barPrev = bars.length > 1 ? bars[bars.length - 2].close : null;
   const previousClose =
-    Number(data.chart?.result?.[0]?.meta?.chartPreviousClose) ||
-    Number(data.chart?.result?.[0]?.meta?.previousClose) ||
-    (bars.length > 1 ? bars[bars.length - 2].close : null);
+    metaPrev && Number.isFinite(metaPrev)
+      ? metaPrev
+      : barPrev && Number.isFinite(barPrev)
+        ? barPrev
+        : null;
   return {
     last,
-    previousClose: previousClose && Number.isFinite(previousClose) ? previousClose : null,
+    previousClose,
     bars,
   };
 }

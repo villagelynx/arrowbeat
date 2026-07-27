@@ -31,12 +31,16 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
+  /* Keep overflow visible on the document root so About pitch glyphs are never
+     mid-line clipped by a scrollport (overflow-x: clip + overflow-y: auto does that). */
+  overflow: visible;
 }
 
 body {
   min-width: 320px;
-  /* Explicit y:auto — pairing overflow-x:clip with visible would compute y to clip. */
-  overflow-x: clip;
+  /* Prefer auto over clip — clip establishes a paint containment that crops
+     ascenders/descenders on About kicker + lede in WebKit/Blink. */
+  overflow-x: auto;
   overflow-y: auto;
 }
 

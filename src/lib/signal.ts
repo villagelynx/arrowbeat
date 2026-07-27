@@ -133,6 +133,8 @@ export type TomorrowSignal = {
   sessionLabel: string;
   /** "Tomorrow's lean" when next calendar day is a session; else "Next session lean". */
   label: string;
+  /** Short UI kicker, e.g. "Into tomorrow" / "Into Monday". */
+  kicker: string;
   /** True when Sat/Sun (or holiday-style skip) pushed past literal calendar tomorrow. */
   skippedWeekend: boolean;
   bias: Bias;
@@ -241,6 +243,13 @@ function shiftIsoDays(iso: string, days: number): string {
     month: "2-digit",
     day: "2-digit",
   }).format(d);
+}
+
+function longWeekdayNy(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "long",
+  }).format(new Date(`${iso}T12:00:00-04:00`));
 }
 
 /** Next Mon–Fri session after `fromIso` (skips Sat/Sun; does not model holidays). */
@@ -619,204 +628,6 @@ function confidenceFrom(edge: number, aligned: number): {
 
 /**
  * Next-session lean from calendar / historical slices known today.
- * No tomorrow ES/VIX/breadth — intentionally thinner than today's live signal.
- */
-export function buildTomorrowSignal(
-  asOfDate: string,
-  spyRets: { date: string; ret: number }[],
-  weekdayOdds: WeekdayOdds[],
-  monthOdds: MonthOdds[],
-  dayOfMonthOdds: DayOfMonthOdds[],
-  decadeUpPct: number,
-): TomorrowSignal {
-  const nextIso = nextTradingDayIso(asOfDate);
-  const calendarTomorrow = shiftIsoNy(asOfDate, 1);
-  const skippedWeekend = nextIso !== calendarTomorrow;
-  const dow = weekdayInNy(nextIso);
-  const monthNum = monthIndexFromIso(nextIso);
-  const dayNum = dayOfMonthFromIso(nextIso);
-
-  const thisWeekday = weekdayOdds.find((w) => w.weekdayIndex === dow) ?? null;
-  const thisMonth = monthOdds.find((m) => m.monthIndex === monthNum) ?? null;
-  const thisDom = dayOfMonthOdds.find((d) => d.day === dayNum) ?? null;
-  const cashflowKind = cashflowKindForDay(dayNum);
-  const taxKind = taxSeasonKindForMonth(monthNum);
-  const taxSeason = buildTaxSeasonInsight(monthOdds, nextIso);
-  const cashflow = buildCashflowCycleInsight(dayOfMonthOdds, nextIso);
-  const cpiWindow = buildCpiWindowInsight(spyRets, nextIso);
-  const streaks = streakFromReturns(spyRets);
-  const afterDown = afterDownDayStatsFromRets(spyRets);
-
-  let score = decadeUpPct / 100;
-
-  // Mild weekday / seasonality / DOM — same spirit as today, calendar only.
-  if (dow === 1) score -= 0.025;
-  if (dow === 5) score += 0.01;
-  if (thisWeekday) {
-    score += Math.max(-0.03, Math.min(0.03, ((thisWeekday.upPct - 50) / 100) * 0.45));
-  }
-  if (thisMonth) {
-    if (thisMonth.upPct >= 50) score += 0.01;
-    else score -= 0.01;
-  }
-  if (thisDom) {
-    if (thisDom.upPct >= 52) score += 0.01;
-    else if (thisDom.upPct <= 48) score -= 0.01;
-  }
-  if (cashflow?.todayKind === "payday") {
-    score += Math.max(0, Math.min(0.02, (cashflow.paydayAvgUpPct - 50) / 100));
-  } else if (cashflow?.todayKind === "rent") {
-    score += Math.max(-0.02, Math.min(0, (cashflow.rentAvgUpPct - 50) / 100));
-  }
-  if (taxKind === "march" && taxSeason) {
-    if (taxSeason.march.upPct < 50) score -= 0.01;
-    else score += 0.005;
-  } else if (taxKind === "april" && taxSeason) {
-    if (taxSeason.april.upPct >= 50) score += 0.01;
-    else score -= 0.005;
-  }
-  if (cpiWindow && cpiWindow.todayKind !== "quiet") {
-    const row = cpiWindow.odds.find((o) => o.kind === cpiWindow.todayKind);
-    if (row) {
-      if (row.upPct >= 52) score += 0.01;
-      else if (row.upPct <= 48) score -= 0.01;
-    }
-  }
-  // Streak into the next open is known now (no tomorrow quotes needed).
-  if (streaks.down >= 3) score += 0.04;
-  else if (streaks.down === 2) score += 0.025;
-  if (streaks.up >= 4) score -= 0.025;
-
-  // Slightly tighter clamp — thinner calendar book than live ES/VIX stack.
-  score = Math.min(0.72, Math.max(0.32, score));
-
-  const bias: Bias = score >= 0.5 ? "up" : "down";
-  const probabilityHigher = Math.round(score * 1000) / 10;
-  const probabilityLower = Math.round((100 - probabilityHigher) * 10) / 10;
-
-  const factors: Factor[] = [];
-  if (thisWeekday) {
-    factors.push({
-      id: "tmr-weekday",
-      label: `${thisWeekday.weekday} historically ${thisWeekday.upPct.toFixed(1)}% higher (#${thisWeekday.rank}/5)`,
-      supports: thisWeekday.upPct >= 50 ? "up" : "down",
-      detail: `~10y SPY higher-close rate for ${thisWeekday.weekday} sessions.`,
-    });
-  }
-  if (thisMonth) {
-    factors.push({
-      id: "tmr-month",
-      label: `${thisMonth.month} historically ${thisMonth.upPct.toFixed(1)}% higher (#${thisMonth.rank}/12)`,
-      supports: thisMonth.upPct >= 50 ? "up" : "down",
-      detail: "Mild calendar-month seasonality only.",
-    });
-  }
-  if (thisDom) {
-    factors.push({
-      id: "tmr-dom",
-      label: `${thisDom.label} of month: historically ${thisDom.upPct.toFixed(1)}% higher (#${thisDom.rank} of ${dayOfMonthOdds.length})`,
-      supports: thisDom.upPct >= 50 ? "up" : "down",
-      detail: "Day-of-month slice from ~10y SPY.",
-    });
-  }
-  if (cashflowKind === "payday" && cashflow) {
-    factors.push({
-      id: "tmr-payday",
-      label: `Classic payday window (1st/15th) · avg ${cashflow.paydayAvgUpPct.toFixed(1)}% higher`,
-      supports: cashflow.paydayAvgUpPct >= 50 ? "up" : "down",
-      detail: "Cashflow calendar edge known before the open.",
-    });
-  } else if (cashflowKind === "rent" && cashflow) {
-    factors.push({
-      id: "tmr-rent",
-      label: `Late-month rent/mortgage window · avg ${cashflow.rentAvgUpPct.toFixed(1)}% higher`,
-      supports: cashflow.rentAvgUpPct >= 50 ? "up" : "down",
-      detail: "Cashflow calendar edge known before the open.",
-    });
-  }
-  if (taxKind === "march" && taxSeason) {
-    factors.push({
-      id: "tmr-tax-march",
-      label: `Tax run-up: March ${taxSeason.march.upPct.toFixed(1)}% higher (#${taxSeason.march.rank}/12)`,
-      supports: taxSeason.march.upPct >= 50 ? "up" : "down",
-      detail: `Vs April ${taxSeason.april.upPct.toFixed(1)}% (#${taxSeason.april.rank}/12).`,
-    });
-  } else if (taxKind === "april" && taxSeason) {
-    factors.push({
-      id: "tmr-tax-april",
-      label: `Tax deadline month: April ${taxSeason.april.upPct.toFixed(1)}% higher (#${taxSeason.april.rank}/12)`,
-      supports: taxSeason.april.upPct >= 50 ? "up" : "down",
-      detail: `Vs March ${taxSeason.march.upPct.toFixed(1)}% (#${taxSeason.march.rank}/12).`,
-    });
-  }
-  if (cpiWindow && cpiWindow.todayKind !== "quiet") {
-    const row = cpiWindow.odds.find((o) => o.kind === cpiWindow.todayKind);
-    if (row) {
-      factors.push({
-        id: "tmr-cpi",
-        label: `${row.label}: historically ${row.upPct.toFixed(1)}% higher (#${row.rank}/5)`,
-        supports: row.upPct >= 50 ? "up" : "down",
-        detail: `Approx. CPI window for next session. Next proxy ${cpiWindow.nextCpi ?? "—"}.`,
-      });
-    }
-  }
-  if (streaks.down >= 2) {
-    factors.push({
-      id: "tmr-streak-down",
-      label: `${streaks.down} SPY down day${streaks.down > 1 ? "s" : ""} into the next open`,
-      supports: "up",
-      detail: `After down days over the last decade, the next session finished higher about ${afterDown.winRate}% of the time (n=${afterDown.n.toLocaleString()}).`,
-    });
-  } else if (streaks.up >= 4) {
-    factors.push({
-      id: "tmr-streak-up",
-      label: `${streaks.up}-day SPY winning streak into the next open`,
-      supports: "down",
-      detail: "Extended upside streaks often cool into the following session.",
-    });
-  }
-
-  const aligned = factors.filter((f) => f.supports === bias).length;
-  const edge = Math.abs(probabilityHigher - 50);
-  // Fewer live factors → agreement bar is effectively stricter; leave scoring as-is.
-  const { confidence, confidenceLabel } = confidenceFrom(edge, aligned);
-
-  const weekdayName = shortWeekdayNy(nextIso);
-  const label = skippedWeekend ? "Next session lean" : "Tomorrow's lean";
-  const kicker = skippedWeekend ? `Into ${weekdayName}` : "Into tomorrow";
-
-  return {
-    asOfDate: nextIso,
-    sessionLabel: formatSession(nextIso),
-    label,
-    kicker,
-    bias,
-    probabilityHigher,
-    probabilityLower,
-    confidence,
-    confidenceLabel,
-    factors,
-    skippedWeekend,
-  };
-}
-
-/** Conditional next-day stats after a down day — from precomputed returns. */
-function afterDownDayStatsFromRets(rets: { ret: number }[]) {
-  const sample = rets.slice(-2520);
-  const next: number[] = [];
-  for (let i = 0; i < sample.length - 1; i++) {
-    if (sample[i].ret < 0) next.push(sample[i + 1].ret);
-  }
-  const wins = next.filter((r) => r > 0);
-  return {
-    n: next.length,
-    winRate: next.length ? Math.round((wins.length / next.length) * 1000) / 10 : 50,
-    avgMovePct: Math.round(mean(next) * 10000) / 100,
-  };
-}
-
-/**
- * Next-session lean from calendar / historical slices known today.
  * No ES / VIX / breadth / next-day bars — intentionally thinner than today's live signal.
  */
 export function buildTomorrowSignal(
@@ -828,6 +639,7 @@ export function buildTomorrowSignal(
     dayOfMonthOdds: DayOfMonthOdds[];
     cashflowCycle: CashflowCycleInsight | null;
     taxSeason: TaxSeasonInsight | null;
+    /** CPI window insight scored for the *next session* date. */
     cpiWindow: CpiWindowInsight | null;
     /** Completed-session streak known today (carries into the open). */
     streaks?: { up: number; down: number };
@@ -838,6 +650,8 @@ export function buildTomorrowSignal(
   const nextIso = nextTradingDayIso(asOfDate);
   const skippedWeekend = nextIso !== shiftIsoDays(asOfDate, 1);
   const label = skippedWeekend ? "Next session lean" : "Tomorrow's lean";
+  const weekdayName = longWeekdayNy(nextIso);
+  const kicker = skippedWeekend ? `Into ${weekdayName}` : "Into tomorrow";
   const dow = weekdayInNy(nextIso);
   const monthNum = monthIndexFromIso(nextIso);
   const dayNum = dayOfMonthFromIso(nextIso);
@@ -994,6 +808,7 @@ export function buildTomorrowSignal(
     asOfDate: nextIso,
     sessionLabel: formatSession(nextIso),
     label,
+    kicker,
     skippedWeekend,
     bias,
     probabilityHigher,
@@ -1021,6 +836,8 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
   const cpiWindow = buildCpiWindowInsight(spyRets, dateIso);
   const nextSessionIso = nextTradingDayIso(dateIso);
   const cpiWindowTomorrow = buildCpiWindowInsight(spyRets, nextSessionIso);
+  const cashflowCycleTomorrow = buildCashflowCycleInsight(dayOfMonthOdds, nextSessionIso);
+  const taxSeasonTomorrow = buildTaxSeasonInsight(monthOdds, nextSessionIso);
   const weekdayMap = new Map(weekdayOdds.map((w) => [w.weekdayIndex, w]));
   const lastSessions = lastSessionsFromReturns(spyRets, 10, weekdayMap);
   const streaks = streakFromReturns(spyRets);
@@ -1271,14 +1088,18 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
         ? decade.avgUpPct
         : decade.avgDownPct;
 
-  const tomorrow = buildTomorrowSignal(
-    dateIso,
-    spyRets,
+  const tomorrow = buildTomorrowSignal(dateIso, {
+    decadeUpPct: decade.upPct,
     weekdayOdds,
     monthOdds,
     dayOfMonthOdds,
-    decade.upPct,
-  );
+    cashflowCycle: cashflowCycleTomorrow,
+    taxSeason: taxSeasonTomorrow,
+    cpiWindow: cpiWindowTomorrow,
+    streaks,
+    afterDownWinRate: afterDown.winRate,
+    afterDownN: afterDown.n,
+  });
 
   return {
     asOfDate: dateIso,
@@ -1337,7 +1158,7 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
 /** Offline fallback if the market API is unreachable. */
 export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
   const nextIso = nextTradingDayIso(dateIso);
-  const skippedWeekend = nextIso !== shiftIsoNy(dateIso, 1);
+  const skippedWeekend = nextIso !== shiftIsoDays(dateIso, 1);
   return {
     asOfDate: dateIso,
     sessionLabel: formatSession(dateIso),
@@ -1358,7 +1179,7 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
       asOfDate: nextIso,
       sessionLabel: formatSession(nextIso),
       label: skippedWeekend ? "Next session lean" : "Tomorrow's lean",
-      kicker: skippedWeekend ? `Into ${shortWeekdayNy(nextIso)}` : "Into tomorrow",
+      kicker: skippedWeekend ? `Into ${longWeekdayNy(nextIso)}` : "Into tomorrow",
       bias: "up",
       probabilityHigher: 52,
       probabilityLower: 48,
@@ -1373,6 +1194,7 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
         },
       ],
       skippedWeekend,
+      calendarEdge: null,
     },
     lastSessions: [],
     weekdayOdds: [],

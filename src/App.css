@@ -177,48 +177,65 @@
 .about {
   max-width: 40rem;
   margin: 0 auto;
-  padding-bottom: 1rem;
+  /* Generous vertical room so kicker ascenders + lede descenders never sit on a clip edge. */
+  padding: 1.25rem 0.15rem 2rem;
   overflow: visible;
-  /* No enter animation — even opacity-only fade promotes a compositor layer that
-     mid-line crops .about__lede under ancestors that establish a clip. */
+  isolation: auto;
+  contain: none;
+  transform: none;
+  filter: none;
+  clip-path: none;
+  mask-image: none;
   animation: none;
 }
 
 .about__hero {
-  margin: 0.35rem 0 0.25rem;
+  margin: 0;
+  padding: 0.85rem 0 1.1rem;
   overflow: visible;
   text-align: left;
+  transform: none;
+  filter: none;
+  clip-path: none;
+  mask-image: none;
+  animation: none;
 }
 
 .about__kicker {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.55rem;
+  padding: 0.4em 0 0.15em;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  line-height: 1.45;
+  overflow: visible;
 }
 
 .about__title {
   margin: 0;
-  padding: 0.2em 0 0.35em;
+  padding: 0.35em 0 0.45em;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 3.4vw, 1.85rem);
   font-weight: 700;
   font-stretch: normal;
   letter-spacing: -0.01em;
-  line-height: 1.6;
+  line-height: 1.55;
   overflow: visible;
   text-wrap: balance;
 }
 
 .about__lede {
-  margin: 0.75rem 0 0;
+  margin: 0.85rem 0 0;
+  padding: 0.2em 0 0.35em;
   color: rgba(232, 238, 245, 0.88);
   font-size: 0.98rem;
-  line-height: 1.55;
+  line-height: 1.65;
   overflow: visible;
   max-height: none;
+  transform: none;
+  filter: none;
 }
 
 .about__lean.is-up {
@@ -232,12 +249,15 @@
 }
 
 .about__tagline {
-  margin: 1rem 0 0;
+  margin: 1.15rem 0 0;
+  padding: 0.15em 0;
   font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.35;
   color: var(--paper);
+  overflow: visible;
 }
 
 .about__cta {
@@ -267,7 +287,10 @@
 /* Beat .panel (defined later) — transform rise mid-line crops About copy. */
 .panel.about__panel {
   overflow: visible;
-  animation: none;
+  animation: none !important;
+  transform: none;
+  filter: none;
+  backdrop-filter: none;
 }
 
 .about__list {
@@ -275,7 +298,8 @@
   padding: 0 0 0 1.1rem;
   color: rgba(232, 238, 245, 0.88);
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.55;
+  overflow: visible;
 }
 
 .about__list li + li {
@@ -289,13 +313,32 @@
 
 .about__disclaimer {
   margin: 0.65rem 0 0;
+  padding: 0.15em 0;
   color: rgba(232, 238, 245, 0.88);
   font-size: 0.9rem;
-  line-height: 1.55;
+  line-height: 1.65;
+  overflow: visible;
 }
 
 .about__disclaimer strong {
   color: var(--paper);
+}
+
+/* About route: clear space under topbar; no clip ancestors. */
+main.about-main {
+  overflow: visible;
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+}
+
+.app--about {
+  overflow: visible;
+}
+
+.app--about .atmosphere {
+  /* Mask on a fixed full-viewport layer can confuse paint of text above it in
+     some WebKit builds — disable mask on About. */
+  mask-image: none;
 }
 
 .data-pill {
@@ -348,7 +391,7 @@
 
 .hero-quotes {
   width: 100%;
-  order: 8;
+  order: 9;
 }
 
 .quote-strip li {

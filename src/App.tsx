@@ -165,7 +165,7 @@ export default function App() {
 
   if (!signal) {
     return (
-      <div className="app theme-up">
+      <div className={`app theme-up${view === "about" ? " app--about" : ""}`}>
         <div className="atmosphere" aria-hidden="true" />
         <header className="topbar">
           <div className="topbar__brand">
@@ -177,7 +177,7 @@ export default function App() {
           <AppNav view={view} onNavigate={setView} />
         </header>
         {view === "about" ? (
-          <main>
+          <main className="about-main">
             <AboutPage onGoDashboard={() => setView("home")} />
           </main>
         ) : null}
@@ -197,7 +197,7 @@ export default function App() {
     : null;
 
   return (
-    <div className={`app ${up ? "theme-up" : "theme-down"}`}>
+    <div className={`app ${up ? "theme-up" : "theme-down"}${view === "about" ? " app--about" : ""}`}>
       <div className="atmosphere" aria-hidden="true" />
 
       <header className="topbar">
@@ -222,7 +222,7 @@ export default function App() {
       </header>
 
       {view === "about" ? (
-        <main>
+        <main className="about-main">
           <AboutPage onGoDashboard={() => setView("home")} />
         </main>
       ) : (

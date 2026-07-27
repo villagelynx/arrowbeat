@@ -600,8 +600,7 @@ main {
   display: contents;
 }
 
-.desk-top,
-.desk-stack--day {
+.desk-top {
   display: contents;
 }
 
@@ -1167,7 +1166,7 @@ main {
     margin-bottom: 0.25rem;
   }
 
-  .desk-top:not(:has(.panel--day)) {
+  .desk-top:not(:has(.desk-stack--day)) {
     grid-template-columns: minmax(15rem, 1fr) minmax(0, 1.1fr);
   }
 

@@ -118,7 +118,7 @@ export default function App() {
           {loading
             ? "Refreshing…"
             : signal.dataMode === "live"
-              ? "Live · SPY · ES · VIX"
+              ? "Live · SPY · Mag7 · ES · VIX"
               : "Demo fallback"}
         </p>
       </header>
@@ -339,6 +339,80 @@ export default function App() {
             </ul>
           </section>
         </div>
+
+        {signal.mag7.length ? (
+          <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
+            <h2 id="mag7-title">Magnificent 7</h2>
+            <p className="panel-lede">
+              Per-name ArrowBeat lean — same idea as SPY (arrow + bias + probability), from each
+              stock&apos;s recent price action plus a mild shared ES / VIX tone. Yahoo free quotes ~
+              15 minutes delayed.
+            </p>
+            <ul className="mag7-grid">
+              {signal.mag7.map((row) => {
+                const leanUp = row.bias === "up";
+                const leadPct = leanUp ? row.probabilityHigher : row.probabilityLower;
+                return (
+                  <li
+                    key={row.symbol}
+                    className={`mag7-card ${
+                      !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
+                    }`}
+                  >
+                    <div className="mag7-card__head">
+                      <p className="mag7-card__symbol">{row.symbol}</p>
+                      <p className="mag7-card__name">{row.name}</p>
+                    </div>
+                    {row.available ? (
+                      <div className="mag7-card__arrow">
+                        <MarketArrow
+                          bias={row.bias}
+                          idSuffix={`-mag7-${row.symbol}`}
+                          className="market-arrow--mag7"
+                        />
+                      </div>
+                    ) : (
+                      <p className="mag7-card__na">Unavailable</p>
+                    )}
+                    <p className="mag7-card__bias">
+                      {row.available
+                        ? leanUp
+                          ? "Higher-close lean"
+                          : "Lower-close lean"
+                        : "No live lean"}
+                    </p>
+                    <p className="mag7-card__prob">
+                      {row.available ? (
+                        <>
+                          {leadPct.toFixed(1)}
+                          <span>%</span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </p>
+                    <div className="mag7-card__quote">
+                      <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
+                      <span
+                        className={
+                          row.changePct == null
+                            ? ""
+                            : row.changePct >= 0
+                              ? "is-up"
+                              : "is-down"
+                        }
+                      >
+                        {row.changePct == null
+                          ? "—"
+                          : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
 
         <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
           {spyBars.length ? (

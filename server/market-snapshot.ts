@@ -242,6 +242,61 @@ function mag7FromChart(data: YahooChart): Mag7Series {
   };
 }
 
+export type StockQuotePayload = {
+  symbol: string;
+  last: number | null;
+  previousClose: number | null;
+  change: number | null;
+  changePct: number | null;
+  delayNote: string;
+  fetchedAt: string;
+  source: string;
+};
+
+/** Normalize user ticker input for Yahoo chart paths. */
+export function sanitizeTicker(raw: string): string {
+  return raw.trim().toUpperCase().replace(/\s+/g, "").slice(0, 16);
+}
+
+/**
+ * On-demand delayed quote for an arbitrary ticker (single soft Yahoo call).
+ * Fast enough for Netlify free-tier; returns nulls when Yahoo fails.
+ */
+export async function buildStockQuote(rawSymbol: string): Promise<StockQuotePayload> {
+  const symbol = sanitizeTicker(rawSymbol);
+  if (!symbol || !/^[A-Z0-9.^*=-]{1,16}$/.test(symbol)) {
+    throw new Error("Enter a valid ticker (letters, numbers, . ^ = -).");
+  }
+
+  const chart = await softYahoo(symbol, "5d");
+  const series = mag7FromChart(chart);
+  const last = series.last;
+  const previousClose = series.previousClose;
+  const change =
+    last != null && previousClose != null && Number.isFinite(last) && Number.isFinite(previousClose)
+      ? last - previousClose
+      : null;
+  const changePct =
+    change != null && previousClose != null && previousClose !== 0
+      ? (change / previousClose) * 100
+      : null;
+
+  if (last == null && !series.bars.length) {
+    throw new Error(`No quote returned for ${symbol}.`);
+  }
+
+  return {
+    symbol,
+    last,
+    previousClose,
+    change: change != null ? Math.round(change * 100) / 100 : null,
+    changePct: changePct != null ? Math.round(changePct * 100) / 100 : null,
+    delayNote: "Yahoo free quotes ~15 minutes delayed",
+    fetchedAt: new Date().toISOString(),
+    source: "yahoo-finance",
+  };
+}
+
 /** Soft Mag7 history after core SPY/FRED — keeps SPY usable if Mag7 is slow. */
 async function softFetchMag7(): Promise<Partial<Record<Mag7Symbol, Mag7Series>>> {
   const charts = await Promise.all(MAG7_SYMBOLS.map((symbol) => softYahoo(symbol, "1y")));

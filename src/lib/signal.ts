@@ -923,13 +923,14 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
     disclaimer:
       "Demo mode — not live quotes. ArrowBeat is educational only, not investment advice.",
     dataMode: "demo",
+    mag7: [],
   };
 }
 
 /**
  * Per-ticker ArrowBeat lean for Mag7 — lighter cousin of buildLiveSignal:
  * own price action + streaks + relative vs SPY, plus a mild shared risk tone
- * (ES / VIX) from the market snapshot.
+ * (ES / VIX) from the market snapshot. Always returns all 7 names (soft-fail → available:false).
  */
 export function buildMag7Signals(
   snapshot: MarketSnapshot,
@@ -937,9 +938,8 @@ export function buildMag7Signals(
 ): Mag7Signal[] {
   const dow = weekdayInNy(dateIso);
   const spyBars = snapshot.spy.bars.length ? snapshot.spy.bars : snapshot.spy.recentBars;
-  const spyRets = spyBars.length >= 6 ? dailyReturns(spyBars) : [];
   const spy5 =
-    spyRets.length >= 5
+    spyBars.length >= 6
       ? (spyBars[spyBars.length - 1].close - spyBars[spyBars.length - 6].close) /
         spyBars[spyBars.length - 6].close
       : 0;
@@ -957,15 +957,42 @@ export function buildMag7Signals(
   const vixChg = pctChange(snapshot.vix.last, vixPrev);
   const vixFalling = (vixChg ?? 0) < 0;
 
-  const out: Mag7Signal[] = [];
-
-  for (const meta of MAG7_META) {
+  return MAG7_META.map((meta) => {
     const series = snapshot.mag7?.[meta.symbol];
-    if (!series || series.bars.length < 20) continue;
+    const changeRaw = series ? pctChange(series.last, series.previousClose) : null;
+    const changePct = changeRaw != null ? Math.round(changeRaw * 10000) / 100 : null;
+
+    if (!series || series.bars.length < 20) {
+      return {
+        symbol: meta.symbol,
+        name: meta.name,
+        bias: "up" as Bias,
+        probabilityHigher: 50,
+        probabilityLower: 50,
+        confidence: 1 as const,
+        confidenceLabel: "Tentative",
+        last: series?.last ?? null,
+        changePct,
+        available: false,
+      };
+    }
 
     const bars = series.bars;
     const rets = dailyReturns(bars);
-    if (rets.length < 15) continue;
+    if (rets.length < 15) {
+      return {
+        symbol: meta.symbol,
+        name: meta.name,
+        bias: "up" as Bias,
+        probabilityHigher: 50,
+        probabilityLower: 50,
+        confidence: 1 as const,
+        confidenceLabel: "Tentative",
+        last: series.last,
+        changePct,
+        available: false,
+      };
+    }
 
     const sample = rets.slice(-252);
     const upShare = sample.filter((r) => r.ret > 0).length / (sample.length || 1);
@@ -989,10 +1016,14 @@ export function buildMag7Signals(
     if (vsSpy > 0.01) score += 0.015;
     else if (vsSpy < -0.01) score -= 0.015;
     // Shared market tone (lighter weight than SPY hero signal)
-    if (futuresPositive) score += 0.02;
-    else score -= 0.02;
-    if (vixFalling) score += 0.015;
-    else score -= 0.012;
+    if (futuresChg != null) {
+      if (futuresPositive) score += 0.02;
+      else score -= 0.02;
+    }
+    if (vixChg != null) {
+      if (vixFalling) score += 0.015;
+      else score -= 0.012;
+    }
 
     score = Math.min(0.78, Math.max(0.28, score));
     const bias: Bias = score >= 0.5 ? "up" : "down";
@@ -1010,9 +1041,7 @@ export function buildMag7Signals(
     const edge = Math.abs(probabilityHigher - 50);
     const { confidence, confidenceLabel } = confidenceFrom(edge, aligned);
 
-    const changePct = pctChange(series.last, series.previousClose);
-
-    out.push({
+    return {
       symbol: meta.symbol,
       name: meta.name,
       bias,
@@ -1021,11 +1050,10 @@ export function buildMag7Signals(
       confidence,
       confidenceLabel,
       last: series.last,
-      changePct: changePct != null ? Math.round(changePct * 10000) / 100 : null,
-    });
-  }
-
-  return out;
+      changePct,
+      available: true,
+    };
+  });
 }
 
 export function nyTradingDateIso(): string {

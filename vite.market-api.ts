@@ -1,5 +1,5 @@
 import type { Plugin } from "vite";
-import { buildMarketSnapshot } from "./server/market-snapshot.ts";
+import { buildMarketSnapshot, buildStockQuote } from "./server/market-snapshot.ts";
 
 function json(res: import("http").ServerResponse, status: number, body: unknown) {
   res.statusCode = status;
@@ -8,7 +8,19 @@ function json(res: import("http").ServerResponse, status: number, body: unknown)
   res.end(JSON.stringify(body));
 }
 
-/** Dev/preview API — same payload as the Netlify function. */
+function pathOnly(url: string): string {
+  return url.split("?")[0] ?? url;
+}
+
+function queryParam(url: string, key: string): string {
+  try {
+    return new URL(url, "http://localhost").searchParams.get(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** Dev/preview API — same payload as the Netlify functions. */
 export function marketApiPlugin(): Plugin {
   return {
     name: "arrowbeat-market-api",
@@ -16,8 +28,13 @@ export function marketApiPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith("/api/market")) return next();
         try {
-          if (req.url.split("?")[0] === "/api/market/snapshot") {
+          const path = pathOnly(req.url);
+          if (path === "/api/market/snapshot") {
             json(res, 200, await buildMarketSnapshot());
+            return;
+          }
+          if (path === "/api/market/quote") {
+            json(res, 200, await buildStockQuote(queryParam(req.url, "symbol")));
             return;
           }
           json(res, 404, { error: "Not found" });
@@ -32,8 +49,13 @@ export function marketApiPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith("/api/market")) return next();
         try {
-          if (req.url.split("?")[0] === "/api/market/snapshot") {
+          const path = pathOnly(req.url);
+          if (path === "/api/market/snapshot") {
             json(res, 200, await buildMarketSnapshot());
+            return;
+          }
+          if (path === "/api/market/quote") {
+            json(res, 200, await buildStockQuote(queryParam(req.url, "symbol")));
             return;
           }
           json(res, 404, { error: "Not found" });

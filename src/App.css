@@ -535,6 +535,44 @@ main {
   width: min(100%, 28rem);
   margin: 0 auto;
   padding: 0.5rem 1.15rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.banner-error {
+  order: 0;
+}
+
+.panel--day {
+  order: 2;
+}
+
+.desk-row--ytd {
+  order: 3;
+}
+
+.desk-row--sessions {
+  order: 4;
+}
+
+.desk-row--weekday {
+  order: 5;
+}
+
+.desk-row--cashflow {
+  order: 6;
+}
+
+.panel--factors {
+  order: 7;
+}
+
+.desk-row--stats {
+  order: 8;
+}
+
+.disclaimer {
+  order: 9;
 }
 
 .hero {
@@ -543,6 +581,7 @@ main {
   text-align: center;
   padding: 0.5rem 0 1.5rem;
   animation: rise 0.7s ease-out both;
+  order: 1;
 }
 
 /* Unwrap on mobile so order can restore original stack (cal between chip & prob) */
@@ -552,7 +591,7 @@ main {
   display: contents;
 }
 
-.desk-predict {
+.desk-top {
   display: contents;
 }
 
@@ -792,6 +831,7 @@ main {
 .prob-block {
   width: 100%;
   margin-top: 1.15rem;
+  order: 6;
 }
 
 .prob-label {
@@ -1060,7 +1100,7 @@ main {
   }
 }
 
-/* Desktop layout — mobile / narrow column unchanged above */
+/* Desktop layout — multi-column dashboard; mobile column unchanged above */
 @media (min-width: 960px) {
   .topbar {
     display: flex;
@@ -1068,7 +1108,7 @@ main {
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    max-width: 68rem;
+    max-width: 72rem;
     margin: 0 auto;
     padding: 1.5rem 1.75rem 0.5rem;
     text-align: left;
@@ -1088,95 +1128,134 @@ main {
   }
 
   main {
-    width: min(100%, 68rem);
+    width: min(100%, 72rem);
     padding: 0.75rem 1.75rem 3rem;
+    display: block;
+  }
+
+  .banner-error,
+  .hero,
+  .panel--day,
+  .panel--factors,
+  .desk-row--ytd,
+  .desk-row--sessions,
+  .desk-row--weekday,
+  .desk-row--cashflow,
+  .desk-row--stats,
+  .disclaimer {
+    order: unset;
+  }
+
+  /* Top band: today chart | arrow+signal | why this signal */
+  .desk-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.95fr) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+    margin-bottom: 0.25rem;
+  }
+
+  .desk-top:not(:has(.panel--day)) {
+    grid-template-columns: minmax(15rem, 1fr) minmax(0, 1.1fr);
+  }
+
+  .panel--day,
+  .panel--factors {
+    margin-top: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel--day .panel-lede {
+    margin-bottom: 0.55rem;
   }
 
   .hero {
     width: 100%;
-    grid-template-columns: minmax(16rem, 0.95fr) minmax(20rem, 1.15fr);
+    min-width: 0;
+    margin: 0;
+    padding: 0.85rem 0.9rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: rgba(8, 16, 26, 0.55);
+    backdrop-filter: blur(10px);
+    display: grid;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "kicker kicker"
-      "title title"
-      "arrow cal"
-      "chip cal"
-      "prob quotes"
-      "conf quotes";
-    column-gap: 2.25rem;
-    row-gap: 0.55rem;
-    align-items: start;
+      "head"
+      "signal"
+      "rail";
     justify-items: stretch;
-    text-align: left;
-    padding: 0.85rem 0 1.75rem;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 0.35rem;
+    align-content: start;
+    text-align: center;
+    row-gap: 0.35rem;
   }
 
-  .hero-kicker {
-    grid-area: kicker;
-    justify-self: center;
-    text-align: center;
+  .hero-head,
+  .hero-signal,
+  .hero-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .hero-head {
+    grid-area: head;
+  }
+
+  .hero-signal {
+    grid-area: signal;
+  }
+
+  .hero-rail {
+    grid-area: rail;
+    margin-top: 0.35rem;
+    gap: 0.55rem;
+  }
+
+  .hero-kicker,
+  .hero-title,
+  .arrow-stage,
+  .bias-chip,
+  .cal-edge,
+  .prob-block,
+  .confidence,
+  .hero-quotes {
+    order: unset;
+    grid-area: auto;
+    justify-self: auto;
   }
 
   .hero-title {
-    grid-area: title;
-    justify-self: center;
-    text-align: center;
-    font-size: 1.85rem;
+    font-size: 1.25rem;
   }
 
   .arrow-stage {
-    grid-area: arrow;
-    justify-self: center;
-    width: min(100%, 17.5rem);
-    margin-top: 0.5rem;
-  }
-
-  .bias-chip {
-    grid-area: chip;
-    justify-self: center;
-  }
-
-  .cal-edge {
-    grid-area: cal;
-    margin-top: 0.5rem;
-    align-self: stretch;
+    width: min(100%, 11.5rem);
+    margin: 0.45rem 0 0.2rem;
   }
 
   .prob-block {
-    grid-area: prob;
-    width: 100%;
-    max-width: 18rem;
-    justify-self: center;
+    margin-top: 0.55rem;
+    max-width: 100%;
   }
 
-  .confidence {
-    grid-area: conf;
-    justify-self: center;
+  .prob-value {
+    font-size: clamp(2.4rem, 4vw, 3.2rem);
   }
 
-  .hero-quotes {
-    grid-area: quotes;
-    width: 100%;
-    align-self: start;
+  .cal-edge {
+    margin-top: 0;
   }
 
   .hero-quotes .quote-strip {
-    margin-top: 0.55rem;
+    margin-top: 0;
   }
 
-  .hero-quotes .quote-strip:first-child {
-    margin-top: 0.35rem;
-  }
-
-  .hero:not(:has(.cal-edge)) {
-    grid-template-areas:
-      "kicker kicker"
-      "title title"
-      "arrow quotes"
-      "chip quotes"
-      "prob quotes"
-      "conf quotes";
+  .hero-quotes .quote-strip--inflation {
+    margin-top: 0.4rem;
   }
 
   .desk-grid {
@@ -1197,11 +1276,7 @@ main {
     min-width: 0;
   }
 
-  .desk-grid--trio {
-    grid-template-columns: 1.25fr 1fr 1fr;
-  }
-
-  .desk-grid--trio .panel {
+  .desk-grid--ytd .panel {
     margin-top: 1.15rem;
   }
 
@@ -1218,7 +1293,7 @@ main {
   }
 
   .footer {
-    max-width: 68rem;
+    max-width: 72rem;
     margin: 0 auto;
     padding: 0 1.75rem 2.5rem;
     text-align: left;
@@ -1231,16 +1306,21 @@ main {
 
 @media (min-width: 1200px) {
   main {
-    width: min(100%, 74rem);
+    width: min(100%, 78rem);
   }
 
   .topbar,
   .footer {
-    max-width: 74rem;
+    max-width: 78rem;
   }
 
-  .desk-grid--charts {
-    grid-template-columns: 1fr 1.15fr;
+  .desk-top {
+    grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.9fr) minmax(0, 1.05fr);
+    gap: 1.15rem;
+  }
+
+  .arrow-stage {
+    width: min(100%, 12.5rem);
   }
 }
 

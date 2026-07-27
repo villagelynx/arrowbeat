@@ -126,7 +126,17 @@ export default function App() {
       <main>
         {error ? <p className="banner-error">{error}</p> : null}
 
-        <div className="desk-predict">
+        <div className="desk-top">
+          {dayBars.length > 1 ? (
+            <section className="panel panel--day" aria-labelledby="spy-day-title">
+              <h2 id="spy-day-title">S&amp;P 500 today</h2>
+              <p className="panel-lede">
+                Free Yahoo 15-minute bars — typically about 15 minutes delayed.
+              </p>
+              <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
+            </section>
+          ) : null}
+
           <section className="hero" aria-labelledby="bias-title">
             <div className="hero-head">
               <p className="hero-kicker">{signal.sessionLabel}</p>
@@ -287,25 +297,13 @@ export default function App() {
           </section>
         </div>
 
-        {dayBars.length > 1 || spyBars.length ? (
-          <div className="desk-grid desk-grid--charts desk-row desk-row--charts">
-            {dayBars.length > 1 ? (
-              <section className="panel" aria-labelledby="spy-day-title">
-                <h2 id="spy-day-title">S&amp;P 500 today</h2>
-                <p className="panel-lede">
-                  Free Yahoo 15-minute bars — typically about 15 minutes delayed.
-                </p>
-                <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
-              </section>
-            ) : null}
-
-            {spyBars.length ? (
-              <section className="panel" aria-labelledby="spy-chart-title">
-                <h2 id="spy-chart-title">S&amp;P 500 this year</h2>
-                <p className="panel-lede">SPY daily closes — year to date.</p>
-                <SpyYearChart bars={spyBars} year={yearFromIso(signal.asOfDate)} />
-              </section>
-            ) : null}
+        {spyBars.length ? (
+          <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
+            <section className="panel" aria-labelledby="spy-chart-title">
+              <h2 id="spy-chart-title">S&amp;P 500 this year</h2>
+              <p className="panel-lede">SPY daily closes — year to date.</p>
+              <SpyYearChart bars={spyBars} year={yearFromIso(signal.asOfDate)} />
+            </section>
           </div>
         ) : null}
 

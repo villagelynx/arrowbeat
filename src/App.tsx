@@ -585,7 +585,17 @@ export default function App() {
                 <MarketArrow bias={primary.bias} />
               </div>
 
-              <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
+              <div className="bias-share-row">
+                <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
+                <button
+                  type="button"
+                  className="share-pill"
+                  onClick={() => void shareScorecard()}
+                  aria-label="Share score"
+                >
+                  {shareStatus === "Copied" ? "Copied" : "Share"}
+                </button>
+              </div>
 
               <div className="prob-block">
                 <p className="prob-label">
@@ -659,15 +669,6 @@ export default function App() {
                   </ul>
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="share-pill"
-                onClick={() => void shareScorecard()}
-                aria-label="Share score"
-              >
-                {shareStatus === "Copied" ? "Copied" : "Share"}
-              </button>
 
               {primary.calendarEdge ? (
                 <div

@@ -1062,7 +1062,7 @@ main {
   order: 1;
 }
 
-/* Unwrap on mobile so order stacks: chip → prob → confidence → share → cal-edge */
+/* Unwrap on mobile so order stacks: chip+share → prob → confidence → cal-edge */
 .hero-head,
 .hero-signal,
 .hero-rail {
@@ -1471,8 +1471,18 @@ main {
   line-height: 1.4;
 }
 
-.bias-chip {
+.bias-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   margin: 0.4rem 0 0;
+  order: 4;
+}
+
+.bias-chip {
+  margin: 0;
   padding: 0.35rem 0.85rem;
   border-radius: 999px;
   border: 1px solid rgba(var(--glow), 0.35);
@@ -1482,7 +1492,6 @@ main {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  order: 4;
 }
 
 .cal-edge {
@@ -1735,29 +1744,29 @@ main {
 }
 
 .share-pill {
-  margin: 0.75rem 0 0;
+  margin: 0;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid rgba(var(--glow), 0.35);
-  background: rgba(var(--glow), 0.12);
-  color: var(--signal);
+  border: 1px solid #7c3aed;
+  background: #7c3aed;
+  color: #f5f3ff;
   font-family: var(--font-body);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  order: 7;
 }
 
 .share-pill:hover {
-  border-color: rgba(var(--glow), 0.55);
-  background: rgba(var(--glow), 0.18);
+  border-color: #8b5cf6;
+  background: #8b5cf6;
+  color: #fff;
 }
 
 .share-pill:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px rgba(var(--glow), 0.55);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.55);
 }
 
 .confidence:focus-visible {
@@ -2436,6 +2445,7 @@ main {
   .hero-title,
   .hero-asof,
   .arrow-stage,
+  .bias-share-row,
   .bias-chip,
   .cal-edge,
   .prob-block,

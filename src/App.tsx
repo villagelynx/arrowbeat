@@ -695,6 +695,7 @@ export default function App() {
 
             <div className="hero-signal">
               <div className="arrow-stage">
+                <p className="arrow-score-label">ArrowBeat Score</p>
                 <MarketArrow bias={primary.bias} />
               </div>
 
@@ -704,7 +705,7 @@ export default function App() {
                   type="button"
                   className="share-pill"
                   onClick={() => void shareCurrentSignal(signalSharePayload)}
-                  aria-label="Share current signal"
+                  aria-label="Share ArrowBeat Score"
                 >
                   {signalShareStatus === "Shared" ||
                   signalShareStatus === "Copied" ||

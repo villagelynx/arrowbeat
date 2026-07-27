@@ -840,8 +840,9 @@ main {
 }
 
 .bulletin__player {
-  margin-top: 0.15rem;
-  width: 100%;
+  margin: 0.15rem auto 0;
+  width: 70%;
+  max-width: 70%;
   aspect-ratio: 9 / 16;
   border-radius: 0.75rem;
   overflow: hidden;

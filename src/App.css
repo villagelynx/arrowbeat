@@ -217,13 +217,13 @@
 
 .about__title {
   margin: 0;
-  padding: 0.35em 0 0.45em;
+  padding: 0.4em 0 0.5em;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 3.4vw, 1.85rem);
   font-weight: 700;
   font-stretch: normal;
   letter-spacing: -0.01em;
-  line-height: 1.55;
+  line-height: 1.45;
   overflow: visible;
   text-wrap: balance;
 }
@@ -252,12 +252,12 @@
 
 .about__tagline {
   margin: 1.15rem 0 0;
-  padding: 0.15em 0;
+  padding: 0.2em 0 0.25em;
   font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--paper);
   overflow: visible;
 }
@@ -286,13 +286,12 @@
   overflow: visible;
 }
 
-/* Beat .panel (defined later) — transform rise mid-line crops About copy. */
+/* Beat .panel (defined later) — no rise animation on About copy. */
 .panel.about__panel {
   overflow: visible;
   animation: none !important;
   transform: none;
   filter: none;
-  backdrop-filter: none;
 }
 
 .about__list {
@@ -1130,10 +1129,13 @@ main {
 
 .hero-title {
   margin: 0.35rem 0 0;
+  padding: 0.08em 0 0.18em;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 5.5vw, 1.7rem);
   font-weight: 700;
   letter-spacing: -0.03em;
+  line-height: 1.35;
+  overflow: visible;
   order: 2;
 }
 
@@ -2029,28 +2031,49 @@ main {
 }
 
 .panel {
+  position: relative;
   margin-top: 1.15rem;
   padding: 1.15rem 1rem 1.2rem;
   border: 1px solid var(--line);
   border-radius: 1rem;
-  background: rgba(8, 16, 26, 0.55);
-  backdrop-filter: blur(10px);
+  /* Blur lives on ::before — backdrop-filter on this box forces overflow clip
+     and mid-line crops Syne/Manrope descenders (g/y/p) inside the panel. */
+  background: transparent;
+  overflow: visible;
+  isolation: isolate;
   animation: rise 0.8s ease-out both;
   animation-delay: 0.08s;
 }
 
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgba(8, 16, 26, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
 .panel h2 {
   margin: 0;
+  padding: 0.08em 0 0.18em;
   font-family: var(--font-display);
   font-size: 1.15rem;
   letter-spacing: -0.02em;
+  line-height: 1.35;
+  overflow: visible;
 }
 
 .panel-lede {
   margin: 0.35rem 0 0.9rem;
+  padding-bottom: 0.1em;
   color: var(--muted);
   font-size: 0.88rem;
-  line-height: 1.45;
+  line-height: 1.55;
+  overflow: visible;
 }
 
 .factor-list {
@@ -2059,6 +2082,7 @@ main {
   padding: 0;
   display: grid;
   gap: 0.75rem;
+  overflow: visible;
 }
 
 .factor-list li {
@@ -2066,6 +2090,7 @@ main {
   grid-template-columns: auto 1fr;
   gap: 0.65rem;
   align-items: start;
+  overflow: visible;
 }
 
 .factor-mark {
@@ -2090,15 +2115,20 @@ main {
 
 .factor-label {
   margin: 0;
+  padding-bottom: 0.12em;
   font-weight: 650;
   font-size: 0.92rem;
+  line-height: 1.35;
+  overflow: visible;
 }
 
 .factor-detail {
   margin: 0.2rem 0 0;
+  padding-bottom: 0.08em;
   color: var(--muted);
   font-size: 0.8rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  overflow: visible;
 }
 
 .stat-grid {
@@ -2186,11 +2216,11 @@ main {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    /* Opacity only — transform + backdrop/compositor layers mid-line crop
+       descenders on panel titles and factor labels (Syne/Manrope). */
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -2343,14 +2373,16 @@ main {
   }
 
   .hero {
+    position: relative;
     width: 100%;
     min-width: 0;
     margin: 0;
     padding: 0.85rem 0.9rem 1rem;
     border: 1px solid var(--line);
     border-radius: 1rem;
-    background: rgba(8, 16, 26, 0.55);
-    backdrop-filter: blur(10px);
+    background: transparent;
+    overflow: visible;
+    isolation: isolate;
     display: grid;
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -2361,6 +2393,18 @@ main {
     align-content: start;
     text-align: center;
     row-gap: 0.35rem;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: rgba(8, 16, 26, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    pointer-events: none;
   }
 
   .hero-head,

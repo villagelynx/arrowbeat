@@ -262,7 +262,11 @@
 .about__panel {
   margin-top: 1rem;
   overflow: visible;
-  /* Override .panel’s rise (translateY) — transform layers clip under ancestors. */
+}
+
+/* Beat .panel (defined later) — transform rise mid-line crops About copy. */
+.panel.about__panel {
+  overflow: visible;
   animation: none;
 }
 
@@ -1512,6 +1516,145 @@ main {
   box-shadow: 0 0 0 1px rgba(240, 194, 75, 0.55);
 }
 
+.tomorrow-lean {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem 0.8rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  text-align: left;
+  order: 8;
+}
+
+.tomorrow-lean.is-up {
+  border-color: rgba(18, 212, 107, 0.28);
+  background: rgba(18, 212, 107, 0.05);
+}
+
+.tomorrow-lean.is-down {
+  border-color: rgba(239, 51, 64, 0.28);
+  background: rgba(239, 51, 64, 0.05);
+}
+
+.tomorrow-lean__kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tomorrow-lean__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tomorrow-lean.is-up .tomorrow-lean__title {
+  color: var(--up);
+}
+
+.tomorrow-lean.is-down .tomorrow-lean__title {
+  color: var(--down);
+}
+
+.tomorrow-lean__lede {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.tomorrow-lean__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.55rem;
+  align-items: center;
+  margin-top: 0.65rem;
+}
+
+.tomorrow-lean__arrow {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.tomorrow-lean.is-up .tomorrow-lean__arrow {
+  color: var(--up);
+}
+
+.tomorrow-lean.is-down .tomorrow-lean__arrow {
+  color: var(--down);
+}
+
+.tomorrow-lean__prob {
+  min-width: 0;
+}
+
+.tomorrow-lean__chip {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tomorrow-lean__value {
+  margin: 0.05rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 5vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.tomorrow-lean.is-up .tomorrow-lean__value {
+  color: var(--up);
+}
+
+.tomorrow-lean.is-down .tomorrow-lean__value {
+  color: var(--down);
+}
+
+.tomorrow-lean__value span {
+  font-size: 0.5em;
+  margin-left: 0.06em;
+}
+
+.tomorrow-lean__split {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.tomorrow-lean__conf {
+  text-align: right;
+}
+
+.tomorrow-lean__conf-label,
+.tomorrow-lean__conf-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.tomorrow-lean__stars {
+  margin: 0.1rem 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.tomorrow-lean__session {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
 .confidence-label,
 .confidence-text {
   margin: 0;
@@ -1986,6 +2129,7 @@ main {
   .cal-edge,
   .prob-block,
   .confidence,
+  .tomorrow-lean,
   .hero-quotes {
     order: unset;
     grid-area: auto;
@@ -2004,6 +2148,10 @@ main {
   .prob-block {
     margin-top: 0.55rem;
     max-width: 100%;
+  }
+
+  .tomorrow-lean {
+    margin-top: 0.75rem;
   }
 
   .prob-value {

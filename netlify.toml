@@ -7,6 +7,10 @@
   node_bundler = "esbuild"
   directory = "netlify/functions"
 
+[functions."market-snapshot"]
+  # Free tier max is typically 10s; stay under that in code too.
+  timeout = 10
+
 # Market API before the SPA fallback
 [[redirects]]
   from = "/api/market/snapshot"

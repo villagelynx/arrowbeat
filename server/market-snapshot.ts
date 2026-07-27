@@ -1,6 +1,9 @@
 /**
  * Shared market snapshot builder for Vite dev middleware + Netlify Functions.
  * Free Yahoo Finance + FRED CSV — no API keys.
+ *
+ * Tuned for Netlify free-tier ~10s function limit: short per-request timeouts
+ * and soft failures so the UI always gets a usable payload.
  */
 
 export type Bar = { date: string; close: number };
@@ -42,26 +45,48 @@ export type MarketSnapshotPayload = {
   };
 };
 
-async function fetchYahooChart(symbol: string, range: string, interval = "1d"): Promise<YahooChart> {
-  const url = new URL(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`);
-  url.searchParams.set("interval", interval);
-  url.searchParams.set("range", range);
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 ArrowBeat/1.0",
-      Accept: "application/json",
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Yahoo ${symbol} HTTP ${res.status}`);
+const FETCH_MS = 4500;
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
-  return (await res.json()) as YahooChart;
+}
+
+async function fetchYahooChart(symbol: string, range: string, interval = "1d"): Promise<YahooChart> {
+  const hosts = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"];
+  let lastError: Error | null = null;
+  for (const host of hosts) {
+    try {
+      const url = new URL(`https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}`);
+      url.searchParams.set("interval", interval);
+      url.searchParams.set("range", range);
+      const res = await fetchWithTimeout(url.toString(), {
+        headers: {
+          "User-Agent": "Mozilla/5.0 ArrowBeat/1.0",
+          Accept: "application/json",
+        },
+      });
+      if (!res.ok) {
+        lastError = new Error(`Yahoo ${symbol} HTTP ${res.status}`);
+        continue;
+      }
+      return (await res.json()) as YahooChart;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+  throw lastError || new Error(`Yahoo ${symbol} failed`);
 }
 
 /** Free FRED CSV (no API key) — used for TIPS real yield + 10Y breakeven. */
 async function fetchFredBars(seriesId: string): Promise<Bar[]> {
   const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(seriesId)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     headers: { Accept: "text/csv", "User-Agent": "Mozilla/5.0 ArrowBeat/1.0" },
   });
   if (!res.ok) throw new Error(`FRED ${seriesId} HTTP ${res.status}`);
@@ -132,14 +157,19 @@ function lastFromBars(bars: Bar[]): number | null {
 }
 
 export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
+  // Prefer soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
+  // SPY history: try 10y, then 5y — decade stats degrade gracefully with less history.
   const [spyLong, spyShort, vix, es, rsp, tnx, oil, gold, breakevenBars, realYieldBars] =
     await Promise.all([
-      fetchYahooChart("SPY", "10y"),
-      fetchYahooChart("SPY", "3mo"),
-      fetchYahooChart("^VIX", "3mo"),
-      fetchYahooChart("ES=F", "5d"),
-      fetchYahooChart("RSP", "1mo"),
-      fetchYahooChart("^TNX", "1mo"),
+      softYahoo("SPY", "10y").then(async (chart) => {
+        if (chart.chart?.result?.[0]?.timestamp?.length) return chart;
+        return softYahoo("SPY", "5y");
+      }),
+      softYahoo("SPY", "3mo"),
+      softYahoo("^VIX", "3mo"),
+      softYahoo("ES=F", "5d"),
+      softYahoo("RSP", "1mo"),
+      softYahoo("^TNX", "1mo"),
       softYahoo("CL=F", "1mo"),
       softYahoo("GC=F", "1mo"),
       softFred("T10YIE"),
@@ -154,6 +184,10 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   const tnxBars = barsFromChart(tnx);
   const oilBars = barsFromChart(oil);
   const goldBars = barsFromChart(gold);
+
+  if (!spyBars.length && !spyRecent.length) {
+    throw new Error("Yahoo Finance returned no SPY history from this host.");
+  }
 
   return {
     source: "yahoo-finance+fred",
@@ -170,9 +204,9 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
       gold: "GC=F",
     },
     spy: {
-      last: lastPrice(spyShort, spyRecent),
-      bars: spyBars,
-      recentBars: spyRecent,
+      last: lastPrice(spyShort, spyRecent.length ? spyRecent : spyBars),
+      bars: spyBars.length ? spyBars : spyRecent,
+      recentBars: spyRecent.length ? spyRecent : spyBars.slice(-60),
     },
     futures: {
       last: lastPrice(es, esBars),
@@ -186,7 +220,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
       bars: vixBars,
     },
     breadth: {
-      spyBars: spyRecent.slice(-15),
+      spyBars: (spyRecent.length ? spyRecent : spyBars).slice(-15),
       rspBars: rspBars.slice(-15),
     },
     yields: {

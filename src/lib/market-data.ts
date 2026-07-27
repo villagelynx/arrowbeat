@@ -22,10 +22,16 @@ export type MarketSnapshot = {
 };
 
 export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
-  const res = await fetch("/api/market/snapshot");
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Market data unavailable (${res.status}). ${detail}`);
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 20_000);
+  try {
+    const res = await fetch("/api/market/snapshot", { signal: controller.signal });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`Market data unavailable (${res.status}). ${detail}`);
+    }
+    return (await res.json()) as MarketSnapshot;
+  } finally {
+    window.clearTimeout(timer);
   }
-  return (await res.json()) as MarketSnapshot;
 }

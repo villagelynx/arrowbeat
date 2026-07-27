@@ -320,58 +320,73 @@ export default function App() {
         </section>
 
         <div className="desk-top">
-          {dayBars.length > 1 || signal.lastSessions.length ? (
-            <div className="desk-stack desk-stack--day">
-              {dayBars.length > 1 ? (
-                <section className="panel panel--day" aria-labelledby="spy-day-title">
-                  <h2 id="spy-day-title">S&amp;P 500 today</h2>
-                  <p className="panel-lede">
-                    Free Yahoo 15-minute bars — typically about 15 minutes delayed.
-                  </p>
-                  <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
-                </section>
-              ) : null}
+          <div className="desk-stack desk-stack--day">
+            {dayBars.length > 1 ? (
+              <section className="panel panel--day" aria-labelledby="spy-day-title">
+                <h2 id="spy-day-title">S&amp;P 500 today</h2>
+                <p className="panel-lede">
+                  Free Yahoo 15-minute bars — typically about 15 minutes delayed.
+                </p>
+                <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
+              </section>
+            ) : null}
 
-              {signal.lastSessions.length ? (
-                <section className="panel panel--sessions" aria-labelledby="recent-title">
-                  <h2 id="recent-title">Last 10 trading days</h2>
-                  <p className="panel-lede">SPY close vs prior close — green up, red down.</p>
-                  <ol className="session-strip">
-                    {signal.lastSessions.map((day) => {
-                      const dateLabel = new Intl.DateTimeFormat("en-US", {
-                        timeZone: "America/New_York",
-                        month: "short",
-                        day: "numeric",
-                      }).format(new Date(`${day.date}T12:00:00-04:00`));
-                      return (
-                        <li
-                          key={day.date}
-                          className={day.bias === "up" ? "is-up" : "is-down"}
-                          title={`${day.date}: ${day.changePct >= 0 ? "+" : ""}${day.changePct.toFixed(2)}%`}
-                        >
-                          <span className="session-day">{day.weekday}</span>
-                          <span className="session-date">{dateLabel}</span>
-                          <span className="session-arrow" aria-hidden="true">
-                            {day.bias === "up" ? "▲" : "▼"}
+            {signal.lastSessions.length ? (
+              <section className="panel panel--sessions" aria-labelledby="recent-title">
+                <h2 id="recent-title">Last 10 trading days</h2>
+                <p className="panel-lede">SPY close vs prior close — green up, red down.</p>
+                <ol className="session-strip">
+                  {signal.lastSessions.map((day) => {
+                    const dateLabel = new Intl.DateTimeFormat("en-US", {
+                      timeZone: "America/New_York",
+                      month: "short",
+                      day: "numeric",
+                    }).format(new Date(`${day.date}T12:00:00-04:00`));
+                    return (
+                      <li
+                        key={day.date}
+                        className={day.bias === "up" ? "is-up" : "is-down"}
+                        title={`${day.date}: ${day.changePct >= 0 ? "+" : ""}${day.changePct.toFixed(2)}%`}
+                      >
+                        <span className="session-day">{day.weekday}</span>
+                        <span className="session-date">{dateLabel}</span>
+                        <span className="session-arrow" aria-hidden="true">
+                          {day.bias === "up" ? "▲" : "▼"}
+                        </span>
+                        <span className="session-pct">
+                          {day.changePct >= 0 ? "+" : ""}
+                          {day.changePct.toFixed(1)}%
+                        </span>
+                        {day.histUpPct != null ? (
+                          <span className="session-hist">
+                            Hist {day.histUpPct.toFixed(0)}%
+                            {day.histRank != null ? ` · #${day.histRank}` : ""}
                           </span>
-                          <span className="session-pct">
-                            {day.changePct >= 0 ? "+" : ""}
-                            {day.changePct.toFixed(1)}%
-                          </span>
-                          {day.histUpPct != null ? (
-                            <span className="session-hist">
-                              Hist {day.histUpPct.toFixed(0)}%
-                              {day.histRank != null ? ` · #${day.histRank}` : ""}
-                            </span>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            ) : null}
+
+            <section className="panel panel--stat" aria-labelledby="decade-title">
+              <h2 id="decade-title">Market stat of the day</h2>
+              <p className="market-stat">{signal.marketStat}</p>
+              <div className="decade">
+                <div>
+                  <p className="decade-label">Up days (~10y SPY)</p>
+                  <p className="decade-value up">{signal.decadeStats.upPct}%</p>
+                  <p className="decade-sub">{signal.decadeStats.upDays} days</p>
+                </div>
+                <div>
+                  <p className="decade-label">Down days (~10y SPY)</p>
+                  <p className="decade-value down">{signal.decadeStats.downPct}%</p>
+                  <p className="decade-sub">{signal.decadeStats.downDays} days</p>
+                </div>
+              </div>
+            </section>
+          </div>
 
           <section className="hero" aria-labelledby="bias-title">
             <div className="hero-head">
@@ -1148,23 +1163,6 @@ export default function App() {
                   {signal.historical.avgMovePct.toFixed(2)}%
                 </p>
                 <p className="stat-note">SPY sample</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="panel panel--stat" aria-labelledby="decade-title">
-            <h2 id="decade-title">Market stat of the day</h2>
-            <p className="market-stat">{signal.marketStat}</p>
-            <div className="decade">
-              <div>
-                <p className="decade-label">Up days (~10y SPY)</p>
-                <p className="decade-value up">{signal.decadeStats.upPct}%</p>
-                <p className="decade-sub">{signal.decadeStats.upDays} days</p>
-              </div>
-              <div>
-                <p className="decade-label">Down days (~10y SPY)</p>
-                <p className="decade-value down">{signal.decadeStats.downPct}%</p>
-                <p className="decade-sub">{signal.decadeStats.downDays} days</p>
               </div>
             </div>
           </section>

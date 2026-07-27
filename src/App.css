@@ -746,6 +746,10 @@ main {
   order: 4;
 }
 
+.panel--stat {
+  order: 4;
+}
+
 .panel--score {
   order: 4;
 }
@@ -1759,6 +1763,7 @@ main {
   .hero,
   .panel--day,
   .panel--sessions,
+  .panel--stat,
   .panel--ytd,
   .panel--score,
   .panel--factors,
@@ -1794,6 +1799,7 @@ main {
 
   .panel--day,
   .panel--sessions,
+  .panel--stat,
   .panel--factors {
     margin-top: 0;
     min-width: 0;

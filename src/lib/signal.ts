@@ -126,6 +126,24 @@ export type CalendarEdge = {
   blendPts: number | null;
 };
 
+/** Calendar / historical lean for the next trading session (no live next-day quotes). */
+export type TomorrowSignal = {
+  /** Next session date (skips Sat/Sun). */
+  asOfDate: string;
+  sessionLabel: string;
+  /** "Tomorrow's lean" when next calendar day is a session; else "Next session lean". */
+  label: string;
+  /** True when Sat/Sun (or holiday-style skip) pushed past literal calendar tomorrow. */
+  skippedWeekend: boolean;
+  bias: Bias;
+  probabilityHigher: number;
+  probabilityLower: number;
+  confidence: 1 | 2 | 3 | 4 | 5;
+  confidenceLabel: string;
+  factors: Factor[];
+  calendarEdge: CalendarEdge | null;
+};
+
 export type DailySignal = {
   asOfDate: string;
   sessionLabel: string;
@@ -135,6 +153,8 @@ export type DailySignal = {
   confidence: 1 | 2 | 3 | 4 | 5;
   confidenceLabel: string;
   factors: Factor[];
+  /** Next-session lean from calendar/historical edges known today. */
+  tomorrow: TomorrowSignal | null;
   /** Most recent completed SPY sessions, newest → oldest (usually 10). */
   lastSessions: SessionDay[];
   /** Weekdays ranked by historical higher-close rate (~10y SPY). */
@@ -210,6 +230,28 @@ function formatSession(iso: string): string {
     day: "numeric",
     year: "numeric",
   }).format(new Date(`${iso}T12:00:00-04:00`));
+}
+
+function shiftIsoDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00-04:00`);
+  d.setDate(d.getDate() + days);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** Next Mon–Fri session after `fromIso` (skips Sat/Sun; does not model holidays). */
+export function nextTradingDayIso(fromIso: string): string {
+  let iso = shiftIsoDays(fromIso, 1);
+  let dow = weekdayInNy(iso);
+  while (dow === 0 || dow === 6) {
+    iso = shiftIsoDays(iso, 1);
+    dow = weekdayInNy(iso);
+  }
+  return iso;
 }
 
 function dailyReturns(bars: Bar[]): { date: string; ret: number }[] {

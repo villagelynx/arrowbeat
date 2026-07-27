@@ -22,7 +22,8 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
         </p>
         <p className="about__lede">
           Free Yahoo data, roughly fifteen minutes delayed. Not advice. Just a clearer lean, plus
-          the calendar story behind the swings.
+          the calendar story behind the swings — including a thinner lean into tomorrow from stats
+          we already know today.
         </p>
         <p className="about__tagline">Feel the beat.</p>
         {onGoDashboard ? (
@@ -41,7 +42,9 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
         <ul className="about__list">
           <li>
             <strong>Bias &amp; probability</strong> — P(higher close) vs P(lower close), plus a
-            confidence rating from edge and factor agreement.
+            confidence rating from edge and factor agreement. A compact{" "}
+            <strong>Tomorrow&apos;s lean</strong> uses calendar &amp; historical edges known now
+            (thinner — no next-day live quotes yet).
           </li>
           <li>
             <strong>Why this signal</strong> — ES futures, VIX, breadth, yields, seasonality,

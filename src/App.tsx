@@ -188,6 +188,13 @@ export default function App() {
   const up = signal.bias === "up";
   const leadPct = up ? signal.probabilityHigher : signal.probabilityLower;
   const pillBusy = loading || refreshing;
+  const tomorrow = signal.tomorrow;
+  const tmrUp = tomorrow?.bias === "up";
+  const tmrLeadPct = tomorrow
+    ? tmrUp
+      ? tomorrow.probabilityHigher
+      : tomorrow.probabilityLower
+    : null;
 
   return (
     <div className={`app ${up ? "theme-up" : "theme-down"}`}>
@@ -460,6 +467,51 @@ export default function App() {
                   </ul>
                 </div>
               </div>
+
+              {tomorrow && tmrLeadPct != null ? (
+                <div
+                  className={`tomorrow-lean ${tmrUp ? "is-up" : "is-down"}`}
+                  aria-labelledby="tomorrow-lean-title"
+                >
+                  <p className="tomorrow-lean__kicker">{tomorrow.kicker}</p>
+                  <p id="tomorrow-lean-title" className="tomorrow-lean__title">
+                    {tomorrow.label}
+                  </p>
+                  <p className="tomorrow-lean__lede">
+                    Calendar &amp; historical stats known now — thinner than today&apos;s live
+                    signal (no tomorrow quotes yet).
+                  </p>
+                  <div className="tomorrow-lean__row">
+                    <span className="tomorrow-lean__arrow" aria-hidden="true">
+                      {tmrUp ? "▲" : "▼"}
+                    </span>
+                    <div className="tomorrow-lean__prob">
+                      <p className="tomorrow-lean__chip">
+                        {tmrUp ? "Higher-close lean" : "Lower-close lean"}
+                      </p>
+                      <p className="tomorrow-lean__value">
+                        {tmrLeadPct.toFixed(1)}
+                        <span>%</span>
+                      </p>
+                      <p className="tomorrow-lean__split">
+                        Higher {tomorrow.probabilityHigher.toFixed(1)}% · Lower{" "}
+                        {tomorrow.probabilityLower.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="tomorrow-lean__conf">
+                      <p className="tomorrow-lean__conf-label">Confidence</p>
+                      <p
+                        className="tomorrow-lean__stars"
+                        aria-label={`${tomorrow.confidence} of 5 stars`}
+                      >
+                        {stars(tomorrow.confidence)}
+                      </p>
+                      <p className="tomorrow-lean__conf-text">{tomorrow.confidenceLabel}</p>
+                    </div>
+                  </div>
+                  <p className="tomorrow-lean__session">{tomorrow.sessionLabel}</p>
+                </div>
+              ) : null}
             </div>
 
             <aside className="hero-rail">

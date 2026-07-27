@@ -1019,6 +1019,8 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
   const taxSeason = buildTaxSeasonInsight(monthOdds, dateIso);
   const calendarEdge = buildCalendarEdge(dateIso, weekdayOdds, monthOdds, dayOfMonthOdds);
   const cpiWindow = buildCpiWindowInsight(spyRets, dateIso);
+  const nextSessionIso = nextTradingDayIso(dateIso);
+  const cpiWindowTomorrow = buildCpiWindowInsight(spyRets, nextSessionIso);
   const weekdayMap = new Map(weekdayOdds.map((w) => [w.weekdayIndex, w]));
   const lastSessions = lastSessionsFromReturns(spyRets, 10, weekdayMap);
   const streaks = streakFromReturns(spyRets);

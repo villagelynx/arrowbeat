@@ -201,13 +201,13 @@
 
 .about__title {
   margin: 0;
-  padding: 0.15em 0 0.28em;
+  padding: 0.2em 0 0.35em;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 3.4vw, 1.85rem);
   font-weight: 700;
   font-stretch: normal;
   letter-spacing: -0.01em;
-  line-height: 1.55;
+  line-height: 1.6;
   overflow: visible;
   text-wrap: balance;
 }

@@ -879,6 +879,7 @@ main {
 
 .confidence {
   margin-top: 1rem;
+  order: 7;
 }
 
 .confidence-label,

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ArrowBeat">
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" role="img" aria-label="ArrowBeat">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.2" y2="1">
+    <linearGradient id="bg" x1="0" y1="0" x2="0.15" y2="1">
       <stop offset="0%" stop-color="#050b12"/>
       <stop offset="45%" stop-color="#0b1520"/>
       <stop offset="100%" stop-color="#071018"/>
@@ -10,19 +10,19 @@
       <stop offset="55%" stop-color="#12d46b"/>
       <stop offset="100%" stop-color="#0a8f48"/>
     </linearGradient>
-    <radialGradient id="glow" cx="28%" cy="40%" r="45%">
-      <stop offset="0%" stop-color="#12d46b" stop-opacity="0.28"/>
+    <radialGradient id="glow" cx="50%" cy="28%" r="48%">
+      <stop offset="0%" stop-color="#12d46b" stop-opacity="0.32"/>
       <stop offset="100%" stop-color="#12d46b" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#glow)"/>
-  <text x="64" y="100" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="56" font-weight="800" fill="#e8eef5">Arrow<tspan fill="#12d46b">Beat</tspan></text>
-  <text x="64" y="140" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="22" font-weight="600" fill="#8fa3b8">Daily market probability</text>
-  <g transform="translate(220 340)">
+  <rect width="1080" height="1350" fill="url(#bg)"/>
+  <rect width="1080" height="1350" fill="url(#glow)"/>
+  <text x="540" y="110" text-anchor="middle" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="72" font-weight="800" fill="#e8eef5">Arrow<tspan fill="#12d46b">Beat</tspan></text>
+  <text x="540" y="160" text-anchor="middle" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="26" font-weight="600" fill="#8fa3b8">Daily market probability</text>
+  <g transform="translate(540 430) scale(1.55)">
     <path fill="url(#arrow)" d="M0 -118 L78 18 H42 V128 H-42 V18 H-78 Z"/>
   </g>
-  <text x="220" y="520" text-anchor="middle" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="26" font-weight="700" fill="#e8eef5">ArrowBeat Score</text>
-  <text x="560" y="300" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="36" font-weight="800" fill="#e8eef5">Share today’s lean</text>
-  <text x="560" y="350" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="22" fill="#8fa3b8">arrowbeat.com</text>
+  <text x="540" y="640" text-anchor="middle" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="34" font-weight="700" fill="#e8eef5">ArrowBeat Score</text>
+  <text x="540" y="760" text-anchor="middle" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="40" font-weight="800" fill="#e8eef5">Share today’s lean</text>
+  <text x="540" y="820" text-anchor="middle" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="26" fill="#8fa3b8">arrowbeat.com</text>
 </svg>

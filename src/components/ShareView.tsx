@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MarketArrow } from "./MarketArrow";
 import {
+  buildSignalShareUrl,
   downloadSignalSharePng,
   leanChipLabel,
   shareSignalCard,
@@ -20,7 +21,7 @@ function stars(n: number) {
   ));
 }
 
-/** Recipient / reconstructable share view — same card content + Share again. */
+/** Recipient / reconstructable share view — hero-style card + Share again. */
 export function ShareView({ payload, onClose }: Props) {
   const up = payload.bias === "up";
   const [status, setStatus] = useState<string | null>(null);
@@ -67,9 +68,23 @@ export function ShareView({ payload, onClose }: Props) {
     setPreviewBlob(null);
   }
 
+  function openDashboard() {
+    onClose?.();
+  }
+
   return (
     <div className={`share-view ${up ? "theme-up" : "theme-down"}`}>
-      <div className="share-view__card" role="img" aria-label="ArrowBeat signal share card">
+      <a
+        className="share-view__card"
+        href="/"
+        onClick={(e) => {
+          if (onClose) {
+            e.preventDefault();
+            openDashboard();
+          }
+        }}
+        aria-label="ArrowBeat Score — open dashboard"
+      >
         <p className="share-view__brand">
           Arrow<span>Beat</span>
         </p>
@@ -77,24 +92,24 @@ export function ShareView({ payload, onClose }: Props) {
 
         <div className="share-view__body">
           <div className="share-view__arrow">
-            <p className="arrow-score-label">ArrowBeat Score</p>
             <MarketArrow bias={payload.bias} idSuffix="share" />
+            <p className="arrow-score-label">ArrowBeat Score</p>
           </div>
           <div className="share-view__stats">
-            <p className="share-view__label">{payload.label}</p>
             <p className="bias-chip">{leanChipLabel(payload.bias)}</p>
+            <p className="share-view__label">{payload.label}</p>
+            <p className="share-view__prob-sub">
+              Probability of {up ? "higher" : "lower"} close
+            </p>
             <p className="share-view__prob">
               {payload.probability.toFixed(1)}
               <span>%</span>
             </p>
-            <p className="share-view__prob-sub">
-              Probability of {up ? "higher" : "lower"} close
-            </p>
             <div className="share-view__confidence">
+              <p className="share-view__conf-label">Confidence</p>
               <p className="confidence-stars" aria-label={`${payload.confidence} of 5 stars`}>
                 {stars(payload.confidence)}
               </p>
-              <p className="share-view__conf-label">Confidence</p>
             </div>
           </div>
         </div>
@@ -102,9 +117,9 @@ export function ShareView({ payload, onClose }: Props) {
         <p className="share-view__stamp">
           {payload.updated ? `Updated ${payload.updated}` : "arrowbeat.com"}
           <span aria-hidden="true"> · </span>
-          Not financial advice
+          Tap to open dashboard
         </p>
-      </div>
+      </a>
 
       <div className="share-view__actions">
         <button type="button" className="share-pill" onClick={() => void onShare()}>
@@ -113,7 +128,7 @@ export function ShareView({ payload, onClose }: Props) {
             : "Share"}
         </button>
         {onClose ? (
-          <button type="button" className="share-view__home" onClick={onClose}>
+          <button type="button" className="share-view__home" onClick={openDashboard}>
             Open ArrowBeat
           </button>
         ) : null}
@@ -160,12 +175,19 @@ export function SharePreviewModal({
     else onShared("Couldn’t copy");
   }
 
+  const shareUrl = buildSignalShareUrl(payload);
+
   return (
     <div className="share-preview" role="dialog" aria-modal="true" aria-label="Share preview">
       <div className="share-preview__backdrop" onClick={onClose} />
       <div className="share-preview__panel">
         <p className="share-preview__title">Share card ready</p>
-        <img className="share-preview__img" src={imageUrl} alt="ArrowBeat signal card" />
+        <a className="share-preview__link" href={shareUrl} target="_blank" rel="noopener noreferrer">
+          <img className="share-preview__img" src={imageUrl} alt="ArrowBeat signal card" />
+        </a>
+        <p className="share-preview__hint">
+          Prefer “Copy link” for a tappable Messages preview.
+        </p>
         <div className="share-preview__actions">
           <button type="button" className="share-pill" onClick={() => void shareAgain()}>
             Share again

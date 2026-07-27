@@ -21,6 +21,10 @@ export const SIGNAL_SHARE_ORIGIN = SCORE_SHARE_ORIGIN;
 /** Visible name for the hero / share-card arrow. */
 export const ARROW_SCORE_LABEL = "ArrowBeat Score";
 
+/** Portrait share card — close to phone / Stories aspect (not OG landscape). */
+export const SHARE_CARD_W = 1080;
+export const SHARE_CARD_H = 1350;
+
 export function leanChipLabel(bias: Bias): string {
   return bias === "up" ? "Higher-close lean" : "Lower-close lean";
 }
@@ -49,6 +53,21 @@ export function formatShareUpdated(asOfDate: string): string {
 export function buildSignalShareUrl(payload: SignalSharePayload): string {
   const url = new URL("/", SIGNAL_SHARE_ORIGIN);
   url.searchParams.set("view", "share");
+  url.searchParams.set("bias", payload.bias);
+  url.searchParams.set("p", roundProb(payload.probability).toFixed(1));
+  url.searchParams.set("c", String(clampConfidence(payload.confidence)));
+  if (payload.label.trim()) {
+    url.searchParams.set("label", payload.label.trim().slice(0, 48));
+  }
+  if (payload.updated?.trim()) {
+    url.searchParams.set("asof", payload.updated.trim().slice(0, 64));
+  }
+  return url.toString();
+}
+
+/** Dynamic OG image URL for crawlers / link previews. */
+export function buildOgImageUrl(payload: SignalSharePayload): string {
+  const url = new URL("/api/og", SIGNAL_SHARE_ORIGIN);
   url.searchParams.set("bias", payload.bias);
   url.searchParams.set("p", roundProb(payload.probability).toFixed(1));
   url.searchParams.set("c", String(clampConfidence(payload.confidence)));
@@ -101,146 +120,162 @@ function clampConfidence(n: number): number {
   return Math.min(5, Math.max(1, Math.round(n)));
 }
 
+/** Short line for rare fallbacks — prefer omitting from Web Share. */
 export function shareText(payload: SignalSharePayload): string {
-  const lean = payload.bias === "up" ? "Higher-close" : "Lower-close";
-  return `ArrowBeat Score · ${payload.label}: ${lean} lean · ${payload.probability.toFixed(1)}% · ${payload.confidence}/5 confidence`;
+  return `ArrowBeat Score · ${payload.probability.toFixed(1)}%`;
 }
 
-const CARD_W = 1200;
-const CARD_H = 630;
-
-/** Render an OG-friendly PNG of the current signal card. */
+/**
+ * Portrait PNG matching the website hero stack:
+ * brand → arrow + score label → lean / label / probability / confidence.
+ */
 export async function renderSignalSharePng(
   payload: SignalSharePayload,
 ): Promise<Blob> {
   const canvas = document.createElement("canvas");
-  canvas.width = CARD_W;
-  canvas.height = CARD_H;
+  canvas.width = SHARE_CARD_W;
+  canvas.height = SHARE_CARD_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
 
+  const W = SHARE_CARD_W;
+  const H = SHARE_CARD_H;
+  const cx = W / 2;
   const up = payload.bias === "up";
   const glow = up ? "18, 212, 107" : "239, 51, 64";
   const signal = up ? "#12d46b" : "#ef3340";
   const signalHi = up ? "#5dffa8" : "#ff8a7a";
   const signalLo = up ? "#0a8f48" : "#a51020";
 
-  const bg = ctx.createLinearGradient(0, 0, CARD_W * 0.2, CARD_H);
+  const bg = ctx.createLinearGradient(0, 0, W * 0.15, H);
   bg.addColorStop(0, "#050b12");
   bg.addColorStop(0.45, "#0b1520");
   bg.addColorStop(1, "#071018");
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  ctx.fillRect(0, 0, W, H);
 
-  const rad = ctx.createRadialGradient(
-    CARD_W * 0.28,
-    CARD_H * 0.35,
-    20,
-    CARD_W * 0.28,
-    CARD_H * 0.35,
-    420,
-  );
-  rad.addColorStop(0, `rgba(${glow}, 0.28)`);
+  const rad = ctx.createRadialGradient(cx, H * 0.28, 40, cx, H * 0.28, 520);
+  rad.addColorStop(0, `rgba(${glow}, 0.32)`);
   rad.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = rad;
-  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  ctx.fillRect(0, 0, W, H);
 
   ctx.save();
   ctx.strokeStyle = "rgba(232, 238, 245, 0.045)";
   ctx.lineWidth = 1;
-  for (let x = 0; x < CARD_W; x += 28) {
+  for (let x = 0; x < W; x += 32) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, CARD_H);
+    ctx.lineTo(x, H);
     ctx.stroke();
   }
-  for (let y = 0; y < CARD_H; y += 28) {
+  for (let y = 0; y < H; y += 32) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(CARD_W, y);
+    ctx.lineTo(W, y);
     ctx.stroke();
   }
   ctx.restore();
 
-  // Brand
-  ctx.font = '800 52px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  // Brand — top center
+  ctx.textAlign = "center";
+  ctx.font = '800 64px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  const brandY = 110;
+  const arrowWord = "Arrow";
+  const beatWord = "Beat";
+  const arrowW = ctx.measureText(arrowWord).width;
+  const beatW = ctx.measureText(beatWord).width;
+  const brandLeft = cx - (arrowW + beatW) / 2;
+  ctx.textAlign = "left";
   ctx.fillStyle = "#e8eef5";
-  ctx.fillText("Arrow", 64, 88);
-  const arrowW = ctx.measureText("Arrow").width;
+  ctx.fillText(arrowWord, brandLeft, brandY);
   ctx.fillStyle = signal;
-  ctx.fillText("Beat", 64 + arrowW, 88);
+  ctx.fillText(beatWord, brandLeft + arrowW, brandY);
 
+  ctx.textAlign = "center";
   ctx.font = '600 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText("Daily market probability", 64, 128);
+  ctx.fillText("Daily market probability", cx, 158);
 
-  // Arrow + score label
-  const arrowCx = 210;
-  const arrowCy = 330;
-  drawShareArrow(ctx, up, signalHi, signal, signalLo, arrowCx, arrowCy);
+  // Arrow + score label (hero center)
+  drawShareArrow(ctx, up, signalHi, signal, signalLo, cx, 430, 1.45);
 
-  ctx.font = '700 22px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '800 34px Syne, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#e8eef5";
-  const scoreLabel = ARROW_SCORE_LABEL;
-  const scoreW = ctx.measureText(scoreLabel).width;
-  ctx.fillText(scoreLabel, arrowCx - scoreW / 2, 520);
+  ctx.fillText(ARROW_SCORE_LABEL, cx, 640);
 
   // Lean pill
   const lean = leanChipLabel(payload.bias).toUpperCase();
-  ctx.font = '700 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '700 24px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   const leanMetrics = ctx.measureText(lean);
-  const pillPadX = 22;
+  const pillPadX = 28;
   const pillW = leanMetrics.width + pillPadX * 2;
-  const pillH = 44;
-  const pillX = 520;
-  const pillY = 190;
-  roundRect(ctx, pillX, pillY, pillW, pillH, 22);
+  const pillH = 48;
+  const pillX = cx - pillW / 2;
+  const pillY = 690;
+  roundRect(ctx, pillX, pillY, pillW, pillH, 24);
   ctx.fillStyle = `rgba(${glow}, 0.14)`;
   ctx.fill();
-  ctx.strokeStyle = `rgba(${glow}, 0.4)`;
+  ctx.strokeStyle = `rgba(${glow}, 0.45)`;
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.fillStyle = signal;
-  ctx.fillText(lean, pillX + pillPadX, pillY + 29);
+  ctx.fillText(lean, cx, pillY + 32);
 
+  // Session label
   ctx.font = '700 28px Syne, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText(payload.label, 520, 280);
+  ctx.fillText(payload.label, cx, 790);
 
-  ctx.font = '500 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '500 24px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText(
     `Probability of ${up ? "higher" : "lower"} close`,
-    520,
-    330,
+    cx,
+    840,
   );
 
-  ctx.font = '800 120px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  // Big probability
+  ctx.font = '800 168px Syne, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#e8eef5";
   const pct = payload.probability.toFixed(1);
-  ctx.fillText(pct, 520, 450);
   const pctW = ctx.measureText(pct).width;
-  ctx.font = '700 48px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '700 72px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  const pctMarkW = ctx.measureText("%").width;
+  const blockW = pctW + 12 + pctMarkW;
+  const pctLeft = cx - blockW / 2;
+  ctx.textAlign = "left";
+  ctx.font = '800 168px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.fillStyle = "#e8eef5";
+  ctx.fillText(pct, pctLeft, 1000);
+  ctx.font = '700 72px Syne, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = signal;
-  ctx.fillText("%", 520 + pctW + 8, 430);
+  ctx.fillText("%", pctLeft + pctW + 12, 975);
 
-  ctx.font = '600 20px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  // Confidence
+  ctx.textAlign = "center";
+  ctx.font = '600 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText("Confidence", 520, 510);
-  ctx.font = '700 36px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.fillText("Confidence", cx, 1085);
+
+  const starGap = 52;
+  const starsW = starGap * 4;
+  const starLeft = cx - starsW / 2;
+  ctx.font = '700 44px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.textAlign = "left";
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i < payload.confidence ? "#f0c24b" : "rgba(143, 163, 184, 0.35)";
-    ctx.fillText("★", 520 + i * 42, 558);
+    ctx.fillText("★", starLeft + i * starGap, 1145);
   }
 
+  // Footer
+  ctx.textAlign = "center";
   const stamp = payload.updated?.trim()
     ? `Updated ${payload.updated.trim()}`
     : `Updated ${formatShareUpdated("")}`;
-  ctx.font = '500 18px Manrope, "Avenir Next", "Segoe UI", sans-serif';
-  ctx.fillStyle = "rgba(143, 163, 184, 0.85)";
-  ctx.fillText(stamp, 64, CARD_H - 40);
-  const host = "arrowbeat.com";
-  ctx.fillText(host, CARD_W - 64 - ctx.measureText(host).width, CARD_H - 40);
+  ctx.font = '500 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.fillStyle = "rgba(143, 163, 184, 0.9)";
+  ctx.fillText(`${stamp}  ·  arrowbeat.com`, cx, H - 56);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -258,12 +293,13 @@ function drawShareArrow(
   lo: string,
   cx: number,
   cy: number,
+  scale = 1,
 ) {
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.scale(1.05, 1.05);
+  ctx.scale(scale, scale);
   ctx.shadowColor = mid;
-  ctx.shadowBlur = 36;
+  ctx.shadowBlur = 42;
   const grad = ctx.createLinearGradient(0, up ? -140 : 140, 0, up ? 140 : -140);
   grad.addColorStop(0, hi);
   grad.addColorStop(0.55, mid);
@@ -311,7 +347,8 @@ function roundRect(
 }
 
 /**
- * Prefer Web Share with PNG file + link; fall back to URL share / clipboard + preview.
+ * Prefer Web Share with PNG first + URL (no verbose text);
+ * fall back to URL-only (best for tappable OG preview) / clipboard + preview.
  */
 export async function shareSignalCard(
   payload: SignalSharePayload,
@@ -319,7 +356,6 @@ export async function shareSignalCard(
 ): Promise<{ result: SignalShareOutcome; url: string; blob: Blob | null }> {
   const url = buildSignalShareUrl(payload);
   const title = "ArrowBeat Score";
-  const text = shareText(payload);
 
   let blob: Blob;
   try {
@@ -329,14 +365,12 @@ export async function shareSignalCard(
   }
 
   if (opts.forcePreview) {
-    let copied = false;
     try {
       await navigator.clipboard.writeText(url);
-      copied = true;
     } catch {
       // still return preview
     }
-    return { result: copied ? "preview" : "preview", url, blob };
+    return { result: "preview", url, blob };
   }
 
   const file = new File([blob], "arrowbeat-score.png", { type: "image/png" });
@@ -344,10 +378,12 @@ export async function shareSignalCard(
     canShare?: (data?: ShareData) => boolean;
   };
 
+  // Image first in the payload; omit long summary so the card / link lead.
   if (typeof nav.share === "function" && typeof nav.canShare === "function") {
     try {
-      if (nav.canShare({ files: [file] })) {
-        await nav.share({ title, text, url, files: [file] });
+      const withFile: ShareData = { files: [file], url, title };
+      if (nav.canShare(withFile)) {
+        await nav.share(withFile);
         return { result: "shared", url, blob };
       }
     } catch (e) {
@@ -357,9 +393,10 @@ export async function shareSignalCard(
     }
   }
 
+  // URL-only — iMessage/Slack can show a tappable OG preview of the share page.
   if (typeof navigator.share === "function") {
     try {
-      await navigator.share({ title, text, url });
+      await navigator.share({ title, url });
       return { result: "shared", url, blob };
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {

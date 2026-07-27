@@ -20,6 +20,11 @@
 [functions."og"]
   timeout = 4
 
+# Inject per-share og:image meta for ?view=share crawlers / link previews
+[[edge_functions]]
+  function = "share-meta"
+  path = "/*"
+
 # Market API before the SPA fallback
 [[redirects]]
   from = "/api/market/snapshot"

@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MarketArrow } from "./components/MarketArrow";
 import { SpyDayChart } from "./components/SpyDayChart";
 import { SpyYearChart } from "./components/SpyYearChart";
-import { fetchMarketSnapshot, type Bar, type IntradayBar } from "./lib/market-data";
+import {
+  fetchMarketSnapshot,
+  fetchStockQuote,
+  MAG7_SYMBOLS,
+  type Bar,
+  type IntradayBar,
+  type StockQuote,
+} from "./lib/market-data";
 import {
   buildDemoSignal,
   buildLiveSignal,
@@ -17,6 +24,9 @@ import {
 import { emptyScorecard, syncScorecard, type ScorecardSummary } from "./lib/scorecard";
 import { yearFromIso } from "./lib/spy-ytd";
 import "./App.css";
+
+/** Aligns with Yahoo free delayed quotes (~15 minutes). */
+const REFRESH_MS = 15 * 60 * 1000;
 
 function edgeLabel(pts: number) {
   const sign = pts > 0 ? "+" : "";
@@ -53,12 +63,26 @@ export default function App() {
   const [scorecard, setScorecard] = useState<ScorecardSummary>(() => emptyScorecard(""));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [quoteInput, setQuoteInput] = useState("");
+  const [quoteResult, setQuoteResult] = useState<StockQuote | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const lastFetchAt = useRef(0);
+  const loadInFlight = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
+
+    async function load(opts: { silent?: boolean } = {}) {
+      const silent = opts.silent === true;
+      if (loadInFlight.current) return;
+      loadInFlight.current = true;
+      if (silent) setRefreshing(true);
+      else {
+        setLoading(true);
+        setError(null);
+      }
       try {
         const snap = await fetchMarketSnapshot();
         if (cancelled) return;
@@ -69,24 +93,64 @@ export default function App() {
         setDayBars(snap.spy.dayBars ?? []);
         setDayPrevClose(snap.spy.dayPrevClose ?? null);
         setScorecard(syncScorecard(live, bars));
+        setError(null);
+        lastFetchAt.current = Date.now();
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Could not load market data.");
-        const demo = buildDemoSignal();
-        setSignal(demo);
-        setSpyBars([]);
-        setDayBars([]);
-        setDayPrevClose(null);
-        setScorecard(syncScorecard(demo, []));
+        if (!silent) {
+          setError(e instanceof Error ? e.message : "Could not load market data.");
+          const demo = buildDemoSignal();
+          setSignal(demo);
+          setSpyBars([]);
+          setDayBars([]);
+          setDayPrevClose(null);
+          setScorecard(syncScorecard(demo, []));
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        loadInFlight.current = false;
+        if (!cancelled) {
+          if (silent) setRefreshing(false);
+          else setLoading(false);
+        }
       }
     }
+
     void load();
+
+    const intervalId = window.setInterval(() => {
+      void load({ silent: true });
+    }, REFRESH_MS);
+
+    function onVisibility() {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastFetchAt.current < REFRESH_MS) return;
+      void load({ silent: true });
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
+
+  async function lookupQuote(ticker: string) {
+    const symbol = ticker.trim().toUpperCase();
+    if (!symbol) return;
+    setQuoteInput(symbol);
+    setQuoteLoading(true);
+    setQuoteError(null);
+    try {
+      const q = await fetchStockQuote(symbol);
+      setQuoteResult(q);
+    } catch (e) {
+      setQuoteResult(null);
+      setQuoteError(e instanceof Error ? e.message : "Quote lookup failed.");
+    } finally {
+      setQuoteLoading(false);
+    }
+  }
 
   if (!signal) {
     return (

@@ -1053,6 +1053,10 @@ export function buildMag7Signals(
       changePct,
       available: true,
     };
+  }).sort((a, b) => {
+    // Rank by P(higher close); unavailable names sink to the end.
+    if (a.available !== b.available) return a.available ? -1 : 1;
+    return b.probabilityHigher - a.probabilityHigher || a.symbol.localeCompare(b.symbol);
   });
 }
 

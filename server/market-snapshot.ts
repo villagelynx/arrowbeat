@@ -157,14 +157,11 @@ function lastFromBars(bars: Bar[]): number | null {
 }
 
 export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
-  // Prefer soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
-  // SPY history: try 10y, then 5y — decade stats degrade gracefully with less history.
+  // Soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
+  // Use 5y SPY history (fits free-tier time limits better than 10y).
   const [spyLong, spyShort, vix, es, rsp, tnx, oil, gold, breakevenBars, realYieldBars] =
     await Promise.all([
-      softYahoo("SPY", "10y").then(async (chart) => {
-        if (chart.chart?.result?.[0]?.timestamp?.length) return chart;
-        return softYahoo("SPY", "5y");
-      }),
+      softYahoo("SPY", "5y"),
       softYahoo("SPY", "3mo"),
       softYahoo("^VIX", "3mo"),
       softYahoo("ES=F", "5d"),

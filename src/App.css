@@ -963,6 +963,38 @@ main {
   order: 1;
 }
 
+.market-clock {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  order: 1;
+}
+
+.market-clock.is-open .market-clock__status {
+  color: #9ef0c2;
+}
+
+.market-clock.is-closed .market-clock__status {
+  color: var(--muted);
+}
+
+.market-clock__time {
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+  font-weight: 650;
+}
+
+.market-clock__sep {
+  margin: 0 0.35em;
+  opacity: 0.55;
+}
+
+.market-clock__status {
+  font-variant-numeric: tabular-nums;
+}
+
 .hero-title {
   margin: 0.35rem 0 0;
   font-family: var(--font-display);
@@ -2166,6 +2198,7 @@ main {
   }
 
   .hero-kicker,
+  .market-clock,
   .hero-title,
   .arrow-stage,
   .bias-chip,

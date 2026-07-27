@@ -25,12 +25,22 @@ import {
   type CalendarEdgeSlice,
 } from "./lib/signal";
 import { applySignalFavicon } from "./lib/favicon";
+import { getMarketClock, type MarketClock } from "./lib/market-hours";
 import { emptyScorecard, syncScorecard, type ScorecardSummary } from "./lib/scorecard";
 import { yearFromIso } from "./lib/spy-ytd";
 import "./App.css";
 
 /** Aligns with Yahoo free delayed quotes (~15 minutes). */
 const REFRESH_MS = 15 * 60 * 1000;
+
+function useMarketClock(): MarketClock {
+  const [clock, setClock] = useState(() => getMarketClock());
+  useEffect(() => {
+    const id = window.setInterval(() => setClock(getMarketClock()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return clock;
+}
 
 function edgeLabel(pts: number) {
   const sign = pts > 0 ? "+" : "";
@@ -73,6 +83,7 @@ export default function App() {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [view, setView] = useState<AppView>("home");
+  const marketClock = useMarketClock();
   const lastFetchAt = useRef(0);
   const loadInFlight = useRef(false);
 
@@ -399,6 +410,16 @@ export default function App() {
           <section className="hero" aria-labelledby="bias-title">
             <div className="hero-head">
               <p className="hero-kicker">{signal.sessionLabel}</p>
+              <p
+                className={`market-clock${marketClock.isOpen ? " is-open" : " is-closed"}`}
+                aria-live="polite"
+              >
+                <span className="market-clock__time">{marketClock.timeEt}</span>
+                <span className="market-clock__sep" aria-hidden="true">
+                  ·
+                </span>
+                <span className="market-clock__status">{marketClock.status}</span>
+              </p>
               <h1 id="bias-title" className="hero-title">
                 Today&apos;s market bias
               </h1>

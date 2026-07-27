@@ -841,17 +841,21 @@ main {
 
 .bulletin__player {
   margin-top: 0.15rem;
+  width: 100%;
+  aspect-ratio: 9 / 16;
   border-radius: 0.75rem;
   overflow: hidden;
   border: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.35);
+  position: relative;
 }
 
 .bulletin__video {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  max-height: min(50vh, 18rem);
-  aspect-ratio: 16 / 9;
+  height: 100%;
   object-fit: contain;
   background: #000;
 }
@@ -2029,7 +2033,7 @@ main {
     min-width: 0;
   }
 
-  /* Weekday + Sports in 60 share the left pair cell; bulletin stays compact under the list. */
+  /* Weekday + Sports in 60 share the left pair cell; bulletin fills the stack width. */
   .desk-stack--weekday {
     margin-top: 1.15rem;
     align-self: start;
@@ -2040,12 +2044,7 @@ main {
   }
 
   .panel--bulletin {
-    max-width: 22rem;
     width: 100%;
-  }
-
-  .bulletin__video {
-    max-height: min(36vh, 14rem);
   }
 
   .desk-row--ytd {

@@ -35,6 +35,9 @@ body,
 
 body {
   min-width: 320px;
+  /* Explicit y:auto — pairing overflow-x:clip with visible would compute y to clip. */
+  overflow-x: clip;
+  overflow-y: auto;
 }
 
 button,

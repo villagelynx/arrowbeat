@@ -975,15 +975,6 @@ main {
   opacity: 0.55;
 }
 
-.hero-asof {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  order: 2;
-}
-
 .market-clock {
   margin: 0;
   color: var(--muted);

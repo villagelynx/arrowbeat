@@ -543,15 +543,24 @@ main {
   order: 0;
 }
 
+.desk-stack--day,
+.desk-row--ytd {
+  display: contents;
+}
+
 .panel--day {
   order: 2;
 }
 
-.desk-row--ytd {
+.panel--ytd {
   order: 3;
 }
 
-.desk-row--sessions {
+.panel--sessions {
+  order: 4;
+}
+
+.panel--score {
   order: 4;
 }
 
@@ -591,7 +600,8 @@ main {
   display: contents;
 }
 
-.desk-top {
+.desk-top,
+.desk-stack--day {
   display: contents;
 }
 
@@ -1137,9 +1147,10 @@ main {
   .banner-error,
   .hero,
   .panel--day,
+  .panel--sessions,
+  .panel--ytd,
+  .panel--score,
   .panel--factors,
-  .desk-row--ytd,
-  .desk-row--sessions,
   .desk-row--weekday,
   .desk-row--cashflow,
   .desk-row--stats,
@@ -1147,12 +1158,12 @@ main {
     order: unset;
   }
 
-  /* Top band: today chart | arrow+signal | why this signal */
+  /* Top band: today chart + last sessions | arrow+signal | why this signal */
   .desk-top {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.95fr) minmax(0, 1fr);
     gap: 1rem;
-    align-items: stretch;
+    align-items: start;
     margin-bottom: 0.25rem;
   }
 
@@ -1160,7 +1171,15 @@ main {
     grid-template-columns: minmax(15rem, 1fr) minmax(0, 1.1fr);
   }
 
+  .desk-stack--day {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
   .panel--day,
+  .panel--sessions,
   .panel--factors {
     margin-top: 0;
     min-width: 0;
@@ -1277,8 +1296,19 @@ main {
     min-width: 0;
   }
 
+  .desk-row--ytd {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
   .desk-grid--ytd .panel {
     margin-top: 1.15rem;
+  }
+
+  .desk-grid--ytd > :only-child {
+    grid-column: 1 / -1;
   }
 
   .panel {

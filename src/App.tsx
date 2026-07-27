@@ -490,6 +490,15 @@ export default function App() {
               <h1 id="bias-title" className="hero-title">
                 {primary.title}
               </h1>
+              {tomorrowAsPrimary && tomorrowDisplay ? (
+                <p
+                  className={`hero-asof${
+                    tomorrowDisplay.phase === "preview" ? " is-preview" : ""
+                  }`}
+                >
+                  {tomorrowDisplay.stamp}
+                </p>
+              ) : null}
             </div>
 
             <div className="hero-signal">

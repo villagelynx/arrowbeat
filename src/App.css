@@ -970,6 +970,20 @@ main {
   font-size: 0.8rem;
 }
 
+.hero-kicker__sep {
+  margin: 0 0.35em;
+  opacity: 0.55;
+}
+
+.hero-asof {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  order: 2;
+}
+
 .market-clock {
   margin: 0;
   color: var(--muted);
@@ -1012,6 +1026,18 @@ main {
   font-weight: 700;
   letter-spacing: -0.03em;
   order: 2;
+}
+
+.hero-asof {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  order: 2;
+}
+
+.hero-asof.is-preview {
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 .arrow-stage {
@@ -1751,6 +1777,11 @@ main {
   margin: 0.55rem 0 0;
   color: var(--muted);
   font-size: 0.68rem;
+}
+
+.tomorrow-lean--settled {
+  opacity: 0.88;
+  border-style: dashed;
 }
 
 .confidence-label,

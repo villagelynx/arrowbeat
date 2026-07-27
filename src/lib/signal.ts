@@ -144,11 +144,6 @@ export type TomorrowSignal = {
   confidenceLabel: string;
   factors: Factor[];
   calendarEdge: CalendarEdge | null;
-  /**
-   * UI stamp from the 1:15 ET publish clock (attached in the client).
-   * e.g. "Updated 1:15 ET" / "Preview · updates at 1:15 ET".
-   */
-  publishStamp?: string;
 };
 
 export type DailySignal = {

@@ -100,6 +100,7 @@ export default function App() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [view, setView] = useState<AppView>("home");
   const marketClock = useMarketClock();
+  const tomorrowDisplay = useDisplayedTomorrowLean(signal?.tomorrow ?? null);
   const lastFetchAt = useRef(0);
   const loadInFlight = useRef(false);
 
@@ -118,7 +119,7 @@ export default function App() {
       try {
         const snap = await fetchMarketSnapshot();
         if (cancelled) return;
-        const live = applyTomorrowLeanPublish(buildLiveSignal(snap));
+        const live = buildLiveSignal(snap);
         const bars = snap.spy.bars.length ? snap.spy.bars : snap.spy.recentBars;
         setSignal(live);
         setSpyBars(bars);
@@ -131,7 +132,7 @@ export default function App() {
         if (cancelled) return;
         if (!silent) {
           setError(e instanceof Error ? e.message : "Could not load market data.");
-          const demo = applyTomorrowLeanPublish(buildDemoSignal());
+          const demo = buildDemoSignal();
           setSignal(demo);
           setSpyBars([]);
           setDayBars([]);
@@ -215,7 +216,6 @@ export default function App() {
   const up = signal.bias === "up";
   const leadPct = up ? signal.probabilityHigher : signal.probabilityLower;
   const pillBusy = loading || refreshing;
-  const tomorrowDisplay = useDisplayedTomorrowLean(signal.tomorrow);
   const tomorrow = tomorrowDisplay?.lean ?? null;
   const tmrUp = tomorrow?.bias === "up";
   const tmrLeadPct = tomorrow
@@ -558,9 +558,6 @@ export default function App() {
                     </div>
                   </div>
                   <p className="tomorrow-lean__session">{tomorrow.sessionLabel}</p>
-                  {tomorrow.publishStamp ? (
-                    <p className="tomorrow-lean__stamp">{tomorrow.publishStamp}</p>
-                  ) : null}
                 </div>
               ) : null}
             </div>

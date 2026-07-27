@@ -5,9 +5,6 @@ const OPEN_H = 9;
 const OPEN_M = 30;
 const CLOSE_H = 16;
 const CLOSE_M = 0;
-/** Daily recompute / publish time for next-session ("tomorrow") lean. */
-const TOMORROW_LEAN_H = 13;
-const TOMORROW_LEAN_M = 15;
 
 export type MarketPhase = "open" | "pre" | "closed";
 
@@ -348,74 +345,5 @@ export function getMarketClock(now: Date = new Date()): MarketClock {
     phase: "closed",
     statusText: `Closed · opens in ${formatCountdown(msRemaining)}`,
     msRemaining,
-  };
-}
-
-/** ET calendar date as YYYY-MM-DD. */
-export function etDateKey(now: Date = new Date()): string {
-  const p = nyParts(now);
-  return ymdKey({ year: p.year, month: p.month, day: p.day });
-}
-
-/** True if the America/New_York calendar day of `now` is a full NYSE session. */
-export function isNyseTradingDay(now: Date = new Date()): boolean {
-  const p = nyParts(now);
-  return isTradingDay({ year: p.year, month: p.month, day: p.day });
-}
-
-function nextTradingYmd(start: Ymd, inclusive: boolean): Ymd {
-  let cur = inclusive ? start : addCalendarDays(start.year, start.month, start.day, 1);
-  for (let i = 0; i < 14; i++) {
-    if (isTradingDay(cur)) return cur;
-    cur = addCalendarDays(cur.year, cur.month, cur.day, 1);
-  }
-  return cur;
-}
-
-function shortWeekdayNy(ymd: Ymd): string {
-  const d = nyLocalToDate(ymd.year, ymd.month, ymd.day, 12, 0);
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: TZ,
-    weekday: "short",
-  }).format(d);
-}
-
-export type TomorrowLeanPublish = {
-  /** ET calendar date (YYYY-MM-DD) — sessionStorage lock key. */
-  etDate: string;
-  /**
-   * True on a trading day at/after 1:15 PM ET: freeze displayed lean until
-   * the next ET calendar day (unlocks again until that day's 1:15).
-   */
-  locked: boolean;
-  /** Card stamp, e.g. "Updated 1:15 ET" / "Preview · updates at 1:15 ET". */
-  stamp: string;
-};
-
-/**
- * Publish clock for the next-session lean card.
- * Weekday trading days recompute/lock at 1:15 PM ET; weekends/holidays stay unlocked
- * and point at the next session's 1:15 update.
- */
-export function getTomorrowLeanPublish(now: Date = new Date()): TomorrowLeanPublish {
-  const p = nyParts(now);
-  const today: Ymd = { year: p.year, month: p.month, day: p.day };
-  const etDate = ymdKey(today);
-  const trading = isTradingDay(today);
-
-  if (trading) {
-    const publishAt = nyLocalToDate(p.year, p.month, p.day, TOMORROW_LEAN_H, TOMORROW_LEAN_M);
-    if (now.getTime() >= publishAt.getTime()) {
-      return { etDate, locked: true, stamp: "Updated 1:15 ET" };
-    }
-    return { etDate, locked: false, stamp: "Preview · updates at 1:15 ET" };
-  }
-
-  const next = nextTradingYmd(today, false);
-  const day = shortWeekdayNy(next);
-  return {
-    etDate,
-    locked: false,
-    stamp: `Next update ${day} 1:15 ET`,
   };
 }

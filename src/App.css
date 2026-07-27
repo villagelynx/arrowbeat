@@ -1753,14 +1753,6 @@ main {
   font-size: 0.68rem;
 }
 
-.tomorrow-lean__stamp {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
 .confidence-label,
 .confidence-text {
   margin: 0;

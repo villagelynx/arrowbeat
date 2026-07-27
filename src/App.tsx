@@ -280,12 +280,41 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="confidence">
-                <p className="confidence-label">Confidence</p>
-                <p className="confidence-stars" aria-label={`${signal.confidence} of 5`}>
+              <div
+                className="confidence"
+                tabIndex={0}
+                aria-describedby="confidence-tip"
+              >
+                <p className="confidence-label">
+                  Confidence
+                  <span className="confidence-hint" aria-hidden="true">
+                    ?
+                  </span>
+                </p>
+                <p className="confidence-stars" aria-label={`${signal.confidence} of 5 stars`}>
                   {stars(signal.confidence)}
                 </p>
                 <p className="confidence-text">{signal.confidenceLabel}</p>
+                <div id="confidence-tip" className="confidence-tip" role="tooltip">
+                  <p>
+                    Confidence is how settled today&apos;s lean looks — not a guarantee, and not
+                    the same as the probability %.
+                  </p>
+                  <p>
+                    Stars come from two live checks in the scorer:{" "}
+                    <strong>edge</strong> (|P(higher close) − 50|), and{" "}
+                    <strong>agreement</strong> (how many of today&apos;s listed factors point the
+                    same way as the lean — ES, VIX, breadth, seasonality/calendar, streaks, yields,
+                    CPI window, and similar items when they fire).
+                  </p>
+                  <ul>
+                    <li>5★ Very high — edge &gt; 12 pts and ≥5 factors agree</li>
+                    <li>4★ High — edge &gt; 8 pts and ≥4 agree</li>
+                    <li>3★ Moderate — edge &gt; 5 pts and ≥3 agree</li>
+                    <li>2★ Low — edge &gt; 3 pts (agreement not required)</li>
+                    <li>1★ Tentative — lean near a coin flip</li>
+                  </ul>
+                </div>
               </div>
             </div>
 

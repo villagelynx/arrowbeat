@@ -1226,8 +1226,8 @@ main {
   position: absolute;
   left: 50%;
   bottom: calc(100% + 0.45rem);
-  z-index: 8;
-  width: min(18.5rem, calc(100vw - 2rem));
+  z-index: 30;
+  width: min(22rem, calc(100vw - 2rem));
   padding: 0.7rem 0.75rem 0.75rem;
   border-radius: 0.65rem;
   border: 1px solid rgba(240, 194, 75, 0.35);
@@ -1240,6 +1240,11 @@ main {
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.confidence-tip strong {
+  font-weight: 700;
+  color: var(--paper);
 }
 
 .confidence-tip::after {

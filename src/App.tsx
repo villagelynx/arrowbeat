@@ -168,6 +168,7 @@ export default function App() {
 
   const up = signal.bias === "up";
   const leadPct = up ? signal.probabilityHigher : signal.probabilityLower;
+  const pillBusy = loading || refreshing;
 
   return (
     <div className={`app ${up ? "theme-up" : "theme-down"}`}>
@@ -179,7 +180,7 @@ export default function App() {
         </p>
         <p className="brand-tag">Daily market probability</p>
         <p className={`data-pill ${signal.dataMode === "live" ? "is-live" : "is-demo"}`}>
-          {loading
+          {pillBusy
             ? "Refreshing…"
             : signal.dataMode === "live"
               ? "Live · SPY · Mag7 · ES · VIX"
@@ -408,14 +409,12 @@ export default function App() {
           <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
             <h2 id="mag7-title">Magnificent 7</h2>
             <p className="panel-lede">
-              Per-name ArrowBeat lean — same idea as SPY (arrow + bias + probability), from each
-              stock&apos;s recent price action plus a mild shared ES / VIX tone. Yahoo free quotes ~
-              15 minutes delayed.
+              Ranked by probability of a higher close. Compact ArrowBeat lean per name — Yahoo ~
+              15 min delayed.
             </p>
             <ul className="mag7-grid">
               {signal.mag7.map((row) => {
                 const leanUp = row.bias === "up";
-                const leadPct = leanUp ? row.probabilityHigher : row.probabilityLower;
                 return (
                   <li
                     key={row.symbol}
@@ -423,39 +422,32 @@ export default function App() {
                       !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
                     }`}
                   >
-                    <div className="mag7-card__head">
-                      <p className="mag7-card__symbol">{row.symbol}</p>
-                      <p className="mag7-card__name">{row.name}</p>
+                    <div className="mag7-card__top">
+                      <span className="mag7-card__symbol">{row.symbol}</span>
+                      {row.available ? (
+                        <span className="mag7-card__chev" aria-hidden="true">
+                          {leanUp ? "▲" : "▼"}
+                        </span>
+                      ) : (
+                        <span className="mag7-card__chev is-na" aria-hidden="true">
+                          —
+                        </span>
+                      )}
                     </div>
-                    {row.available ? (
-                      <div className="mag7-card__arrow">
-                        <MarketArrow
-                          bias={row.bias}
-                          idSuffix={`-mag7-${row.symbol}`}
-                          className="market-arrow--mag7"
-                        />
-                      </div>
-                    ) : (
-                      <p className="mag7-card__na">Unavailable</p>
-                    )}
                     <p className="mag7-card__bias">
-                      {row.available
-                        ? leanUp
-                          ? "Higher-close lean"
-                          : "Lower-close lean"
-                        : "No live lean"}
+                      {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
                     </p>
                     <p className="mag7-card__prob">
                       {row.available ? (
                         <>
-                          {leadPct.toFixed(1)}
+                          {row.probabilityHigher.toFixed(1)}
                           <span>%</span>
                         </>
                       ) : (
                         "—"
                       )}
                     </p>
-                    <div className="mag7-card__quote">
+                    <p className="mag7-card__quote">
                       <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
                       <span
                         className={
@@ -470,13 +462,101 @@ export default function App() {
                           ? "—"
                           : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
                       </span>
-                    </div>
+                    </p>
                   </li>
                 );
               })}
             </ul>
           </section>
         ) : null}
+
+        <section className="panel panel--quote desk-row desk-row--quote" aria-labelledby="quote-title">
+          <h2 id="quote-title">Stock quote</h2>
+          <p className="panel-lede">
+            Look up any ticker — Yahoo free data, typically about 15 minutes delayed.
+          </p>
+          <form
+            className="quote-lookup"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void lookupQuote(quoteInput);
+            }}
+          >
+            <label className="quote-lookup__label" htmlFor="quote-ticker">
+              Ticker
+            </label>
+            <div className="quote-lookup__row">
+              <input
+                id="quote-ticker"
+                className="quote-lookup__input"
+                value={quoteInput}
+                onChange={(e) => setQuoteInput(e.target.value.toUpperCase())}
+                placeholder="e.g. SPY or AAPL"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={16}
+              />
+              <button type="submit" className="quote-lookup__btn" disabled={quoteLoading}>
+                {quoteLoading ? "Looking up…" : "Get quote"}
+              </button>
+            </div>
+          </form>
+          <div className="quote-chips" role="group" aria-label="Quick select">
+            {MAG7_SYMBOLS.map((sym) => (
+              <button
+                key={sym}
+                type="button"
+                className="quote-chip"
+                onClick={() => void lookupQuote(sym)}
+                disabled={quoteLoading}
+              >
+                {sym}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="quote-chip"
+              onClick={() => void lookupQuote("SPY")}
+              disabled={quoteLoading}
+            >
+              SPY
+            </button>
+          </div>
+          {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
+          {quoteResult ? (
+            <div
+              className={`quote-result ${
+                quoteResult.changePct == null
+                  ? ""
+                  : quoteResult.changePct >= 0
+                    ? "is-up"
+                    : "is-down"
+              }`}
+            >
+              <p className="quote-result__symbol">{quoteResult.symbol}</p>
+              <p className="quote-result__last">
+                {quoteResult.last != null ? quoteResult.last.toFixed(2) : "—"}
+              </p>
+              <p className="quote-result__chg">
+                {quoteResult.change != null
+                  ? `${quoteResult.change >= 0 ? "+" : ""}${quoteResult.change.toFixed(2)}`
+                  : "—"}{" "}
+                (
+                {quoteResult.changePct != null
+                  ? `${quoteResult.changePct >= 0 ? "+" : ""}${quoteResult.changePct.toFixed(2)}%`
+                  : "—"}
+                )
+              </p>
+              <p className="quote-result__meta">
+                Prev close{" "}
+                {quoteResult.previousClose != null
+                  ? quoteResult.previousClose.toFixed(2)
+                  : "—"}{" "}
+                · {quoteResult.delayNote}
+              </p>
+            </div>
+          ) : null}
+        </section>
 
         <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
           {spyBars.length ? (

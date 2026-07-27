@@ -34,6 +34,26 @@ type YahooChart = {
   };
 };
 
+/** Magnificent 7 Yahoo tickers (soft-fetched; may be empty on timeout). */
+export const MAG7_SYMBOLS = [
+  "AAPL",
+  "MSFT",
+  "NVDA",
+  "AMZN",
+  "META",
+  "GOOGL",
+  "TSLA",
+] as const;
+
+export type Mag7Symbol = (typeof MAG7_SYMBOLS)[number];
+
+export type Mag7Series = {
+  last: number | null;
+  previousClose: number | null;
+  /** ~1y daily closes when Yahoo responds in time. */
+  bars: Bar[];
+};
+
 export type MarketSnapshotPayload = {
   source: string;
   fetchedAt: string;
@@ -60,6 +80,8 @@ export type MarketSnapshotPayload = {
     oil: { last: number | null; bars: Bar[] };
     gold: { last: number | null; bars: Bar[] };
   };
+  /** Mag7 daily series — soft-fail empty object if Yahoo is slow. */
+  mag7: Partial<Record<Mag7Symbol, Mag7Series>>;
 };
 
 const FETCH_MS = 2800;
@@ -206,6 +228,33 @@ function lastFromBars(bars: Bar[]): number | null {
   return bars.length ? bars[bars.length - 1].close : null;
 }
 
+function mag7FromChart(data: YahooChart): Mag7Series {
+  const bars = barsFromChart(data);
+  const last = lastPrice(data, bars);
+  const previousClose =
+    Number(data.chart?.result?.[0]?.meta?.chartPreviousClose) ||
+    Number(data.chart?.result?.[0]?.meta?.previousClose) ||
+    (bars.length > 1 ? bars[bars.length - 2].close : null);
+  return {
+    last,
+    previousClose: previousClose && Number.isFinite(previousClose) ? previousClose : null,
+    bars,
+  };
+}
+
+/** Soft Mag7 history after core SPY/FRED — keeps SPY usable if Mag7 is slow. */
+async function softFetchMag7(): Promise<Partial<Record<Mag7Symbol, Mag7Series>>> {
+  const charts = await Promise.all(MAG7_SYMBOLS.map((symbol) => softYahoo(symbol, "1y")));
+  const out: Partial<Record<Mag7Symbol, Mag7Series>> = {};
+  for (let i = 0; i < MAG7_SYMBOLS.length; i++) {
+    const series = mag7FromChart(charts[i]);
+    if (series.bars.length || series.last != null) {
+      out[MAG7_SYMBOLS[i]] = series;
+    }
+  }
+  return out;
+}
+
 export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   // Soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
   // Use 5y SPY history (fits free-tier time limits better than 10y).
@@ -266,6 +315,9 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
     throw new Error("Yahoo Finance returned no SPY history from this host.");
   }
 
+  // Mag7 after core snapshot work so SPY still ships if these soft-fail.
+  const mag7 = await softFetchMag7();
+
   return {
     source: "yahoo-finance+fred",
     fetchedAt: new Date().toISOString(),
@@ -280,6 +332,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
       realYield10y: "DFII10",
       oil: "CL=F",
       gold: "GC=F",
+      mag7: MAG7_SYMBOLS.join(","),
     },
     spy: {
       last:
@@ -329,5 +382,6 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
         bars: goldBars,
       },
     },
+    mag7,
   };
 }

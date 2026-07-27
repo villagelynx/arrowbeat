@@ -9,6 +9,21 @@ export type IntradayBar = {
 
 export type Series = { last: number | null; bars: Bar[] };
 
+export type Mag7Symbol =
+  | "AAPL"
+  | "MSFT"
+  | "NVDA"
+  | "AMZN"
+  | "META"
+  | "GOOGL"
+  | "TSLA";
+
+export type Mag7Series = {
+  last: number | null;
+  previousClose: number | null;
+  bars: Bar[];
+};
+
 export type MarketSnapshot = {
   source: string;
   fetchedAt: string;
@@ -33,6 +48,8 @@ export type MarketSnapshot = {
     oil: Series;
     gold: Series;
   };
+  /** Soft-fetched Mag7 daily history — may be empty or partial. */
+  mag7?: Partial<Record<Mag7Symbol, Mag7Series>>;
 };
 
 async function fetchJson(url: string, timeoutMs: number): Promise<MarketSnapshot> {

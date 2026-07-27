@@ -102,6 +102,10 @@
   margin-top: 0.4rem;
 }
 
+.hero-quotes {
+  width: 100%;
+}
+
 .quote-strip li {
   padding: 0.55rem 0.35rem;
   border-radius: 0.65rem;
@@ -1036,6 +1040,190 @@ main {
 
   .arrow-stage {
     width: 18rem;
+  }
+}
+
+/* Desktop layout — mobile / narrow column unchanged above */
+@media (min-width: 960px) {
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.75rem 0.5rem;
+    text-align: left;
+  }
+
+  .brand {
+    font-size: 2.85rem;
+  }
+
+  .brand-tag {
+    margin: 0;
+    flex: 1;
+  }
+
+  .data-pill {
+    margin: 0;
+  }
+
+  main {
+    width: min(100%, 68rem);
+    padding: 0.75rem 1.75rem 3rem;
+  }
+
+  .hero {
+    width: 100%;
+    grid-template-columns: minmax(16rem, 0.95fr) minmax(20rem, 1.15fr);
+    grid-template-areas:
+      "kicker kicker"
+      "title title"
+      "arrow cal"
+      "chip cal"
+      "prob quotes"
+      "conf quotes";
+    column-gap: 2.25rem;
+    row-gap: 0.55rem;
+    align-items: start;
+    justify-items: stretch;
+    text-align: left;
+    padding: 0.85rem 0 1.75rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 0.35rem;
+  }
+
+  .hero-kicker {
+    grid-area: kicker;
+    justify-self: center;
+    text-align: center;
+  }
+
+  .hero-title {
+    grid-area: title;
+    justify-self: center;
+    text-align: center;
+    font-size: 1.85rem;
+  }
+
+  .arrow-stage {
+    grid-area: arrow;
+    justify-self: center;
+    width: min(100%, 17.5rem);
+    margin-top: 0.5rem;
+  }
+
+  .bias-chip {
+    grid-area: chip;
+    justify-self: center;
+  }
+
+  .cal-edge {
+    grid-area: cal;
+    margin-top: 0.5rem;
+    align-self: stretch;
+  }
+
+  .prob-block {
+    grid-area: prob;
+    width: 100%;
+    max-width: 18rem;
+    justify-self: center;
+  }
+
+  .confidence {
+    grid-area: conf;
+    justify-self: center;
+  }
+
+  .hero-quotes {
+    grid-area: quotes;
+    width: 100%;
+    align-self: start;
+  }
+
+  .hero-quotes .quote-strip {
+    margin-top: 0.55rem;
+  }
+
+  .hero-quotes .quote-strip:first-child {
+    margin-top: 0.35rem;
+  }
+
+  .hero:not(:has(.cal-edge)) {
+    grid-template-areas:
+      "kicker kicker"
+      "title title"
+      "arrow quotes"
+      "chip quotes"
+      "prob quotes"
+      "conf quotes";
+  }
+
+  .desk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .desk-grid > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .desk-grid .panel {
+    margin-top: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .desk-grid--trio {
+    grid-template-columns: 1.25fr 1fr 1fr;
+  }
+
+  .desk-grid--trio .panel {
+    margin-top: 1.15rem;
+  }
+
+  .panel {
+    padding: 1.25rem 1.2rem 1.35rem;
+  }
+
+  .panel h2 {
+    font-size: 1.25rem;
+  }
+
+  .session-strip {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .footer {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 0 1.75rem 2.5rem;
+    text-align: left;
+  }
+
+  .disclaimer {
+    max-width: 42rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  main {
+    width: min(100%, 74rem);
+  }
+
+  .topbar,
+  .footer {
+    max-width: 74rem;
+  }
+
+  .desk-grid--charts {
+    grid-template-columns: 1fr 1.15fr;
   }
 }
 

@@ -195,7 +195,7 @@ export default function App() {
           </div>
 
           {signal.quotes ? (
-            <>
+            <div className="hero-quotes">
               <ul className="quote-strip" aria-label="Latest quotes">
                 <li>
                   <span>SPY</span>
@@ -216,7 +216,10 @@ export default function App() {
                   </strong>
                 </li>
               </ul>
-              <ul className="quote-strip quote-strip--inflation" aria-label="Inflation and commodities">
+              <ul
+                className="quote-strip quote-strip--inflation"
+                aria-label="Inflation and commodities"
+              >
                 <li>
                   <span>B/E 10Y</span>
                   <strong>
@@ -248,28 +251,33 @@ export default function App() {
                   </strong>
                 </li>
               </ul>
-            </>
+            </div>
           ) : null}
         </section>
 
-        {dayBars.length > 1 ? (
-          <section className="panel" aria-labelledby="spy-day-title">
-            <h2 id="spy-day-title">S&amp;P 500 today</h2>
-            <p className="panel-lede">
-              Free Yahoo 15-minute bars — typically about 15 minutes delayed.
-            </p>
-            <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
-          </section>
+        {dayBars.length > 1 || spyBars.length ? (
+          <div className="desk-grid desk-grid--charts">
+            {dayBars.length > 1 ? (
+              <section className="panel" aria-labelledby="spy-day-title">
+                <h2 id="spy-day-title">S&amp;P 500 today</h2>
+                <p className="panel-lede">
+                  Free Yahoo 15-minute bars — typically about 15 minutes delayed.
+                </p>
+                <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
+              </section>
+            ) : null}
+
+            {spyBars.length ? (
+              <section className="panel" aria-labelledby="spy-chart-title">
+                <h2 id="spy-chart-title">S&amp;P 500 this year</h2>
+                <p className="panel-lede">SPY daily closes — year to date.</p>
+                <SpyYearChart bars={spyBars} year={yearFromIso(signal.asOfDate)} />
+              </section>
+            ) : null}
+          </div>
         ) : null}
 
-        {spyBars.length ? (
-          <section className="panel" aria-labelledby="spy-chart-title">
-            <h2 id="spy-chart-title">S&amp;P 500 this year</h2>
-            <p className="panel-lede">SPY daily closes — year to date.</p>
-            <SpyYearChart bars={spyBars} year={yearFromIso(signal.asOfDate)} />
-          </section>
-        ) : null}
-
+        <div className="desk-grid desk-grid--pair">
         {signal.lastSessions.length ? (
           <section className="panel" aria-labelledby="recent-title">
             <h2 id="recent-title">Last 10 trading days</h2>
@@ -393,7 +401,10 @@ export default function App() {
             </ol>
           ) : null}
         </section>
+        </div>
 
+        {signal.weekdayOdds.length || signal.monthOdds.length ? (
+          <div className="desk-grid desk-grid--pair">
         {signal.weekdayOdds.length ? (
           <section className="panel" aria-labelledby="weekday-title">
             <h2 id="weekday-title">Weekday odds ranked</h2>
@@ -539,7 +550,11 @@ export default function App() {
             </ol>
           </section>
         ) : null}
+          </div>
+        ) : null}
 
+        {signal.dayOfMonthOdds.length || signal.cpiWindow?.odds.length ? (
+          <div className="desk-grid desk-grid--pair">
         {signal.dayOfMonthOdds.length ? (
           <section className="panel" aria-labelledby="dom-title">
             <h2 id="dom-title">Day-of-month odds ranked</h2>
@@ -721,7 +736,10 @@ export default function App() {
             </ol>
           </section>
         ) : null}
+          </div>
+        ) : null}
 
+        <div className="desk-grid desk-grid--trio">
         <section className="panel" aria-labelledby="factors-title">
           <h2 id="factors-title">Why this signal</h2>
           <p className="panel-lede">
@@ -782,6 +800,7 @@ export default function App() {
             </div>
           </div>
         </section>
+        </div>
 
         <p className="disclaimer">{signal.disclaimer}</p>
       </main>

@@ -391,7 +391,7 @@ main.about-main {
 
 .hero-quotes {
   width: 100%;
-  order: 9;
+  order: 10;
 }
 
 .quote-strip li {
@@ -1061,7 +1061,7 @@ main {
   order: 1;
 }
 
-/* Unwrap on mobile so order stacks: chip → prob → confidence → cal-edge */
+/* Unwrap on mobile so order stacks: chip → prob → confidence → share → cal-edge */
 .hero-head,
 .hero-signal,
 .hero-rail {
@@ -1489,7 +1489,7 @@ main {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
-  order: 7;
+  order: 8;
 }
 
 .cal-edge__title {
@@ -1730,6 +1730,32 @@ main {
   cursor: help;
 }
 
+.share-pill {
+  margin: 0.75rem 0 0;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--glow), 0.35);
+  background: rgba(var(--glow), 0.12);
+  color: var(--signal);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  order: 7;
+}
+
+.share-pill:hover {
+  border-color: rgba(var(--glow), 0.55);
+  background: rgba(var(--glow), 0.18);
+}
+
+.share-pill:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(var(--glow), 0.55);
+}
+
 .confidence:focus-visible {
   box-shadow: 0 0 0 1px rgba(240, 194, 75, 0.55);
 }
@@ -1742,7 +1768,7 @@ main {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
-  order: 8;
+  order: 9;
 }
 
 .tomorrow-lean.is-up {
@@ -2368,6 +2394,7 @@ main {
   .cal-edge,
   .prob-block,
   .confidence,
+  .share-pill,
   .tomorrow-lean,
   .hero-quotes {
     order: unset;

@@ -247,7 +247,7 @@ export default function App() {
   }
 
   async function shareScorecard() {
-    const url = buildScoreShareUrl(window.location.origin, scorecard);
+    const url = buildScoreShareUrl(scorecard);
     const hit =
       scorecard.hitRate != null ? `${scorecard.hitRate.toFixed(1)}% hit rate` : "ArrowBeat scorecard";
     let copied = false;
@@ -264,16 +264,16 @@ export default function App() {
           text: `ArrowBeat prediction score — ${hit}`,
           url,
         });
-        setShareStatus(copied ? "Shared · link copied" : "Shared");
+        setShareStatus(copied ? "Copied" : "Shared");
         return;
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") {
-          if (copied) setShareStatus("Link copied");
+          if (copied) setShareStatus("Copied");
           return;
         }
       }
     }
-    setShareStatus(copied ? "Link copied" : "Couldn’t copy link");
+    setShareStatus(copied ? "Copied" : "Couldn’t copy link");
   }
 
   if (!signal) {
@@ -659,6 +659,15 @@ export default function App() {
                   </ul>
                 </div>
               </div>
+
+              <button
+                type="button"
+                className="share-pill"
+                onClick={() => void shareScorecard()}
+                aria-label="Share score"
+              >
+                {shareStatus === "Copied" ? "Copied" : "Share"}
+              </button>
 
               {primary.calendarEdge ? (
                 <div

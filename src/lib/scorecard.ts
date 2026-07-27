@@ -261,9 +261,12 @@ export function decodeShareSnapshot(encoded: string): SharedScoreSnapshot | null
   }
 }
 
-/** Share URL: `https://<origin>/?view=score` with optional `#s=<snapshot>`. */
-export function buildScoreShareUrl(origin: string, summary: ScorecardSummary): string {
-  const url = new URL("/", origin);
+/** Canonical public host for share links (not netlify.app / localhost). */
+export const SCORE_SHARE_ORIGIN = "https://arrowbeat.com";
+
+/** Share URL: `https://arrowbeat.com/?view=score` with optional `#s=<snapshot>`. */
+export function buildScoreShareUrl(summary: ScorecardSummary): string {
+  const url = new URL("/", SCORE_SHARE_ORIGIN);
   url.searchParams.set("view", "score");
   if (summary.settled > 0 || summary.recent.length > 0) {
     url.hash = `s=${encodeShareSnapshot(summary)}`;

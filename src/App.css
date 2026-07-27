@@ -510,6 +510,13 @@ main.about-main {
   font-weight: 700;
 }
 
+.score-list-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .score-list {
   list-style: none;
   margin: 0;
@@ -520,7 +527,7 @@ main.about-main {
 
 .score-list li {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto auto auto;
   gap: 0.45rem;
   align-items: center;
   padding: 0.55rem 0.65rem;
@@ -544,9 +551,14 @@ main.about-main {
 }
 
 .score-list__pred,
-.score-list__act {
+.score-list__act,
+.score-list__err {
   color: var(--muted);
   white-space: nowrap;
+}
+
+.score-list__err {
+  font-variant-numeric: tabular-nums;
 }
 
 .score-list__verdict {

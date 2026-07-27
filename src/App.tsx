@@ -992,7 +992,7 @@ export default function App() {
             )}
 
             {scorecard.recent.length ? (
-              <ol className="score-list">
+              <ol className="score-list" aria-label="Last 10 settled predictions">
                 {scorecard.recent.map((row) => {
                   const dateLabel = new Intl.DateTimeFormat("en-US", {
                     timeZone: "America/New_York",
@@ -1006,6 +1006,11 @@ export default function App() {
                       : row.correct
                         ? "hit"
                         : "miss";
+                  // |P(higher) − realized|: realized = 100 if close was higher, else 0.
+                  const errorPct =
+                    row.outcome === "up" || row.outcome === "down"
+                      ? Math.abs(row.probabilityHigher - (row.outcome === "up" ? 100 : 0))
+                      : null;
                   return (
                     <li
                       key={row.date}
@@ -1015,7 +1020,7 @@ export default function App() {
                     >
                       <span className="score-list__date">{dateLabel}</span>
                       <span className="score-list__pred">
-                        Pred {row.bias === "up" ? "▲" : "▼"} {row.probabilityHigher.toFixed(0)}%
+                        Pred {row.bias === "up" ? "▲" : "▼"}
                       </span>
                       <span className="score-list__act">
                         {row.outcome === "flat"
@@ -1024,12 +1029,17 @@ export default function App() {
                               row.changePct != null && row.changePct >= 0 ? "+" : ""
                             }${row.changePct?.toFixed(2) ?? "—"}%`}
                       </span>
+                      <span className="score-list__err" title="Absolute error vs P(higher) and outcome">
+                        {errorPct != null ? `Err ${errorPct.toFixed(0)}%` : "Err —"}
+                      </span>
                       <span className="score-list__verdict">{verdict}</span>
                     </li>
                   );
                 })}
               </ol>
-            ) : null}
+            ) : (
+              <p className="score-list-empty">No settled days yet — recent hits and misses will show here.</p>
+            )}
           </section>
         </div>
 

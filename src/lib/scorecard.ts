@@ -121,7 +121,7 @@ function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSumm
   const recent = [...records]
     .filter((r) => r.outcome != null)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 12);
+    .slice(0, 10);
 
   return {
     settled,

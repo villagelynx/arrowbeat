@@ -71,9 +71,11 @@
 
 .brand-tag {
   margin: 0.35rem 0 0;
+  max-width: 36rem;
   color: var(--muted);
   font-size: 0.82rem;
   letter-spacing: 0.12em;
+  line-height: 1.45;
   text-transform: uppercase;
 }
 

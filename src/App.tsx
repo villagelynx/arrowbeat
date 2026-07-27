@@ -285,7 +285,7 @@ export default function App() {
             <p className="brand">
               Arrow<span>Beat</span>
             </p>
-            <p className="brand-tag">Loading market data…</p>
+            <p className="brand-tag">turns historical stats into a daily market probability</p>
           </div>
           <AppNav view={view} onNavigate={setView} />
         </header>
@@ -350,7 +350,7 @@ export default function App() {
             Arrow<span>Beat</span>
           </button>
           <p className="brand-tag">
-            {view === "about" ? "About" : "Daily market probability"}
+            turns historical stats into a daily market probability
           </p>
           {view === "home" ? (
             <p className={`data-pill ${signal.dataMode === "live" ? "is-live" : "is-demo"}`}>

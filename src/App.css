@@ -2483,6 +2483,10 @@ main {
     margin: 0.45rem 0 0.2rem;
   }
 
+  .arrow-stage .arrow-score-label {
+    font-size: 0.88rem;
+  }
+
   .prob-block {
     margin-top: 0.55rem;
     max-width: 100%;

@@ -30,12 +30,28 @@ import {
   resolveDisplayedTomorrowLean,
   type DisplayedTomorrowLean,
 } from "./lib/tomorrow-lean-publish";
-import { emptyScorecard, syncScorecard, type ScorecardSummary } from "./lib/scorecard";
+import { emptyScorecard, syncScorecard, buildScoreShareUrl, decodeShareSnapshot, type ScorecardSummary, type SharedScoreSnapshot } from "./lib/scorecard";
 import { yearFromIso } from "./lib/spy-ytd";
 import "./App.css";
 
 /** Aligns with Yahoo free delayed quotes (~15 minutes). */
 const REFRESH_MS = 15 * 60 * 1000;
+
+function readScoreShareFromLocation(): {
+  focusScore: boolean;
+  snapshot: SharedScoreSnapshot | null;
+} {
+  if (typeof window === "undefined") return { focusScore: false, snapshot: null };
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.replace(/^#/, "");
+  const viewScore = params.get("view") === "score";
+  let snapshot: SharedScoreSnapshot | null = null;
+  if (hash.startsWith("s=")) {
+    snapshot = decodeShareSnapshot(hash.slice(2));
+  }
+  const focusScore = viewScore || hash === "scorecard" || snapshot != null;
+  return { focusScore, snapshot };
+}
 
 function useMarketClock(): MarketClock {
   const [clock, setClock] = useState(() => getMarketClock());
@@ -99,9 +115,42 @@ export default function App() {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [view, setView] = useState<AppView>("home");
+  const [sharedScore, setSharedScore] = useState<SharedScoreSnapshot | null>(null);
+  const [scoreFocus, setScoreFocus] = useState(false);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const scorePanelRef = useRef<HTMLElement | null>(null);
   const marketClock = useMarketClock();
   const tomorrowDisplay = useDisplayedTomorrowLean(signal?.tomorrow ?? null);
   const lastFetchAt = useRef(0);
+
+  useEffect(() => {
+    const { focusScore, snapshot } = readScoreShareFromLocation();
+    if (snapshot) setSharedScore(snapshot);
+    if (focusScore) {
+      setView("home");
+      setScoreFocus(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!scoreFocus || !signal || view !== "home") return;
+    const el = scorePanelRef.current;
+    if (!el) return;
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    const clear = window.setTimeout(() => setScoreFocus(false), 3200);
+    return () => {
+      window.clearTimeout(id);
+      window.clearTimeout(clear);
+    };
+  }, [scoreFocus, signal, view]);
+
+  useEffect(() => {
+    if (!shareStatus) return;
+    const id = window.setTimeout(() => setShareStatus(null), 2200);
+    return () => window.clearTimeout(id);
+  }, [shareStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +244,36 @@ export default function App() {
     } finally {
       setQuoteLoading(false);
     }
+  }
+
+  async function shareScorecard() {
+    const url = buildScoreShareUrl(window.location.origin, scorecard);
+    const hit =
+      scorecard.hitRate != null ? `${scorecard.hitRate.toFixed(1)}% hit rate` : "ArrowBeat scorecard";
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      // Clipboard may be blocked; Web Share can still succeed.
+    }
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "ArrowBeat Score",
+          text: `ArrowBeat prediction score — ${hit}`,
+          url,
+        });
+        setShareStatus(copied ? "Shared · link copied" : "Shared");
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+          if (copied) setShareStatus("Link copied");
+          return;
+        }
+      }
+    }
+    setShareStatus(copied ? "Link copied" : "Couldn’t copy link");
   }
 
   if (!signal) {
@@ -581,6 +660,41 @@ export default function App() {
                 </div>
               </div>
 
+              {primary.calendarEdge ? (
+                <div
+                  className="cal-edge"
+                  aria-label={
+                    tomorrowAsPrimary
+                      ? "Next session calendar edge versus coin flip"
+                      : "Today's calendar edge versus coin flip"
+                  }
+                >
+                  <p className="cal-edge__title">
+                    {tomorrowAsPrimary ? "Next session calendar edge" : "Today's calendar edge"}{" "}
+                    <span
+                      className={
+                        (primary.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
+                      }
+                    >
+                      {primary.calendarEdge.blendPts != null
+                        ? `${edgeLabel(primary.calendarEdge.blendPts)} pts vs 50%`
+                        : ""}
+                    </span>
+                  </p>
+                  <ul className="cal-edge__list">
+                    {primary.calendarEdge.weekday ? (
+                      <CalendarEdgeChip slice={primary.calendarEdge.weekday} kind="Weekday" />
+                    ) : null}
+                    {primary.calendarEdge.month ? (
+                      <CalendarEdgeChip slice={primary.calendarEdge.month} kind="Month" />
+                    ) : null}
+                    {primary.calendarEdge.dayOfMonth ? (
+                      <CalendarEdgeChip slice={primary.calendarEdge.dayOfMonth} kind="Day" />
+                    ) : null}
+                  </ul>
+                </div>
+              ) : null}
+
               {tomorrowAsPrimary ? (
                 <div
                   className={`tomorrow-lean tomorrow-lean--settled ${todayUp ? "is-up" : "is-down"}`}
@@ -677,41 +791,6 @@ export default function App() {
             </div>
 
             <aside className="hero-rail">
-              {primary.calendarEdge ? (
-                <div
-                  className="cal-edge"
-                  aria-label={
-                    tomorrowAsPrimary
-                      ? "Next session calendar edge versus coin flip"
-                      : "Today's calendar edge versus coin flip"
-                  }
-                >
-                  <p className="cal-edge__title">
-                    {tomorrowAsPrimary ? "Next session calendar edge" : "Today's calendar edge"}{" "}
-                    <span
-                      className={
-                        (primary.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
-                      }
-                    >
-                      {primary.calendarEdge.blendPts != null
-                        ? `${edgeLabel(primary.calendarEdge.blendPts)} pts vs 50%`
-                        : ""}
-                    </span>
-                  </p>
-                  <ul className="cal-edge__list">
-                    {primary.calendarEdge.weekday ? (
-                      <CalendarEdgeChip slice={primary.calendarEdge.weekday} kind="Weekday" />
-                    ) : null}
-                    {primary.calendarEdge.month ? (
-                      <CalendarEdgeChip slice={primary.calendarEdge.month} kind="Month" />
-                    ) : null}
-                    {primary.calendarEdge.dayOfMonth ? (
-                      <CalendarEdgeChip slice={primary.calendarEdge.dayOfMonth} kind="Day" />
-                    ) : null}
-                  </ul>
-                </div>
-              ) : null}
-
               {signal.quotes ? (
                 <div className="hero-quotes">
                   <ul className="quote-strip" aria-label="Latest quotes">
@@ -947,12 +1026,80 @@ export default function App() {
             </section>
           ) : null}
 
-          <section className="panel panel--score" aria-labelledby="score-title">
-            <h2 id="score-title">Prediction scorecard</h2>
+          <section
+            ref={scorePanelRef}
+            id="scorecard"
+            className={`panel panel--score${scoreFocus ? " is-share-focus" : ""}`}
+            aria-labelledby="score-title"
+          >
+            <div className="score-panel__head">
+              <h2 id="score-title">Prediction scorecard</h2>
+              <div className="score-share">
+                <button
+                  type="button"
+                  className="score-share__btn"
+                  onClick={() => void shareScorecard()}
+                >
+                  Share score
+                </button>
+                {shareStatus ? (
+                  <span className="score-share__status" role="status">
+                    {shareStatus}
+                  </span>
+                ) : null}
+              </div>
+            </div>
             <p className="panel-lede">
               Live leans saved on this device, graded when SPY&apos;s close vs prior is known. Hit =
               direction correct. Brier = probability calibration (lower better; coin flip ≈ 0.25).
             </p>
+
+            {sharedScore ? (
+              <div className="score-shared" role="status">
+                <p className="score-shared__label">Shared score snapshot</p>
+                <p className="score-shared__stats">
+                  {sharedScore.h != null ? `${sharedScore.h.toFixed(1)}%` : "—"} hit rate
+                  {sharedScore.s
+                    ? ` · ${sharedScore.i}/${sharedScore.s} settled`
+                    : " · no settled days"}
+                </p>
+                <p className="score-shared__note">
+                  Read-only link preview — your device scorecard below is unchanged.
+                </p>
+                {sharedScore.n.length ? (
+                  <ol className="score-shared__list" aria-label="Shared last settled predictions">
+                    {sharedScore.n.map((row) => {
+                      const dateLabel = new Intl.DateTimeFormat("en-US", {
+                        timeZone: "America/New_York",
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      }).format(new Date(`${row.d}T12:00:00-04:00`));
+                      const verdict =
+                        row.ok === 1 ? "hit" : row.ok === 0 ? "miss" : "flat";
+                      return (
+                        <li
+                          key={row.d}
+                          className={
+                            verdict === "hit"
+                              ? "is-hit"
+                              : verdict === "miss"
+                                ? "is-miss"
+                                : undefined
+                          }
+                        >
+                          <span>{dateLabel}</span>
+                          <span>Pred {row.b === "u" ? "▲" : "▼"}</span>
+                          <span>{row.e != null ? `Err ${row.e}%` : "Err —"}</span>
+                          <span>{verdict}</span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="stat-grid score-grid">
               <div className="stat-card">
                 <p className="stat-kicker">Hit rate</p>

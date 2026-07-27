@@ -180,3 +180,95 @@ export function emptyScorecard(_asOfDate = ""): ScorecardSummary {
     records: [],
   };
 }
+
+/** Compact row for URL-encoded share snapshots (keep hash short). */
+export type SharedScoreRow = {
+  d: string;
+  b: "u" | "d";
+  /** 1 hit, 0 miss, null flat / unset */
+  ok: 0 | 1 | null;
+  /** Absolute error vs P(higher), rounded; null if flat */
+  e: number | null;
+};
+
+/** Compact snapshot: hitRate `h`, settled `s`, hits `i`, recent `n`. */
+export type SharedScoreSnapshot = {
+  h: number | null;
+  s: number;
+  i: number;
+  n: SharedScoreRow[];
+};
+
+function toBase64Url(json: string): string {
+  const bytes = new TextEncoder().encode(json);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function fromBase64Url(encoded: string): string {
+  const pad = encoded.length % 4 === 0 ? "" : "=".repeat(4 - (encoded.length % 4));
+  const b64 = encoded.replace(/-/g, "+").replace(/_/g, "/") + pad;
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function rowErrorPct(row: PredictionRecord): number | null {
+  if (row.outcome !== "up" && row.outcome !== "down") return null;
+  return Math.round(Math.abs(row.probabilityHigher - (row.outcome === "up" ? 100 : 0)));
+}
+
+/** Compact base64url JSON for `?view=score#s=…` share links. */
+export function encodeShareSnapshot(summary: ScorecardSummary): string {
+  const payload: SharedScoreSnapshot = {
+    h: summary.hitRate,
+    s: summary.settled,
+    i: summary.hits,
+    n: summary.recent.slice(0, 10).map((row) => ({
+      d: row.date,
+      b: row.bias === "up" ? "u" : "d",
+      ok: row.correct === true ? 1 : row.correct === false ? 0 : null,
+      e: rowErrorPct(row),
+    })),
+  };
+  return toBase64Url(JSON.stringify(payload));
+}
+
+export function decodeShareSnapshot(encoded: string): SharedScoreSnapshot | null {
+  try {
+    const parsed = JSON.parse(fromBase64Url(encoded)) as SharedScoreSnapshot;
+    if (typeof parsed !== "object" || parsed == null) return null;
+    if (typeof parsed.s !== "number" || !Array.isArray(parsed.n)) return null;
+    const h =
+      parsed.h == null
+        ? null
+        : typeof parsed.h === "number" && Number.isFinite(parsed.h)
+          ? parsed.h
+          : null;
+    const i = typeof parsed.i === "number" && Number.isFinite(parsed.i) ? parsed.i : 0;
+    const n: SharedScoreRow[] = [];
+    for (const row of parsed.n.slice(0, 10)) {
+      if (!row || typeof row.d !== "string") continue;
+      if (row.b !== "u" && row.b !== "d") continue;
+      const ok = row.ok === 1 || row.ok === 0 ? row.ok : null;
+      const e = typeof row.e === "number" && Number.isFinite(row.e) ? row.e : null;
+      n.push({ d: row.d, b: row.b, ok, e });
+    }
+    return { h, s: parsed.s, i, n };
+  } catch {
+    return null;
+  }
+}
+
+/** Share URL: `https://<origin>/?view=score` with optional `#s=<snapshot>`. */
+export function buildScoreShareUrl(origin: string, summary: ScorecardSummary): string {
+  const url = new URL("/", origin);
+  url.searchParams.set("view", "score");
+  if (summary.settled > 0 || summary.recent.length > 0) {
+    url.hash = `s=${encodeShareSnapshot(summary)}`;
+  } else {
+    url.hash = "scorecard";
+  }
+  return url.toString();
+}

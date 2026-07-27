@@ -494,6 +494,110 @@ main.about-main {
   text-align: center;
 }
 
+.score-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.score-panel__head h2 {
+  margin: 0;
+}
+
+.score-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.score-share__btn {
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(var(--glow), 0.35);
+  background: rgba(var(--glow), 0.12);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.score-share__btn:hover {
+  border-color: rgba(var(--glow), 0.55);
+  background: rgba(var(--glow), 0.18);
+}
+
+.score-share__status {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.panel--score.is-share-focus {
+  box-shadow: 0 0 0 1px rgba(var(--glow), 0.55), 0 0 28px rgba(var(--glow), 0.18);
+  transition: box-shadow 0.4s ease;
+}
+
+.score-shared {
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px dashed rgba(var(--glow), 0.4);
+  background: rgba(var(--glow), 0.06);
+}
+
+.score-shared__label {
+  margin: 0;
+  color: var(--signal);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.score-shared__stats {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.score-shared__note {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.score-shared__list {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.score-shared__list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.score-shared__list li.is-hit {
+  color: var(--up);
+}
+
+.score-shared__list li.is-miss {
+  color: var(--down);
+}
+
 .score-grid {
   margin-bottom: 0.75rem;
 }
@@ -957,7 +1061,7 @@ main {
   order: 1;
 }
 
-/* Unwrap on mobile so order can restore original stack (cal between chip & prob) */
+/* Unwrap on mobile so order stacks: chip → prob → confidence → cal-edge */
 .hero-head,
 .hero-signal,
 .hero-rail {
@@ -1385,7 +1489,7 @@ main {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
-  order: 5;
+  order: 7;
 }
 
 .cal-edge__title {
@@ -1568,7 +1672,7 @@ main {
 .prob-block {
   width: 100%;
   margin-top: 1.15rem;
-  order: 6;
+  order: 5;
 }
 
 .prob-label {
@@ -1617,7 +1721,7 @@ main {
 .confidence {
   position: relative;
   margin-top: 1rem;
-  order: 7;
+  order: 6;
   display: inline-block;
   max-width: 100%;
   padding: 0.15rem 0.2rem;
@@ -2294,7 +2398,7 @@ main {
   }
 
   .cal-edge {
-    margin-top: 0;
+    margin-top: 0.65rem;
   }
 
   .hero-quotes .quote-strip {

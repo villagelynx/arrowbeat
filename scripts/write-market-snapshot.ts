@@ -16,7 +16,7 @@ async function main() {
     const snapshot = await buildMarketSnapshot();
     writeFileSync(outPath, `${JSON.stringify(snapshot)}\n`);
     console.log(
-      `[market-snapshot] wrote ${outPath} (SPY last=${snapshot.spy.last}, bars=${snapshot.spy.bars.length})`,
+      `[market-snapshot] wrote ${outPath} (SPY last=${snapshot.spy.last}, bars=${snapshot.spy.bars.length}, dayBars=${snapshot.spy.dayBars?.length ?? 0})`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

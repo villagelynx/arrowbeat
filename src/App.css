@@ -724,6 +724,12 @@ main {
   height: auto;
 }
 
+.spy-chart__prev {
+  stroke: color-mix(in srgb, var(--ink) 35%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
 .spy-chart__grid {
   stroke: rgba(232, 238, 245, 0.08);
   stroke-width: 1;

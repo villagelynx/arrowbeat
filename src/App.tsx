@@ -71,7 +71,7 @@ export default function App() {
         setScorecard(syncScorecard(live, bars));
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e message : "Could not load market data.");
+        setError(e instanceof Error ? e.message : "Could not load market data.");
         const demo = buildDemoSignal();
         setSignal(demo);
         setSpyBars([]);
@@ -251,6 +251,16 @@ export default function App() {
             </>
           ) : null}
         </section>
+
+        {dayBars.length > 1 ? (
+          <section className="panel" aria-labelledby="spy-day-title">
+            <h2 id="spy-day-title">S&amp;P 500 today</h2>
+            <p className="panel-lede">
+              Free Yahoo 15-minute bars — typically about 15 minutes delayed.
+            </p>
+            <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
+          </section>
+        ) : null}
 
         {spyBars.length ? (
           <section className="panel" aria-labelledby="spy-chart-title">

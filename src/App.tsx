@@ -23,6 +23,7 @@ import {
   type DailySignal,
   type CalendarEdgeSlice,
 } from "./lib/signal";
+import { applySignalFavicon } from "./lib/favicon";
 import { emptyScorecard, syncScorecard, type ScorecardSummary } from "./lib/scorecard";
 import { yearFromIso } from "./lib/spy-ytd";
 import "./App.css";
@@ -137,6 +138,12 @@ export default function App() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
+
+  // Live bias only — loading/demo keep neutral or last-known so the tab never flashes wrong.
+  useEffect(() => {
+    if (!signal || signal.dataMode !== "live") return;
+    applySignalFavicon(signal.bias);
+  }, [signal]);
 
   async function lookupQuote(ticker: string) {
     const symbol = ticker.trim().toUpperCase();

@@ -409,17 +409,20 @@ export default function App() {
 
           <section className="hero" aria-labelledby="bias-title">
             <div className="hero-head">
-              <p className="hero-kicker">{signal.sessionLabel}</p>
-              <p
-                className={`market-clock${marketClock.isOpen ? " is-open" : " is-closed"}`}
-                aria-live="polite"
-              >
-                <span className="market-clock__time">{marketClock.timeEt}</span>
-                <span className="market-clock__sep" aria-hidden="true">
-                  ·
-                </span>
-                <span className="market-clock__status">{marketClock.status}</span>
-              </p>
+              <div className="hero-session">
+                <p className="hero-kicker">{signal.sessionLabel}</p>
+                <p
+                  className={`market-clock is-${marketClock.phase}`}
+                  aria-live="polite"
+                  title="US equity regular session (9:30–16:00 ET)"
+                >
+                  <span className="market-clock__time">{marketClock.timeEt}</span>
+                  <span className="market-clock__sep" aria-hidden="true">
+                    ·
+                  </span>
+                  <span className="market-clock__status">{marketClock.statusText}</span>
+                </p>
+              </div>
               <h1 id="bias-title" className="hero-title">
                 Today&apos;s market bias
               </h1>

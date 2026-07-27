@@ -956,24 +956,34 @@ main {
   display: contents;
 }
 
+.hero-session {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
 .hero-kicker {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
-  order: 1;
 }
 
 .market-clock {
-  margin: 0.35rem 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 0.72rem;
   letter-spacing: 0.02em;
   line-height: 1.35;
-  order: 1;
 }
 
 .market-clock.is-open .market-clock__status {
   color: #9ef0c2;
+}
+
+.market-clock.is-pre .market-clock__status {
+  color: #f0c24b;
 }
 
 .market-clock.is-closed .market-clock__status {
@@ -2197,6 +2207,7 @@ main {
     gap: 0.55rem;
   }
 
+  .hero-session,
   .hero-kicker,
   .market-clock,
   .hero-title,

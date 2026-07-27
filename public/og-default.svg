@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ArrowBeat">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050b12"/>
+      <stop offset="45%" stop-color="#0b1520"/>
+      <stop offset="100%" stop-color="#071018"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5dffa8"/>
+      <stop offset="55%" stop-color="#12d46b"/>
+      <stop offset="100%" stop-color="#0a8f48"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="28%" cy="20%" r="55%">
+      <stop offset="0%" stop-color="rgba(18,212,107,0.28)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <text x="64" y="86" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="54" font-weight="800" fill="#e8eef5">Arrow<tspan fill="#12d46b">Beat</tspan></text>
+  <text x="64" y="122" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="600" fill="#8fa3b8">Daily market probability</text>
+  <g transform="translate(160 200)">
+    <path fill="url(#arrow)" d="M120 28 L210 150 H168 V292 H72 V150 H30 Z"/>
+  </g>
+  <text x="520" y="280" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="22" font-weight="700" fill="#8fa3b8">Open the link for todays lean</text>
+  <text x="520" y="360" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="48" font-weight="800" fill="#e8eef5">Signal · Odds · Confidence</text>
+  <text x="64" y="590" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="16" font-weight="600" fill="rgba(143,163,184,0.85)">arrowbeat.com</text>
+  <text x="960" y="590" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="16" font-weight="600" fill="rgba(143,163,184,0.85)">Not financial advice</text>
+</svg>

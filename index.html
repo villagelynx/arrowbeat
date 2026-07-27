@@ -12,6 +12,30 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="ArrowBeat" />
+    <!--
+      Default OG card. Per-signal previews need crawler HTML that points
+      og:image at /api/og?bias=…&p=…&c=… (Netlify function). Until then,
+      shares still include a client-rendered PNG via Web Share / download,
+      and ?view=share reconstructs the in-app card.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ArrowBeat" />
+    <meta property="og:title" content="ArrowBeat · Daily Market Probability" />
+    <meta
+      property="og:description"
+      content="Daily S&P 500 market probability signal — arrow, lean, odds, confidence."
+    />
+    <meta property="og:url" content="https://arrowbeat.com/" />
+    <meta property="og:image" content="https://arrowbeat.com/og-default.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ArrowBeat · Daily Market Probability" />
+    <meta
+      name="twitter:description"
+      content="Daily S&P 500 market probability signal — arrow, lean, odds, confidence."
+    />
+    <meta name="twitter:image" content="https://arrowbeat.com/og-default.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Full latin Syne + Manrope (no text= subset). UA CSS includes unicode-range latin. -->

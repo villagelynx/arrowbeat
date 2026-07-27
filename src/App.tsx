@@ -31,7 +31,14 @@ import {
   type DisplayedTomorrowLean,
 } from "./lib/tomorrow-lean-publish";
 import { emptyScorecard, syncScorecard, buildScoreShareUrl, decodeShareSnapshot, type ScorecardSummary, type SharedScoreSnapshot } from "./lib/scorecard";
+import {
+  formatShareUpdated,
+  readSignalShareFromLocation,
+  shareSignalCard,
+  type SignalSharePayload,
+} from "./lib/signal-share";
 import { yearFromIso } from "./lib/spy-ytd";
+import { SharePreviewModal, ShareView } from "./components/ShareView";
 import "./App.css";
 
 /** Aligns with Yahoo free delayed quotes (~15 minutes). */
@@ -118,12 +125,23 @@ export default function App() {
   const [sharedScore, setSharedScore] = useState<SharedScoreSnapshot | null>(null);
   const [scoreFocus, setScoreFocus] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [signalShareStatus, setSignalShareStatus] = useState<string | null>(null);
+  const [sharedSignal, setSharedSignal] = useState<SignalSharePayload | null>(null);
+  const [sharePreviewUrl, setSharePreviewUrl] = useState<string | null>(null);
+  const [sharePreviewBlob, setSharePreviewBlob] = useState<Blob | null>(null);
+  const [sharePreviewPayload, setSharePreviewPayload] = useState<SignalSharePayload | null>(null);
   const scorePanelRef = useRef<HTMLElement | null>(null);
   const marketClock = useMarketClock();
   const tomorrowDisplay = useDisplayedTomorrowLean(signal?.tomorrow ?? null);
   const lastFetchAt = useRef(0);
 
   useEffect(() => {
+    const signalSnap = readSignalShareFromLocation();
+    if (signalSnap) {
+      setSharedSignal(signalSnap);
+      setView("home");
+      return;
+    }
     const { focusScore, snapshot } = readScoreShareFromLocation();
     if (snapshot) setSharedScore(snapshot);
     if (focusScore) {
@@ -151,6 +169,18 @@ export default function App() {
     const id = window.setTimeout(() => setShareStatus(null), 2200);
     return () => window.clearTimeout(id);
   }, [shareStatus]);
+
+  useEffect(() => {
+    if (!signalShareStatus) return;
+    const id = window.setTimeout(() => setSignalShareStatus(null), 2200);
+    return () => window.clearTimeout(id);
+  }, [signalShareStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+    };
+  }, [sharePreviewUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -276,6 +306,76 @@ export default function App() {
     setShareStatus(copied ? "Copied" : "Couldn’t copy link");
   }
 
+  function openSharePreview(payload: SignalSharePayload, blob: Blob) {
+    if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+    setSharePreviewPayload(payload);
+    setSharePreviewBlob(blob);
+    setSharePreviewUrl(URL.createObjectURL(blob));
+  }
+
+  function closeSharePreview() {
+    if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+    setSharePreviewUrl(null);
+    setSharePreviewBlob(null);
+    setSharePreviewPayload(null);
+  }
+
+  async function shareCurrentSignal(payload: SignalSharePayload) {
+    const { result, blob } = await shareSignalCard(payload);
+    if (result === "shared") {
+      setSignalShareStatus("Shared");
+      return;
+    }
+    if (result === "aborted") return;
+    if (result === "copied") {
+      setSignalShareStatus("Copied");
+      return;
+    }
+    if (result === "preview" && blob) {
+      openSharePreview(payload, blob);
+      setSignalShareStatus("Link copied");
+      return;
+    }
+    setSignalShareStatus("Couldn’t share");
+  }
+
+  function dismissSharedSignal() {
+    setSharedSignal(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("view") === "share") {
+        url.search = "";
+        window.history.replaceState({}, "", url.pathname);
+      }
+    }
+  }
+
+  if (sharedSignal) {
+    return (
+      <div className={`app ${sharedSignal.bias === "up" ? "theme-up" : "theme-down"}`}>
+        <div className="atmosphere" aria-hidden="true" />
+        <header className="topbar">
+          <div className="topbar__brand">
+            <button type="button" className="brand brand--btn" onClick={dismissSharedSignal}>
+              Arrow<span>Beat</span>
+            </button>
+            <p className="brand-tag">turns historical stats into a daily market probability</p>
+          </div>
+          <AppNav
+            view={view}
+            onNavigate={(next) => {
+              dismissSharedSignal();
+              setView(next);
+            }}
+          />
+        </header>
+        <main className="share-main">
+          <ShareView payload={sharedSignal} onClose={dismissSharedSignal} />
+        </main>
+      </div>
+    );
+  }
+
   if (!signal) {
     return (
       <div className={`app theme-up${view === "about" ? " app--about" : ""}`}>
@@ -339,6 +439,19 @@ export default function App() {
   const leadPct = up ? primary.probabilityHigher : primary.probabilityLower;
   const todayUp = signal.bias === "up";
   const todayLeadPct = todayUp ? signal.probabilityHigher : signal.probabilityLower;
+  const signalSharePayload: SignalSharePayload = {
+    bias: primary.bias,
+    probability: leadPct,
+    confidence: primary.confidence,
+    label: tomorrowAsPrimary
+      ? tomorrow?.skippedWeekend
+        ? "Next session"
+        : "Tomorrow"
+      : "Today",
+    updated: formatShareUpdated(
+      tomorrowAsPrimary && tomorrow ? tomorrow.asOfDate : signal.asOfDate,
+    ),
+  };
 
   return (
     <div className={`app ${up ? "theme-up" : "theme-down"}${view === "about" ? " app--about" : ""}`}>
@@ -590,10 +703,14 @@ export default function App() {
                 <button
                   type="button"
                   className="share-pill"
-                  onClick={() => void shareScorecard()}
-                  aria-label="Share score"
+                  onClick={() => void shareCurrentSignal(signalSharePayload)}
+                  aria-label="Share current signal"
                 >
-                  {shareStatus === "Copied" ? "Copied" : "Share"}
+                  {signalShareStatus === "Shared" ||
+                  signalShareStatus === "Copied" ||
+                  signalShareStatus === "Link copied"
+                    ? signalShareStatus
+                    : "Share"}
                 </button>
               </div>
 
@@ -1576,6 +1693,16 @@ export default function App() {
       <footer className="footer">
         <p>ArrowBeat · Free Yahoo Finance quotes · Before the opening bell</p>
       </footer>
+
+      {sharePreviewUrl && sharePreviewPayload ? (
+        <SharePreviewModal
+          imageUrl={sharePreviewUrl}
+          blob={sharePreviewBlob}
+          payload={sharePreviewPayload}
+          onClose={closeSharePreview}
+          onShared={(msg) => setSignalShareStatus(msg)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -17,6 +17,9 @@
 [functions."sports-bulletin"]
   timeout = 8
 
+[functions."og"]
+  timeout = 4
+
 # Market API before the SPA fallback
 [[redirects]]
   from = "/api/market/snapshot"
@@ -33,6 +36,12 @@
 [[redirects]]
   from = "/api/sports/bulletin"
   to = "/.netlify/functions/sports-bulletin"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/og"
+  to = "/.netlify/functions/og"
   status = 200
   force = true
 

@@ -8,18 +8,6 @@ function json(res: import("http").ServerResponse, status: number, body: unknown)
   res.end(JSON.stringify(body));
 }
 
-function pathOnly(url: string): string {
-  return url.split("?")[0] ?? url;
-}
-
-function queryParam(url: string, key: string): string {
-  try {
-    return new URL(url, "http://localhost").searchParams.get(key) ?? "";
-  } catch {
-    return "";
-  }
-}
-
 /** Dev/preview API — same payload as the Netlify functions. */
 export function marketApiPlugin(): Plugin {
   return {
@@ -28,13 +16,21 @@ export function marketApiPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith("/api/market")) return next();
         try {
-          const path = pathOnly(req.url);
+          const path = req.url.split("?")[0];
           if (path === "/api/market/snapshot") {
             json(res, 200, await buildMarketSnapshot());
             return;
           }
           if (path === "/api/market/quote") {
-            json(res, 200, await buildStockQuote(queryParam(req.url, "symbol")));
+            const symbol = new URL(req.url, "http://localhost").searchParams.get("symbol") ?? "";
+            try {
+              json(res, 200, await buildStockQuote(symbol));
+            } catch (error) {
+              json(res, 404, {
+                error: error instanceof Error ? error.message : "Quote fetch failed",
+                symbol,
+              });
+            }
             return;
           }
           json(res, 404, { error: "Not found" });
@@ -49,13 +45,21 @@ export function marketApiPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith("/api/market")) return next();
         try {
-          const path = pathOnly(req.url);
+          const path = req.url.split("?")[0];
           if (path === "/api/market/snapshot") {
             json(res, 200, await buildMarketSnapshot());
             return;
           }
           if (path === "/api/market/quote") {
-            json(res, 200, await buildStockQuote(queryParam(req.url, "symbol")));
+            const symbol = new URL(req.url, "http://localhost").searchParams.get("symbol") ?? "";
+            try {
+              json(res, 200, await buildStockQuote(symbol));
+            } catch (error) {
+              json(res, 404, {
+                error: error instanceof Error ? error.message : "Quote fetch failed",
+                symbol,
+              });
+            }
             return;
           }
           json(res, 404, { error: "Not found" });

@@ -95,3 +95,36 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     return await fetchJson("/market-snapshot.json", 8000);
   }
 }
+
+export type StockQuote = {
+  source: string;
+  fetchedAt: string;
+  delayNote: string;
+  symbol: string;
+  last: number | null;
+  previousClose: number | null;
+  change: number | null;
+  changePct: number | null;
+  error?: string;
+};
+
+/** On-demand delayed Yahoo quote via Netlify / Vite proxy. */
+export async function fetchStockQuote(symbol: string): Promise<StockQuote> {
+  const ticker = symbol.trim().toUpperCase();
+  if (!ticker) throw new Error("Enter a ticker symbol.");
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 6000);
+  try {
+    const res = await fetch(`/api/market/quote?symbol=${encodeURIComponent(ticker)}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const data = (await res.json()) as StockQuote & { error?: string };
+    if (!res.ok || data.last == null) {
+      throw new Error(data.error || `No quote for ${ticker}.`);
+    }
+    return data;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}

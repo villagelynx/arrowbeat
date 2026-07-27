@@ -45,11 +45,18 @@ function nyParts(date: Date): NyParts {
     hourCycle: "h23",
   }).formatToParts(date);
 
+  let hour = partNum(parts, "hour");
+  // Some engines emit 24:xx for midnight or 1–12 + dayPeriod despite hour12:false.
+  if (hour === 24) hour = 0;
+  const dayPeriod = parts.find((p) => p.type === "dayPeriod")?.value?.toLowerCase();
+  if (dayPeriod === "pm" && hour < 12) hour += 12;
+  if (dayPeriod === "am" && hour === 12) hour = 0;
+
   return {
     year: partNum(parts, "year"),
     month: partNum(parts, "month"),
     day: partNum(parts, "day"),
-    hour: partNum(parts, "hour"),
+    hour,
     minute: partNum(parts, "minute"),
     second: partNum(parts, "second"),
   };

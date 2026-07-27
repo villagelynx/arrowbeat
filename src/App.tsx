@@ -126,143 +126,169 @@ export default function App() {
       <main>
         {error ? <p className="banner-error">{error}</p> : null}
 
-        <section className="hero" aria-labelledby="bias-title">
-          <div className="hero-head">
-            <p className="hero-kicker">{signal.sessionLabel}</p>
-            <h1 id="bias-title" className="hero-title">
-              Today&apos;s market bias
-            </h1>
-          </div>
-
-          <div className="hero-signal">
-            <div className="arrow-stage">
-              <MarketArrow bias={signal.bias} />
+        <div className="desk-predict">
+          <section className="hero" aria-labelledby="bias-title">
+            <div className="hero-head">
+              <p className="hero-kicker">{signal.sessionLabel}</p>
+              <h1 id="bias-title" className="hero-title">
+                Today&apos;s market bias
+              </h1>
             </div>
 
-            <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
-
-            <div className="prob-block">
-              <p className="prob-label">
-                Probability of {up ? "higher" : "lower"} close
-              </p>
-              <p className="prob-value">
-                {leadPct.toFixed(1)}
-                <span>%</span>
-              </p>
-              <div className="prob-meter" role="presentation">
-                <div
-                  className="prob-meter__fill"
-                  style={{ width: `${Math.min(92, Math.max(8, leadPct))}%` }}
-                />
+            <div className="hero-signal">
+              <div className="arrow-stage">
+                <MarketArrow bias={signal.bias} />
               </div>
-              <p className="prob-split">
-                Higher {signal.probabilityHigher.toFixed(1)}% · Lower{" "}
-                {signal.probabilityLower.toFixed(1)}%
-              </p>
-            </div>
 
-            <div className="confidence">
-              <p className="confidence-label">Confidence</p>
-              <p className="confidence-stars" aria-label={`${signal.confidence} of 5`}>
-                {stars(signal.confidence)}
-              </p>
-              <p className="confidence-text">{signal.confidenceLabel}</p>
-            </div>
-          </div>
+              <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
 
-          <aside className="hero-rail">
-            {signal.calendarEdge ? (
-              <div className="cal-edge" aria-label="Today's calendar edge versus coin flip">
-                <p className="cal-edge__title">
-                  Today&apos;s calendar edge{" "}
-                  <span
-                    className={
-                      (signal.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
-                    }
-                  >
-                    {signal.calendarEdge.blendPts != null
-                      ? `${edgeLabel(signal.calendarEdge.blendPts)} pts vs 50%`
-                      : ""}
-                  </span>
+              <div className="prob-block">
+                <p className="prob-label">
+                  Probability of {up ? "higher" : "lower"} close
                 </p>
-                <ul className="cal-edge__list">
-                  {signal.calendarEdge.weekday ? (
-                    <CalendarEdgeChip slice={signal.calendarEdge.weekday} kind="Weekday" />
-                  ) : null}
-                  {signal.calendarEdge.month ? (
-                    <CalendarEdgeChip slice={signal.calendarEdge.month} kind="Month" />
-                  ) : null}
-                  {signal.calendarEdge.dayOfMonth ? (
-                    <CalendarEdgeChip slice={signal.calendarEdge.dayOfMonth} kind="Day" />
-                  ) : null}
-                </ul>
+                <p className="prob-value">
+                  {leadPct.toFixed(1)}
+                  <span>%</span>
+                </p>
+                <div className="prob-meter" role="presentation">
+                  <div
+                    className="prob-meter__fill"
+                    style={{ width: `${Math.min(92, Math.max(8, leadPct))}%` }}
+                  />
+                </div>
+                <p className="prob-split">
+                  Higher {signal.probabilityHigher.toFixed(1)}% · Lower{" "}
+                  {signal.probabilityLower.toFixed(1)}%
+                </p>
               </div>
-            ) : null}
 
-            {signal.quotes ? (
-              <div className="hero-quotes">
-                <ul className="quote-strip" aria-label="Latest quotes">
-                  <li>
-                    <span>SPY</span>
-                    <strong>{signal.quotes.spy?.toFixed(2) ?? "—"}</strong>
-                  </li>
-                  <li>
-                    <span>ES</span>
-                    <strong>{signal.quotes.es?.toFixed(2) ?? "—"}</strong>
-                  </li>
-                  <li>
-                    <span>VIX</span>
-                    <strong>{signal.quotes.vix?.toFixed(2) ?? "—"}</strong>
-                  </li>
-                  <li>
-                    <span>10Y</span>
-                    <strong>
-                      {signal.quotes.tnx != null ? `${signal.quotes.tnx.toFixed(2)}%` : "—"}
-                    </strong>
-                  </li>
-                </ul>
-                <ul
-                  className="quote-strip quote-strip--inflation"
-                  aria-label="Inflation and commodities"
-                >
-                  <li>
-                    <span>B/E 10Y</span>
-                    <strong>
-                      {signal.quotes.breakeven10y != null
-                        ? `${signal.quotes.breakeven10y.toFixed(2)}%`
-                        : "—"}
-                    </strong>
-                  </li>
-                  <li>
-                    <span>Real 10Y</span>
-                    <strong>
-                      {signal.quotes.realYield10y != null
-                        ? `${signal.quotes.realYield10y.toFixed(2)}%`
-                        : "—"}
-                    </strong>
-                  </li>
-                  <li>
-                    <span>Oil</span>
-                    <strong>
-                      {signal.quotes.oil != null ? `$${signal.quotes.oil.toFixed(0)}` : "—"}
-                    </strong>
-                  </li>
-                  <li>
-                    <span>Gold</span>
-                    <strong>
-                      {signal.quotes.gold != null
-                        ? `$${Math.round(signal.quotes.gold).toLocaleString()}`
-                        : "—"}
-                    </strong>
-                  </li>
-                </ul>
+              <div className="confidence">
+                <p className="confidence-label">Confidence</p>
+                <p className="confidence-stars" aria-label={`${signal.confidence} of 5`}>
+                  {stars(signal.confidence)}
+                </p>
+                <p className="confidence-text">{signal.confidenceLabel}</p>
               </div>
-            ) : null}
-          </aside>
-        </section>
+            </div>
+
+            <aside className="hero-rail">
+              {signal.calendarEdge ? (
+                <div className="cal-edge" aria-label="Today's calendar edge versus coin flip">
+                  <p className="cal-edge__title">
+                    Today&apos;s calendar edge{" "}
+                    <span
+                      className={
+                        (signal.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
+                      }
+                    >
+                      {signal.calendarEdge.blendPts != null
+                        ? `${edgeLabel(signal.calendarEdge.blendPts)} pts vs 50%`
+                        : ""}
+                    </span>
+                  </p>
+                  <ul className="cal-edge__list">
+                    {signal.calendarEdge.weekday ? (
+                      <CalendarEdgeChip slice={signal.calendarEdge.weekday} kind="Weekday" />
+                    ) : null}
+                    {signal.calendarEdge.month ? (
+                      <CalendarEdgeChip slice={signal.calendarEdge.month} kind="Month" />
+                    ) : null}
+                    {signal.calendarEdge.dayOfMonth ? (
+                      <CalendarEdgeChip slice={signal.calendarEdge.dayOfMonth} kind="Day" />
+                    ) : null}
+                  </ul>
+                </div>
+              ) : null}
+
+              {signal.quotes ? (
+                <div className="hero-quotes">
+                  <ul className="quote-strip" aria-label="Latest quotes">
+                    <li>
+                      <span>SPY</span>
+                      <strong>{signal.quotes.spy?.toFixed(2) ?? "—"}</strong>
+                    </li>
+                    <li>
+                      <span>ES</span>
+                      <strong>{signal.quotes.es?.toFixed(2) ?? "—"}</strong>
+                    </li>
+                    <li>
+                      <span>VIX</span>
+                      <strong>{signal.quotes.vix?.toFixed(2) ?? "—"}</strong>
+                    </li>
+                    <li>
+                      <span>10Y</span>
+                      <strong>
+                        {signal.quotes.tnx != null ? `${signal.quotes.tnx.toFixed(2)}%` : "—"}
+                      </strong>
+                    </li>
+                  </ul>
+                  <ul
+                    className="quote-strip quote-strip--inflation"
+                    aria-label="Inflation and commodities"
+                  >
+                    <li>
+                      <span>B/E 10Y</span>
+                      <strong>
+                        {signal.quotes.breakeven10y != null
+                          ? `${signal.quotes.breakeven10y.toFixed(2)}%`
+                          : "—"}
+                      </strong>
+                    </li>
+                    <li>
+                      <span>Real 10Y</span>
+                      <strong>
+                        {signal.quotes.realYield10y != null
+                          ? `${signal.quotes.realYield10y.toFixed(2)}%`
+                          : "—"}
+                      </strong>
+                    </li>
+                    <li>
+                      <span>Oil</span>
+                      <strong>
+                        {signal.quotes.oil != null ? `$${signal.quotes.oil.toFixed(0)}` : "—"}
+                      </strong>
+                    </li>
+                    <li>
+                      <span>Gold</span>
+                      <strong>
+                        {signal.quotes.gold != null
+                          ? `$${Math.round(signal.quotes.gold).toLocaleString()}`
+                          : "—"}
+                      </strong>
+                    </li>
+                  </ul>
+                </div>
+              ) : null}
+            </aside>
+          </section>
+
+          <section className="panel panel--factors" aria-labelledby="factors-title">
+            <h2 id="factors-title">Why this signal</h2>
+            <p className="panel-lede">
+              Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they
+              move) oil &amp; gold — still a probability lean, not a crystal ball.
+            </p>
+            <ul className="factor-list">
+              {signal.factors.map((f) => {
+                const good = f.supports === signal.bias;
+                return (
+                  <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
+                    <span className="factor-mark" aria-hidden="true">
+                      {good ? "✓" : "✗"}
+                    </span>
+                    <div>
+                      <p className="factor-label">{f.label}</p>
+                      <p className="factor-detail">{f.detail}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
 
         {dayBars.length > 1 || spyBars.length ? (
-          <div className="desk-grid desk-grid--charts">
+          <div className="desk-grid desk-grid--charts desk-row desk-row--charts">
             {dayBars.length > 1 ? (
               <section className="panel" aria-labelledby="spy-day-title">
                 <h2 id="spy-day-title">S&amp;P 500 today</h2>
@@ -283,7 +309,7 @@ export default function App() {
           </div>
         ) : null}
 
-        <div className="desk-grid desk-grid--pair">
+        <div className="desk-grid desk-grid--pair desk-row desk-row--sessions">
         {signal.lastSessions.length ? (
           <section className="panel" aria-labelledby="recent-title">
             <h2 id="recent-title">Last 10 trading days</h2>
@@ -410,7 +436,7 @@ export default function App() {
         </div>
 
         {signal.weekdayOdds.length || signal.monthOdds.length ? (
-          <div className="desk-grid desk-grid--pair">
+          <div className="desk-grid desk-grid--pair desk-row desk-row--weekday">
         {signal.weekdayOdds.length ? (
           <section className="panel" aria-labelledby="weekday-title">
             <h2 id="weekday-title">Weekday odds ranked</h2>
@@ -560,7 +586,7 @@ export default function App() {
         ) : null}
 
         {signal.dayOfMonthOdds.length || signal.cpiWindow?.odds.length ? (
-          <div className="desk-grid desk-grid--pair">
+          <div className="desk-grid desk-grid--pair desk-row desk-row--cashflow">
         {signal.dayOfMonthOdds.length ? (
           <section className="panel" aria-labelledby="dom-title">
             <h2 id="dom-title">Day-of-month odds ranked</h2>
@@ -745,67 +771,43 @@ export default function App() {
           </div>
         ) : null}
 
-        <div className="desk-grid desk-grid--trio">
-        <section className="panel" aria-labelledby="factors-title">
-          <h2 id="factors-title">Why this signal</h2>
-          <p className="panel-lede">
-            Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they
-            move) oil &amp; gold — still a probability lean, not a crystal ball.
-          </p>
-          <ul className="factor-list">
-            {signal.factors.map((f) => {
-              const good = f.supports === signal.bias;
-              return (
-                <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
-                  <span className="factor-mark" aria-hidden="true">
-                    {good ? "✓" : "✗"}
-                  </span>
-                  <div>
-                    <p className="factor-label">{f.label}</p>
-                    <p className="factor-detail">{f.detail}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        <div className="desk-grid desk-grid--pair desk-row desk-row--stats">
+          <section className="panel" aria-labelledby="history-title">
+            <h2 id="history-title">Historical comparison</h2>
+            <p className="panel-lede">{signal.historical.sampleLabel}</p>
+            <div className="stat-grid">
+              <div className="stat-card">
+                <p className="stat-kicker">Finished higher</p>
+                <p className="stat-num">{signal.historical.winRate.toFixed(1)}%</p>
+                <p className="stat-note">n ≈ {signal.historical.n.toLocaleString()}</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-kicker">Avg. next-day move</p>
+                <p className="stat-num">
+                  {signal.historical.avgMovePct > 0 ? "+" : ""}
+                  {signal.historical.avgMovePct.toFixed(2)}%
+                </p>
+                <p className="stat-note">SPY sample</p>
+              </div>
+            </div>
+          </section>
 
-        <section className="panel" aria-labelledby="history-title">
-          <h2 id="history-title">Historical comparison</h2>
-          <p className="panel-lede">{signal.historical.sampleLabel}</p>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <p className="stat-kicker">Finished higher</p>
-              <p className="stat-num">{signal.historical.winRate.toFixed(1)}%</p>
-              <p className="stat-note">n ≈ {signal.historical.n.toLocaleString()}</p>
+          <section className="panel panel--stat" aria-labelledby="decade-title">
+            <h2 id="decade-title">Market stat of the day</h2>
+            <p className="market-stat">{signal.marketStat}</p>
+            <div className="decade">
+              <div>
+                <p className="decade-label">Up days (~10y SPY)</p>
+                <p className="decade-value up">{signal.decadeStats.upPct}%</p>
+                <p className="decade-sub">{signal.decadeStats.upDays} days</p>
+              </div>
+              <div>
+                <p className="decade-label">Down days (~10y SPY)</p>
+                <p className="decade-value down">{signal.decadeStats.downPct}%</p>
+                <p className="decade-sub">{signal.decadeStats.downDays} days</p>
+              </div>
             </div>
-            <div className="stat-card">
-              <p className="stat-kicker">Avg. next-day move</p>
-              <p className="stat-num">
-                {signal.historical.avgMovePct > 0 ? "+" : ""}
-                {signal.historical.avgMovePct.toFixed(2)}%
-              </p>
-              <p className="stat-note">SPY sample</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="panel panel--stat" aria-labelledby="decade-title">
-          <h2 id="decade-title">Market stat of the day</h2>
-          <p className="market-stat">{signal.marketStat}</p>
-          <div className="decade">
-            <div>
-              <p className="decade-label">Up days (~10y SPY)</p>
-              <p className="decade-value up">{signal.decadeStats.upPct}%</p>
-              <p className="decade-sub">{signal.decadeStats.upDays} days</p>
-            </div>
-            <div>
-              <p className="decade-label">Down days (~10y SPY)</p>
-              <p className="decade-value down">{signal.decadeStats.downPct}%</p>
-              <p className="decade-sub">{signal.decadeStats.downDays} days</p>
-            </div>
-          </div>
-        </section>
+          </section>
         </div>
 
         <p className="disclaimer">{signal.disclaimer}</p>

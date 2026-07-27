@@ -104,6 +104,7 @@
 
 .hero-quotes {
   width: 100%;
+  order: 8;
 }
 
 .quote-strip li {
@@ -544,10 +545,22 @@ main {
   animation: rise 0.7s ease-out both;
 }
 
+/* Unwrap on mobile so order can restore original stack (cal between chip & prob) */
+.hero-head,
+.hero-signal,
+.hero-rail {
+  display: contents;
+}
+
+.desk-predict {
+  display: contents;
+}
+
 .hero-kicker {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
+  order: 1;
 }
 
 .hero-title {
@@ -556,12 +569,14 @@ main {
   font-size: clamp(1.35rem, 5.5vw, 1.7rem);
   font-weight: 700;
   letter-spacing: -0.03em;
+  order: 2;
 }
 
 .arrow-stage {
   width: min(78vw, 17rem);
   margin: 0.85rem 0 0.35rem;
   animation: pulse-glow 3.2s ease-in-out infinite;
+  order: 3;
 }
 
 .market-arrow {
@@ -583,6 +598,7 @@ main {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  order: 4;
 }
 
 .cal-edge {
@@ -593,6 +609,7 @@ main {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
   text-align: left;
+  order: 5;
 }
 
 .cal-edge__title {

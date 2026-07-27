@@ -1,22 +1,42 @@
-export function AboutPage() {
+type AboutPageProps = {
+  onGoDashboard?: () => void;
+};
+
+export function AboutPage({ onGoDashboard }: AboutPageProps) {
   return (
     <article className="about" aria-labelledby="about-title">
       <header className="about__hero">
         <p className="about__kicker">ArrowBeat</p>
         <h1 id="about-title" className="about__title">
-          Daily market probability — not a crystal ball
+          Wouldn&apos;t it be nice to know which way the market might lean — day to day?
         </h1>
         <p className="about__lede">
-          ArrowBeat turns free public market data into a clear lean: how likely today&apos;s
-          session is to close higher or lower for the S&amp;P 500 (via SPY), with supporting
-          context for Mag7 names and commodities.
+          ArrowBeat turns historical stats into a daily probability:{" "}
+          <span className="about__lean is-up">green</span> for a higher-close lean,{" "}
+          <span className="about__lean is-down">red</span> for lower, odds on screen. Mag7.
+          Commodities. A scorecard on the record.
         </p>
+        <p className="about__lede">
+          It also surfaces timing influences people feel in real life — paydays versus rent due —
+          and how those windows have historically tracked market ups and downs.
+        </p>
+        <p className="about__lede">
+          Free Yahoo data, roughly fifteen minutes delayed. Not advice. Just a clearer lean, plus
+          the calendar story behind the swings.
+        </p>
+        <p className="about__tagline">Feel the beat.</p>
+        {onGoDashboard ? (
+          <button type="button" className="about__cta" onClick={onGoDashboard}>
+            Try ArrowBeat today
+          </button>
+        ) : null}
       </header>
 
-      <section className="panel about__panel" aria-labelledby="about-what">
-        <h2 id="about-what">What it is</h2>
+      <section className="panel about__panel" aria-labelledby="about-how">
+        <h2 id="about-how">How it works</h2>
         <p className="panel-lede">
-          A probability lean for the trading day — big arrow, odds, and the factors behind them.
+          Under the hood: a probability lean for the trading day — big arrow, odds, and the factors
+          behind them.
         </p>
         <ul className="about__list">
           <li>
@@ -26,6 +46,10 @@ export function AboutPage() {
           <li>
             <strong>Why this signal</strong> — ES futures, VIX, breadth, yields, seasonality,
             calendar edges, and more when they fire.
+          </li>
+          <li>
+            <strong>Cashflow calendar</strong> — payday vs rent-due windows and other real-life
+            timing slices, scored against historical SPY ups and downs.
           </li>
           <li>
             <strong>Magnificent 7</strong> — compact per-name leans ranked by P(higher close),

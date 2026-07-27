@@ -177,7 +177,7 @@ export default function App() {
         </header>
         {view === "about" ? (
           <main>
-            <AboutPage />
+            <AboutPage onGoDashboard={() => setView("home")} />
           </main>
         ) : null}
       </div>
@@ -215,7 +215,7 @@ export default function App() {
 
       {view === "about" ? (
         <main>
-          <AboutPage />
+          <AboutPage onGoDashboard={() => setView("home")} />
         </main>
       ) : (
       <main>

@@ -127,132 +127,138 @@ export default function App() {
         {error ? <p className="banner-error">{error}</p> : null}
 
         <section className="hero" aria-labelledby="bias-title">
-          <p className="hero-kicker">{signal.sessionLabel}</p>
-          <h1 id="bias-title" className="hero-title">
-            Today&apos;s market bias
-          </h1>
-
-          <div className="arrow-stage">
-            <MarketArrow bias={signal.bias} />
+          <div className="hero-head">
+            <p className="hero-kicker">{signal.sessionLabel}</p>
+            <h1 id="bias-title" className="hero-title">
+              Today&apos;s market bias
+            </h1>
           </div>
 
-          <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
+          <div className="hero-signal">
+            <div className="arrow-stage">
+              <MarketArrow bias={signal.bias} />
+            </div>
 
-          {signal.calendarEdge ? (
-            <div className="cal-edge" aria-label="Today's calendar edge versus coin flip">
-              <p className="cal-edge__title">
-                Today&apos;s calendar edge{" "}
-                <span
-                  className={
-                    (signal.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
-                  }
-                >
-                  {signal.calendarEdge.blendPts != null
-                    ? `${edgeLabel(signal.calendarEdge.blendPts)} pts vs 50%`
-                    : ""}
-                </span>
+            <p className="bias-chip">{up ? "Higher-close lean" : "Lower-close lean"}</p>
+
+            <div className="prob-block">
+              <p className="prob-label">
+                Probability of {up ? "higher" : "lower"} close
               </p>
-              <ul className="cal-edge__list">
-                {signal.calendarEdge.weekday ? (
-                  <CalendarEdgeChip slice={signal.calendarEdge.weekday} kind="Weekday" />
-                ) : null}
-                {signal.calendarEdge.month ? (
-                  <CalendarEdgeChip slice={signal.calendarEdge.month} kind="Month" />
-                ) : null}
-                {signal.calendarEdge.dayOfMonth ? (
-                  <CalendarEdgeChip slice={signal.calendarEdge.dayOfMonth} kind="Day" />
-                ) : null}
-              </ul>
+              <p className="prob-value">
+                {leadPct.toFixed(1)}
+                <span>%</span>
+              </p>
+              <div className="prob-meter" role="presentation">
+                <div
+                  className="prob-meter__fill"
+                  style={{ width: `${Math.min(92, Math.max(8, leadPct))}%` }}
+                />
+              </div>
+              <p className="prob-split">
+                Higher {signal.probabilityHigher.toFixed(1)}% · Lower{" "}
+                {signal.probabilityLower.toFixed(1)}%
+              </p>
             </div>
-          ) : null}
 
-          <div className="prob-block">
-            <p className="prob-label">
-              Probability of {up ? "higher" : "lower"} close
-            </p>
-            <p className="prob-value">
-              {leadPct.toFixed(1)}
-              <span>%</span>
-            </p>
-            <div className="prob-meter" role="presentation">
-              <div
-                className="prob-meter__fill"
-                style={{ width: `${Math.min(92, Math.max(8, leadPct))}%` }}
-              />
+            <div className="confidence">
+              <p className="confidence-label">Confidence</p>
+              <p className="confidence-stars" aria-label={`${signal.confidence} of 5`}>
+                {stars(signal.confidence)}
+              </p>
+              <p className="confidence-text">{signal.confidenceLabel}</p>
             </div>
-            <p className="prob-split">
-              Higher {signal.probabilityHigher.toFixed(1)}% · Lower{" "}
-              {signal.probabilityLower.toFixed(1)}%
-            </p>
           </div>
 
-          <div className="confidence">
-            <p className="confidence-label">Confidence</p>
-            <p className="confidence-stars" aria-label={`${signal.confidence} of 5`}>
-              {stars(signal.confidence)}
-            </p>
-            <p className="confidence-text">{signal.confidenceLabel}</p>
-          </div>
+          <aside className="hero-rail">
+            {signal.calendarEdge ? (
+              <div className="cal-edge" aria-label="Today's calendar edge versus coin flip">
+                <p className="cal-edge__title">
+                  Today&apos;s calendar edge{" "}
+                  <span
+                    className={
+                      (signal.calendarEdge.blendPts ?? 0) >= 0 ? "is-up" : "is-down"
+                    }
+                  >
+                    {signal.calendarEdge.blendPts != null
+                      ? `${edgeLabel(signal.calendarEdge.blendPts)} pts vs 50%`
+                      : ""}
+                  </span>
+                </p>
+                <ul className="cal-edge__list">
+                  {signal.calendarEdge.weekday ? (
+                    <CalendarEdgeChip slice={signal.calendarEdge.weekday} kind="Weekday" />
+                  ) : null}
+                  {signal.calendarEdge.month ? (
+                    <CalendarEdgeChip slice={signal.calendarEdge.month} kind="Month" />
+                  ) : null}
+                  {signal.calendarEdge.dayOfMonth ? (
+                    <CalendarEdgeChip slice={signal.calendarEdge.dayOfMonth} kind="Day" />
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
 
-          {signal.quotes ? (
-            <div className="hero-quotes">
-              <ul className="quote-strip" aria-label="Latest quotes">
-                <li>
-                  <span>SPY</span>
-                  <strong>{signal.quotes.spy?.toFixed(2) ?? "—"}</strong>
-                </li>
-                <li>
-                  <span>ES</span>
-                  <strong>{signal.quotes.es?.toFixed(2) ?? "—"}</strong>
-                </li>
-                <li>
-                  <span>VIX</span>
-                  <strong>{signal.quotes.vix?.toFixed(2) ?? "—"}</strong>
-                </li>
-                <li>
-                  <span>10Y</span>
-                  <strong>
-                    {signal.quotes.tnx != null ? `${signal.quotes.tnx.toFixed(2)}%` : "—"}
-                  </strong>
-                </li>
-              </ul>
-              <ul
-                className="quote-strip quote-strip--inflation"
-                aria-label="Inflation and commodities"
-              >
-                <li>
-                  <span>B/E 10Y</span>
-                  <strong>
-                    {signal.quotes.breakeven10y != null
-                      ? `${signal.quotes.breakeven10y.toFixed(2)}%`
-                      : "—"}
-                  </strong>
-                </li>
-                <li>
-                  <span>Real 10Y</span>
-                  <strong>
-                    {signal.quotes.realYield10y != null
-                      ? `${signal.quotes.realYield10y.toFixed(2)}%`
-                      : "—"}
-                  </strong>
-                </li>
-                <li>
-                  <span>Oil</span>
-                  <strong>
-                    {signal.quotes.oil != null ? `$${signal.quotes.oil.toFixed(0)}` : "—"}
-                  </strong>
-                </li>
-                <li>
-                  <span>Gold</span>
-                  <strong>
-                    {signal.quotes.gold != null
-                      ? `$${Math.round(signal.quotes.gold).toLocaleString()}`
-                      : "—"}
-                  </strong>
-                </li>
-              </ul>
-            </div>
-          ) : null}
+            {signal.quotes ? (
+              <div className="hero-quotes">
+                <ul className="quote-strip" aria-label="Latest quotes">
+                  <li>
+                    <span>SPY</span>
+                    <strong>{signal.quotes.spy?.toFixed(2) ?? "—"}</strong>
+                  </li>
+                  <li>
+                    <span>ES</span>
+                    <strong>{signal.quotes.es?.toFixed(2) ?? "—"}</strong>
+                  </li>
+                  <li>
+                    <span>VIX</span>
+                    <strong>{signal.quotes.vix?.toFixed(2) ?? "—"}</strong>
+                  </li>
+                  <li>
+                    <span>10Y</span>
+                    <strong>
+                      {signal.quotes.tnx != null ? `${signal.quotes.tnx.toFixed(2)}%` : "—"}
+                    </strong>
+                  </li>
+                </ul>
+                <ul
+                  className="quote-strip quote-strip--inflation"
+                  aria-label="Inflation and commodities"
+                >
+                  <li>
+                    <span>B/E 10Y</span>
+                    <strong>
+                      {signal.quotes.breakeven10y != null
+                        ? `${signal.quotes.breakeven10y.toFixed(2)}%`
+                        : "—"}
+                    </strong>
+                  </li>
+                  <li>
+                    <span>Real 10Y</span>
+                    <strong>
+                      {signal.quotes.realYield10y != null
+                        ? `${signal.quotes.realYield10y.toFixed(2)}%`
+                        : "—"}
+                    </strong>
+                  </li>
+                  <li>
+                    <span>Oil</span>
+                    <strong>
+                      {signal.quotes.oil != null ? `$${signal.quotes.oil.toFixed(0)}` : "—"}
+                    </strong>
+                  </li>
+                  <li>
+                    <span>Gold</span>
+                    <strong>
+                      {signal.quotes.gold != null
+                        ? `$${Math.round(signal.quotes.gold).toLocaleString()}`
+                        : "—"}
+                    </strong>
+                  </li>
+                </ul>
+              </div>
+            ) : null}
+          </aside>
         </section>
 
         {dayBars.length > 1 || spyBars.length ? (

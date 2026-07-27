@@ -28,6 +28,17 @@ export type Mag7Signal = {
   available: boolean;
 };
 
+export type AltAssetSignal = {
+  id: string;
+  symbol: string;
+  name: string;
+  bias: Bias;
+  probabilityHigher: number;
+  last: number | null;
+  changePct: number | null;
+  available: boolean;
+};
+
 export type Factor = {
   id: string;
   label: string;
@@ -169,6 +180,8 @@ export type DailySignal = {
   };
   /** Magnificent 7 per-name ArrowBeat leans (always 7; soft-fail → available:false). */
   mag7: Mag7Signal[];
+  /** Oil / gold / BTC / silver compact leans. */
+  alts: AltAssetSignal[];
 };
 
 function nyDateIso(d = new Date()): string {
@@ -875,6 +888,7 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
       gold: snapshot.commodities?.gold.last ?? null,
     },
     mag7: buildMag7Signals(snapshot, dateIso),
+    alts: buildAltAssetSignals(snapshot),
   };
 }
 
@@ -924,6 +938,7 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
       "Demo mode — not live quotes. ArrowBeat is educational only, not investment advice.",
     dataMode: "demo",
     mag7: [],
+    alts: [],
   };
 }
 
@@ -1075,6 +1090,120 @@ export function buildMag7Signals(
     // Rank by P(higher close); unavailable names sink to the end.
     if (a.available !== b.available) return a.available ? -1 : 1;
     return b.probabilityHigher - a.probabilityHigher || a.symbol.localeCompare(b.symbol);
+  });
+}
+
+const ALT_ASSET_META: {
+  id: string;
+  symbol: string;
+  name: string;
+  key: "oil" | "gold" | "btc" | "silver";
+}[] = [
+  { id: "oil", symbol: "CL=F", name: "Oil", key: "oil" },
+  { id: "gold", symbol: "GC=F", name: "Gold", key: "gold" },
+  { id: "btc", symbol: "BTC-USD", name: "Bitcoin", key: "btc" },
+  { id: "silver", symbol: "SI=F", name: "Silver", key: "silver" },
+];
+
+/**
+ * Compact momentum lean for oil / gold / BTC / silver.
+ * Lighter than Mag7 — day change + short momentum + mild ES tone.
+ */
+export function buildAltAssetSignals(snapshot: MarketSnapshot): AltAssetSignal[] {
+  const esPrev =
+    snapshot.futures.previousClose ??
+    (snapshot.futures.bars.length > 1
+      ? snapshot.futures.bars[snapshot.futures.bars.length - 2].close
+      : null);
+  const futuresChg = pctChange(snapshot.futures.last, esPrev);
+  const futuresPositive = (futuresChg ?? 0) > 0;
+
+  return ALT_ASSET_META.map((meta) => {
+    const series = snapshot.commodities?.[meta.key];
+    let changePct: number | null = null;
+    if (series) {
+      const raw = pctChange(series.last, series.previousClose ?? null);
+      changePct = raw != null ? Math.round(raw * 10000) / 100 : null;
+      if (
+        (changePct == null || Math.abs(changePct) > 25) &&
+        series.bars.length >= 2
+      ) {
+        const tip = series.bars[series.bars.length - 1].close;
+        const barPrev = series.bars[series.bars.length - 2].close;
+        const last = series.last ?? tip;
+        const prior =
+          tip > 0 && Math.abs(last - tip) / tip < 0.0008 ? barPrev : tip;
+        const fixed = pctChange(last, prior);
+        if (fixed != null && Math.abs(fixed * 100) <= 25) {
+          changePct = Math.round(fixed * 10000) / 100;
+        }
+      }
+    }
+
+    if (!series || series.bars.length < 10) {
+      return {
+        id: meta.id,
+        symbol: meta.symbol,
+        name: meta.name,
+        bias: "up" as Bias,
+        probabilityHigher: 50,
+        last: series?.last ?? null,
+        changePct,
+        available: false,
+      };
+    }
+
+    const bars = series.bars;
+    const rets = dailyReturns(bars);
+    if (rets.length < 8) {
+      return {
+        id: meta.id,
+        symbol: meta.symbol,
+        name: meta.name,
+        bias: "up" as Bias,
+        probabilityHigher: 50,
+        last: series.last,
+        changePct,
+        available: false,
+      };
+    }
+
+    const sample = rets.slice(-90);
+    const upShare = sample.filter((r) => r.ret > 0).length / (sample.length || 1);
+    const tip = bars[bars.length - 1].close;
+    const fiveAgo = bars.length >= 6 ? bars[bars.length - 6].close : null;
+    const mom5 = fiveAgo && fiveAgo > 0 ? (tip - fiveAgo) / fiveAgo : 0;
+
+    let score = upShare;
+    if (changePct != null) {
+      if (changePct > 0.4) score += 0.03;
+      else if (changePct < -0.4) score -= 0.03;
+    }
+    if (mom5 > 0.02) score += 0.025;
+    else if (mom5 < -0.02) score -= 0.02;
+    if (futuresChg != null) {
+      // Risk-on (ES up) mildly helps oil/BTC; gold/silver get a softer opposite nudge.
+      if (meta.key === "gold" || meta.key === "silver") {
+        if (futuresPositive) score -= 0.01;
+        else score += 0.015;
+      } else if (futuresPositive) score += 0.015;
+      else score -= 0.015;
+    }
+
+    score = Math.min(0.72, Math.max(0.28, score));
+    const bias: Bias = score >= 0.5 ? "up" : "down";
+    const probabilityHigher = Math.round(score * 1000) / 10;
+
+    return {
+      id: meta.id,
+      symbol: meta.symbol,
+      name: meta.name,
+      bias,
+      probabilityHigher,
+      last: series.last,
+      changePct,
+      available: true,
+    };
   });
 }
 

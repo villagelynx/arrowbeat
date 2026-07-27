@@ -191,6 +191,96 @@ export default function App() {
       <main>
         {error ? <p className="banner-error">{error}</p> : null}
 
+        <section className="panel panel--quote desk-row desk-row--quote" aria-labelledby="quote-title">
+          <div className="quote-top">
+            <div className="quote-top__head">
+              <h2 id="quote-title">Stock quote</h2>
+              <p className="panel-lede">~15m delayed Yahoo free quotes</p>
+            </div>
+            <form
+              className="quote-lookup"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void lookupQuote(quoteInput);
+              }}
+            >
+              <label className="quote-lookup__label" htmlFor="quote-ticker">
+                Ticker
+              </label>
+              <div className="quote-lookup__row">
+                <input
+                  id="quote-ticker"
+                  className="quote-lookup__input"
+                  value={quoteInput}
+                  onChange={(e) => setQuoteInput(e.target.value.toUpperCase())}
+                  placeholder="e.g. SPY or AAPL"
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={16}
+                />
+                <button type="submit" className="quote-lookup__btn" disabled={quoteLoading}>
+                  {quoteLoading ? "…" : "Quote"}
+                </button>
+              </div>
+            </form>
+            <div className="quote-chips" role="group" aria-label="Quick select">
+              {MAG7_SYMBOLS.map((sym) => (
+                <button
+                  key={sym}
+                  type="button"
+                  className="quote-chip"
+                  onClick={() => void lookupQuote(sym)}
+                  disabled={quoteLoading}
+                >
+                  {sym}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="quote-chip"
+                onClick={() => void lookupQuote("SPY")}
+                disabled={quoteLoading}
+              >
+                SPY
+              </button>
+            </div>
+          </div>
+          {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
+          {quoteResult ? (
+            <div
+              className={`quote-result ${
+                quoteResult.changePct == null
+                  ? ""
+                  : quoteResult.changePct >= 0
+                    ? "is-up"
+                    : "is-down"
+              }`}
+            >
+              <p className="quote-result__symbol">{quoteResult.symbol}</p>
+              <p className="quote-result__last">
+                {quoteResult.last != null ? quoteResult.last.toFixed(2) : "—"}
+              </p>
+              <p className="quote-result__chg">
+                {quoteResult.change != null
+                  ? `${quoteResult.change >= 0 ? "+" : ""}${quoteResult.change.toFixed(2)}`
+                  : "—"}{" "}
+                (
+                {quoteResult.changePct != null
+                  ? `${quoteResult.changePct >= 0 ? "+" : ""}${quoteResult.changePct.toFixed(2)}%`
+                  : "—"}
+                )
+              </p>
+              <p className="quote-result__meta">
+                Prev close{" "}
+                {quoteResult.previousClose != null
+                  ? quoteResult.previousClose.toFixed(2)
+                  : "—"}{" "}
+                · {quoteResult.delayNote}
+              </p>
+            </div>
+          ) : null}
+        </section>
+
         <div className="desk-top">
           {dayBars.length > 1 || signal.lastSessions.length ? (
             <div className="desk-stack desk-stack--day">
@@ -498,91 +588,77 @@ export default function App() {
           </section>
         ) : null}
 
-        <section className="panel panel--quote desk-row desk-row--quote" aria-labelledby="quote-title">
-          <h2 id="quote-title">Stock quote</h2>
-          <p className="panel-lede">Look up any ticker — free Yahoo quotes (~15m delayed).</p>
-          <form
-            className="quote-lookup"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void lookupQuote(quoteInput);
-            }}
-          >
-            <label className="quote-lookup__label" htmlFor="quote-ticker">
-              Ticker
-            </label>
-            <div className="quote-lookup__row">
-              <input
-                id="quote-ticker"
-                className="quote-lookup__input"
-                value={quoteInput}
-                onChange={(e) => setQuoteInput(e.target.value.toUpperCase())}
-                placeholder="e.g. SPY or AAPL"
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={16}
-              />
-              <button type="submit" className="quote-lookup__btn" disabled={quoteLoading}>
-                {quoteLoading ? "Looking up…" : "Get quote"}
-              </button>
-            </div>
-          </form>
-          <div className="quote-chips" role="group" aria-label="Quick select">
-            {MAG7_SYMBOLS.map((sym) => (
-              <button
-                key={sym}
-                type="button"
-                className="quote-chip"
-                onClick={() => void lookupQuote(sym)}
-                disabled={quoteLoading}
-              >
-                {sym}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="quote-chip"
-              onClick={() => void lookupQuote("SPY")}
-              disabled={quoteLoading}
-            >
-              SPY
-            </button>
-          </div>
-          {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
-          {quoteResult ? (
-            <div
-              className={`quote-result ${
-                quoteResult.changePct == null
-                  ? ""
-                  : quoteResult.changePct >= 0
-                    ? "is-up"
-                    : "is-down"
-              }`}
-            >
-              <p className="quote-result__symbol">{quoteResult.symbol}</p>
-              <p className="quote-result__last">
-                {quoteResult.last != null ? quoteResult.last.toFixed(2) : "—"}
-              </p>
-              <p className="quote-result__chg">
-                {quoteResult.change != null
-                  ? `${quoteResult.change >= 0 ? "+" : ""}${quoteResult.change.toFixed(2)}`
-                  : "—"}{" "}
-                (
-                {quoteResult.changePct != null
-                  ? `${quoteResult.changePct >= 0 ? "+" : ""}${quoteResult.changePct.toFixed(2)}%`
-                  : "—"}
-                )
-              </p>
-              <p className="quote-result__meta">
-                Prev close{" "}
-                {quoteResult.previousClose != null
-                  ? quoteResult.previousClose.toFixed(2)
-                  : "—"}{" "}
-                · {quoteResult.delayNote}
-              </p>
-            </div>
-          ) : null}
-        </section>
+        {signal.alts.length ? (
+          <section className="panel panel--alts desk-row desk-row--alts" aria-labelledby="alts-title">
+            <h2 id="alts-title">Commodities &amp; crypto</h2>
+            <p className="panel-lede">
+              Oil, gold, Bitcoin, silver — compact momentum lean · ~15m delayed (crypto may differ).
+            </p>
+            <ul className="mag7-grid mag7-grid--alts">
+              {signal.alts.map((row) => {
+                const leanUp = row.bias === "up";
+                const price =
+                  row.last == null
+                    ? "—"
+                    : row.id === "btc"
+                      ? row.last.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                      : row.last >= 100
+                        ? row.last.toFixed(1)
+                        : row.last.toFixed(2);
+                return (
+                  <li
+                    key={row.id}
+                    className={`mag7-card ${
+                      !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
+                    }`}
+                  >
+                    <div className="mag7-card__top">
+                      <span className="mag7-card__symbol">{row.name}</span>
+                      {row.available ? (
+                        <span className="mag7-card__chev" aria-hidden="true">
+                          {leanUp ? "▲" : "▼"}
+                        </span>
+                      ) : (
+                        <span className="mag7-card__chev is-na" aria-hidden="true">
+                          —
+                        </span>
+                      )}
+                    </div>
+                    <p className="mag7-card__bias">
+                      {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
+                    </p>
+                    <p className="mag7-card__prob">
+                      {row.available ? (
+                        <>
+                          {row.probabilityHigher.toFixed(1)}
+                          <span>%</span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </p>
+                    <p className="mag7-card__quote">
+                      <span>{price}</span>
+                      <span
+                        className={
+                          row.changePct == null
+                            ? ""
+                            : row.changePct >= 0
+                              ? "is-up"
+                              : "is-down"
+                        }
+                      >
+                        {row.changePct == null
+                          ? "—"
+                          : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
+                      </span>
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
 
         <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
           {spyBars.length ? (

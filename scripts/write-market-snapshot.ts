@@ -40,8 +40,8 @@ async function main() {
           realYield10y: { last: null, bars: [] },
         },
         commodities: {
-          oil: { last: null, bars: [] },
-          gold: { last: null, bars: [] },
+          oil: { last: null, previousClose: null, bars: [] },
+          gold: { last: null, previousClose: null, bars: [] },
         },
         mag7: {},
       })}\n`,

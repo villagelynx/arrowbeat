@@ -58,8 +58,11 @@ export type MarketSnapshot = {
     realYield10y: Series;
   };
   commodities?: {
-    oil: Series;
-    gold: Series;
+    oil: Mag7Series;
+    gold: Mag7Series;
+    btc?: Mag7Series;
+    silver?: Mag7Series;
+    eth?: Mag7Series;
   };
   /** Soft-fetched Mag7 daily history — may be empty or partial. */
   mag7?: Partial<Record<Mag7Symbol, Mag7Series>>;

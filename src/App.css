@@ -768,11 +768,37 @@ main {
 }
 
 .panel--quote {
-  order: 3;
+  order: 0;
+}
+
+.quote-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.quote-top__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+}
+
+.quote-top__head h2 {
+  margin: 0;
+}
+
+.quote-top__head .panel-lede {
+  margin: 0;
 }
 
 .quote-lookup {
-  margin: 0 0 0.65rem;
+  margin: 0;
+}
+
+.panel--alts {
+  order: 3;
 }
 
 .quote-lookup__label {
@@ -830,7 +856,7 @@ main {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin: 0 0 0.75rem;
+  margin: 0;
 }
 
 .quote-chip {
@@ -1529,6 +1555,7 @@ main {
   .panel--score,
   .panel--factors,
   .panel--mag7,
+  .panel--alts,
   .panel--quote,
   .desk-row--weekday,
   .desk-row--cashflow,
@@ -1715,8 +1742,29 @@ main {
   }
 
   .panel--quote,
-  .panel--mag7 {
+  .panel--mag7,
+  .panel--alts {
     order: unset;
+  }
+
+  .quote-top {
+    display: grid;
+    grid-template-columns: minmax(9rem, 0.9fr) minmax(12rem, 1.2fr) minmax(0, 1.1fr);
+    gap: 0.65rem 1rem;
+    align-items: end;
+  }
+
+  .quote-chips {
+    margin: 0;
+    align-self: end;
+  }
+
+  .quote-result {
+    margin-top: 0.65rem;
+  }
+
+  .mag7-grid--alts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .desk-grid--ytd .panel {

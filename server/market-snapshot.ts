@@ -77,8 +77,12 @@ export type MarketSnapshotPayload = {
     realYield10y: { last: number | null; bars: Bar[] };
   };
   commodities: {
-    oil: { last: number | null; bars: Bar[] };
-    gold: { last: number | null; bars: Bar[] };
+    oil: Mag7Series;
+    gold: Mag7Series;
+    /** Soft-fail extras for the alts row. */
+    btc?: Mag7Series;
+    silver?: Mag7Series;
+    eth?: Mag7Series;
   };
   /** Mag7 daily series — soft-fail empty object if Yahoo is slow. */
   mag7: Partial<Record<Mag7Symbol, Mag7Series>>;
@@ -326,6 +330,27 @@ async function softFetchMag7(): Promise<Partial<Record<Mag7Symbol, Mag7Series>>>
   return out;
 }
 
+/** Soft BTC / Silver / ETH — parallel with Mag7; never blocks core SPY. */
+async function softFetchCryptoMetals(): Promise<{
+  btc?: Mag7Series;
+  silver?: Mag7Series;
+  eth?: Mag7Series;
+}> {
+  const [btcChart, silverChart, ethChart] = await Promise.all([
+    softYahoo("BTC-USD", "3mo"),
+    softYahoo("SI=F", "3mo"),
+    softYahoo("ETH-USD", "3mo"),
+  ]);
+  const btc = mag7FromChart(btcChart);
+  const silver = mag7FromChart(silverChart);
+  const eth = mag7FromChart(ethChart);
+  return {
+    ...(btc.bars.length || btc.last != null ? { btc } : {}),
+    ...(silver.bars.length || silver.last != null ? { silver } : {}),
+    ...(eth.bars.length || eth.last != null ? { eth } : {}),
+  };
+}
+
 export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   // Soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
   // Use 5y SPY history (fits free-tier time limits better than 10y).
@@ -344,6 +369,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
     breakevenBars,
     realYieldBars,
     mag7,
+    cryptoMetals,
   ] = await Promise.all([
     softYahoo("SPY", "5y"),
     softYahoo("SPY", "3mo"),
@@ -352,11 +378,12 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
     softYahoo("ES=F", "5d"),
     softYahoo("RSP", "1mo"),
     softYahoo("^TNX", "1mo"),
-    softYahoo("CL=F", "1mo"),
-    softYahoo("GC=F", "1mo"),
+    softYahoo("CL=F", "3mo"),
+    softYahoo("GC=F", "3mo"),
     softFred("T10YIE"),
     softFred("DFII10"),
     softFetchMag7(),
+    softFetchCryptoMetals(),
   ]);
 
   const dayBars = intradayBarsFromChart(spyDay);
@@ -382,8 +409,8 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   const esBars = barsFromChart(es);
   const rspBars = barsFromChart(rsp);
   const tnxBars = barsFromChart(tnx);
-  const oilBars = barsFromChart(oil);
-  const goldBars = barsFromChart(gold);
+  const oilSeries = mag7FromChart(oil);
+  const goldSeries = mag7FromChart(gold);
 
   if (!spyBars.length && !spyRecent.length) {
     throw new Error("Yahoo Finance returned no SPY history from this host.");
@@ -403,6 +430,9 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
       realYield10y: "DFII10",
       oil: "CL=F",
       gold: "GC=F",
+      btc: "BTC-USD",
+      silver: "SI=F",
+      eth: "ETH-USD",
       mag7: MAG7_SYMBOLS.join(","),
     },
     spy: {
@@ -444,14 +474,11 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
       },
     },
     commodities: {
-      oil: {
-        last: lastPrice(oil, oilBars),
-        bars: oilBars,
-      },
-      gold: {
-        last: lastPrice(gold, goldBars),
-        bars: goldBars,
-      },
+      oil: oilSeries,
+      gold: goldSeries,
+      ...(cryptoMetals.btc ? { btc: cryptoMetals.btc } : {}),
+      ...(cryptoMetals.silver ? { silver: cryptoMetals.silver } : {}),
+      ...(cryptoMetals.eth ? { eth: cryptoMetals.eth } : {}),
     },
     mag7,
   };

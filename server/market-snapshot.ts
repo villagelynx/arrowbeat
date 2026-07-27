@@ -8,6 +8,14 @@
 
 export type Bar = { date: string; close: number };
 
+/** Intraday session bar (Yahoo 15m — typically ~15 min delayed, free). */
+export type IntradayBar = {
+  date: string;
+  label: string;
+  close: number;
+  ts: number;
+};
+
 type YahooChart = {
   chart?: {
     result?: Array<{
@@ -29,8 +37,17 @@ type YahooChart = {
 export type MarketSnapshotPayload = {
   source: string;
   fetchedAt: string;
+  /** Free Yahoo quotes are typically ~15 minutes delayed. */
+  delayNote?: string;
   symbols: Record<string, string>;
-  spy: { last: number | null; bars: Bar[]; recentBars: Bar[] };
+  spy: {
+    last: number | null;
+    bars: Bar[];
+    recentBars: Bar[];
+    /** Free Yahoo 15-minute session bars (~15 min delayed). */
+    dayBars?: IntradayBar[];
+    dayPrevClose?: number | null;
+  };
   futures: { last: number | null; bars: Bar[]; previousClose: number | null };
   vix: { last: number | null; bars: Bar[] };
   breadth: { spyBars: Bar[]; rspBars: Bar[] };
@@ -107,9 +124,13 @@ async function softFred(seriesId: string): Promise<Bar[]> {
   }
 }
 
-async function softYahoo(symbol: string, range: string): Promise<YahooChart> {
+async function softYahoo(
+  symbol: string,
+  range: string,
+  interval = "1d",
+): Promise<YahooChart> {
   try {
-    return await fetchYahooChart(symbol, range);
+    return await fetchYahooChart(symbol, range, interval);
   } catch {
     return {};
   }
@@ -140,6 +161,39 @@ function barsFromChart(data: YahooChart): Bar[] {
   return out;
 }
 
+function intradayBarsFromChart(data: YahooChart): IntradayBar[] {
+  const result = data.chart?.result?.[0];
+  if (!result?.timestamp?.length) return [];
+  const closes = result.indicators?.quote?.[0]?.close || [];
+  const out: IntradayBar[] = [];
+  for (let i = 0; i < result.timestamp.length; i++) {
+    const close = closes[i];
+    if (close == null || !Number.isFinite(close)) continue;
+    const at = new Date(result.timestamp[i] * 1000);
+    const date = at.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const label = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(at);
+    out.push({ date, label, close: Number(close), ts: result.timestamp[i] });
+  }
+  return out;
+}
+
+/** Keep daily series tip current with delayed last print when Yahoo has today. */
+function withDelayedLast(bars: Bar[], last: number | null, asOfDate: string): Bar[] {
+  if (last == null || !Number.isFinite(last) || !bars.length) return bars;
+  const next = bars.slice();
+  const tip = next[next.length - 1];
+  if (tip.date === asOfDate) {
+    next[next.length - 1] = { ...tip, close: last };
+  } else if (tip.date < asOfDate) {
+    next.push({ date: asOfDate, close: last });
+  }
+  return next;
+}
+
 function lastPrice(data: YahooChart, bars: Bar[]): number | null {
   const meta = data.chart?.result?.[0]?.meta;
   if (meta?.regularMarketPrice != null && Number.isFinite(meta.regularMarketPrice)) {
@@ -155,22 +209,52 @@ function lastFromBars(bars: Bar[]): number | null {
 export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   // Soft fetches so one slow Yahoo call can't 502 the whole Netlify function.
   // Use 5y SPY history (fits free-tier time limits better than 10y).
-  const [spyLong, spyShort, vix, es, rsp, tnx, oil, gold, breakevenBars, realYieldBars] =
-    await Promise.all([
-      softYahoo("SPY", "5y"),
-      softYahoo("SPY", "3mo"),
-      softYahoo("^VIX", "3mo"),
-      softYahoo("ES=F", "5d"),
-      softYahoo("RSP", "1mo"),
-      softYahoo("^TNX", "1mo"),
-      softYahoo("CL=F", "1mo"),
-      softYahoo("GC=F", "1mo"),
-      softFred("T10YIE"),
-      softFred("DFII10"),
-    ]);
+  // SPY 15m/1d is free delayed (~15 min) intraday for the day chart.
+  const [
+    spyLong,
+    spyShort,
+    spyDay,
+    vix,
+    es,
+    rsp,
+    tnx,
+    oil,
+    gold,
+    breakevenBars,
+    realYieldBars,
+  ] = await Promise.all([
+    softYahoo("SPY", "5y"),
+    softYahoo("SPY", "3mo"),
+    softYahoo("SPY", "1d", "15m"),
+    softYahoo("^VIX", "3mo"),
+    softYahoo("ES=F", "5d"),
+    softYahoo("RSP", "1mo"),
+    softYahoo("^TNX", "1mo"),
+    softYahoo("CL=F", "1mo"),
+    softYahoo("GC=F", "1mo"),
+    softFred("T10YIE"),
+    softFred("DFII10"),
+  ]);
 
-  const spyBars = barsFromChart(spyLong);
-  const spyRecent = barsFromChart(spyShort);
+  const dayBars = intradayBarsFromChart(spyDay);
+  const delayedLast =
+    lastPrice(spyDay, []) ??
+    (dayBars.length ? dayBars[dayBars.length - 1].close : null);
+  const asOfDate =
+    dayBars.length > 0
+      ? dayBars[dayBars.length - 1].date
+      : new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  let spyBars = barsFromChart(spyLong);
+  let spyRecent = barsFromChart(spyShort);
+  spyBars = withDelayedLast(spyBars, delayedLast, asOfDate);
+  spyRecent = withDelayedLast(spyRecent, delayedLast, asOfDate);
+
+  const dayPrevClose =
+    Number(spyDay.chart?.result?.[0]?.meta?.chartPreviousClose) ||
+    Number(spyDay.chart?.result?.[0]?.meta?.previousClose) ||
+    (spyRecent.length > 1 ? spyRecent[spyRecent.length - 2].close : null);
+
   const vixBars = barsFromChart(vix);
   const esBars = barsFromChart(es);
   const rspBars = barsFromChart(rsp);
@@ -185,6 +269,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   return {
     source: "yahoo-finance+fred",
     fetchedAt: new Date().toISOString(),
+    delayNote: "Yahoo free quotes ~15 minutes delayed",
     symbols: {
       spy: "SPY",
       futures: "ES=F",
@@ -197,9 +282,13 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
       gold: "GC=F",
     },
     spy: {
-      last: lastPrice(spyShort, spyRecent.length ? spyRecent : spyBars),
+      last:
+        delayedLast ??
+        lastPrice(spyShort, spyRecent.length ? spyRecent : spyBars),
       bars: spyBars.length ? spyBars : spyRecent,
       recentBars: spyRecent.length ? spyRecent : spyBars.slice(-60),
+      dayBars,
+      dayPrevClose: dayPrevClose && Number.isFinite(dayPrevClose) ? dayPrevClose : null,
     },
     futures: {
       last: lastPrice(es, esBars),

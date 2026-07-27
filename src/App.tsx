@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { MarketArrow } from "./components/MarketArrow";
+import { SpyDayChart } from "./components/SpyDayChart";
 import { SpyYearChart } from "./components/SpyYearChart";
-import { fetchMarketSnapshot, type Bar } from "./lib/market-data";
+import { fetchMarketSnapshot, type Bar, type IntradayBar } from "./lib/market-data";
 import {
   buildDemoSignal,
   buildLiveSignal,
@@ -47,6 +48,8 @@ function stars(n: number) {
 export default function App() {
   const [signal, setSignal] = useState<DailySignal | null>(null);
   const [spyBars, setSpyBars] = useState<Bar[]>([]);
+  const [dayBars, setDayBars] = useState<IntradayBar[]>([]);
+  const [dayPrevClose, setDayPrevClose] = useState<number | null>(null);
   const [scorecard, setScorecard] = useState<ScorecardSummary>(() => emptyScorecard(""));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,13 +66,17 @@ export default function App() {
         const bars = snap.spy.bars.length ? snap.spy.bars : snap.spy.recentBars;
         setSignal(live);
         setSpyBars(bars);
+        setDayBars(snap.spy.dayBars ?? []);
+        setDayPrevClose(snap.spy.dayPrevClose ?? null);
         setScorecard(syncScorecard(live, bars));
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Could not load market data.");
+        setError(e instanceof Error ? e message : "Could not load market data.");
         const demo = buildDemoSignal();
         setSignal(demo);
         setSpyBars([]);
+        setDayBars([]);
+        setDayPrevClose(null);
         setScorecard(syncScorecard(demo, []));
       } finally {
         if (!cancelled) setLoading(false);

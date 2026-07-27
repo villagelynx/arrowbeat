@@ -1,12 +1,26 @@
 export type Bar = { date: string; close: number };
 
+export type IntradayBar = {
+  date: string;
+  label: string;
+  close: number;
+  ts: number;
+};
+
 export type Series = { last: number | null; bars: Bar[] };
 
 export type MarketSnapshot = {
   source: string;
   fetchedAt: string;
+  delayNote?: string;
   symbols: Record<string, string>;
-  spy: { last: number | null; bars: Bar[]; recentBars: Bar[] };
+  spy: {
+    last: number | null;
+    bars: Bar[];
+    recentBars: Bar[];
+    dayBars?: IntradayBar[];
+    dayPrevClose?: number | null;
+  };
   futures: { last: number | null; bars: Bar[]; previousClose: number | null };
   vix: { last: number | null; bars: Bar[] };
   breadth: { spyBars: Bar[]; rspBars: Bar[] };

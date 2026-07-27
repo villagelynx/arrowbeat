@@ -127,14 +127,57 @@ export default function App() {
         {error ? <p className="banner-error">{error}</p> : null}
 
         <div className="desk-top">
-          {dayBars.length > 1 ? (
-            <section className="panel panel--day" aria-labelledby="spy-day-title">
-              <h2 id="spy-day-title">S&amp;P 500 today</h2>
-              <p className="panel-lede">
-                Free Yahoo 15-minute bars — typically about 15 minutes delayed.
-              </p>
-              <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
-            </section>
+          {dayBars.length > 1 || signal.lastSessions.length ? (
+            <div className="desk-stack desk-stack--day">
+              {dayBars.length > 1 ? (
+                <section className="panel panel--day" aria-labelledby="spy-day-title">
+                  <h2 id="spy-day-title">S&amp;P 500 today</h2>
+                  <p className="panel-lede">
+                    Free Yahoo 15-minute bars — typically about 15 minutes delayed.
+                  </p>
+                  <SpyDayChart bars={dayBars} prevClose={dayPrevClose} />
+                </section>
+              ) : null}
+
+              {signal.lastSessions.length ? (
+                <section className="panel panel--sessions" aria-labelledby="recent-title">
+                  <h2 id="recent-title">Last 10 trading days</h2>
+                  <p className="panel-lede">SPY close vs prior close — green up, red down.</p>
+                  <ol className="session-strip">
+                    {signal.lastSessions.map((day) => {
+                      const dateLabel = new Intl.DateTimeFormat("en-US", {
+                        timeZone: "America/New_York",
+                        month: "short",
+                        day: "numeric",
+                      }).format(new Date(`${day.date}T12:00:00-04:00`));
+                      return (
+                        <li
+                          key={day.date}
+                          className={day.bias === "up" ? "is-up" : "is-down"}
+                          title={`${day.date}: ${day.changePct >= 0 ? "+" : ""}${day.changePct.toFixed(2)}%`}
+                        >
+                          <span className="session-day">{day.weekday}</span>
+                          <span className="session-date">{dateLabel}</span>
+                          <span className="session-arrow" aria-hidden="true">
+                            {day.bias === "up" ? "▲" : "▼"}
+                          </span>
+                          <span className="session-pct">
+                            {day.changePct >= 0 ? "+" : ""}
+                            {day.changePct.toFixed(1)}%
+                          </span>
+                          {day.histUpPct != null ? (
+                            <span className="session-hist">
+                              Hist {day.histUpPct.toFixed(0)}%
+                              {day.histRank != null ? ` · #${day.histRank}` : ""}
+                            </span>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </section>
+              ) : null}
+            </div>
           ) : null}
 
           <section className="hero" aria-labelledby="bias-title">
@@ -297,140 +340,99 @@ export default function App() {
           </section>
         </div>
 
-        {spyBars.length ? (
-          <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
-            <section className="panel" aria-labelledby="spy-chart-title">
+        <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
+          {spyBars.length ? (
+            <section className="panel panel--ytd" aria-labelledby="spy-chart-title">
               <h2 id="spy-chart-title">S&amp;P 500 this year</h2>
               <p className="panel-lede">SPY daily closes — year to date.</p>
               <SpyYearChart bars={spyBars} year={yearFromIso(signal.asOfDate)} />
             </section>
-          </div>
-        ) : null}
-
-        <div className="desk-grid desk-grid--pair desk-row desk-row--sessions">
-        {signal.lastSessions.length ? (
-          <section className="panel" aria-labelledby="recent-title">
-            <h2 id="recent-title">Last 10 trading days</h2>
-            <p className="panel-lede">SPY close vs prior close — green up, red down.</p>
-            <ol className="session-strip">
-              {signal.lastSessions.map((day) => {
-                const dateLabel = new Intl.DateTimeFormat("en-US", {
-                  timeZone: "America/New_York",
-                  month: "short",
-                  day: "numeric",
-                }).format(new Date(`${day.date}T12:00:00-04:00`));
-                return (
-                  <li
-                    key={day.date}
-                    className={day.bias === "up" ? "is-up" : "is-down"}
-                    title={`${day.date}: ${day.changePct >= 0 ? "+" : ""}${day.changePct.toFixed(2)}%`}
-                  >
-                    <span className="session-day">{day.weekday}</span>
-                    <span className="session-date">{dateLabel}</span>
-                    <span className="session-arrow" aria-hidden="true">
-                      {day.bias === "up" ? "▲" : "▼"}
-                    </span>
-                    <span className="session-pct">
-                      {day.changePct >= 0 ? "+" : ""}
-                      {day.changePct.toFixed(1)}%
-                    </span>
-                    {day.histUpPct != null ? (
-                      <span className="session-hist">
-                        Hist {day.histUpPct.toFixed(0)}%
-                        {day.histRank != null ? ` · #${day.histRank}` : ""}
-                      </span>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ) : null}
-
-        <section className="panel" aria-labelledby="score-title">
-          <h2 id="score-title">Prediction scorecard</h2>
-          <p className="panel-lede">
-            Live leans saved on this device, graded when SPY&apos;s close vs prior is known. Hit =
-            direction correct. Brier = probability calibration (lower better; coin flip ≈ 0.25).
-          </p>
-          <div className="stat-grid score-grid">
-            <div className="stat-card">
-              <p className="stat-kicker">Hit rate</p>
-              <p className="stat-num">
-                {scorecard.hitRate != null ? `${scorecard.hitRate.toFixed(1)}%` : "—"}
-              </p>
-              <p className="stat-note">
-                {scorecard.settled
-                  ? `${scorecard.hits}/${scorecard.settled} settled`
-                  : "No settled days yet"}
-              </p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-kicker">Brier score</p>
-              <p className="stat-num">
-                {scorecard.brier != null ? scorecard.brier.toFixed(3) : "—"}
-              </p>
-              <p className="stat-note">vs ~0.25 coin flip</p>
-            </div>
-          </div>
-
-          {scorecard.pending ? (
-            <p className="score-pending">
-              Pending {scorecard.pending.date}: lean{" "}
-              <strong>{scorecard.pending.bias === "up" ? "higher" : "lower"}</strong> at{" "}
-              {scorecard.pending.bias === "up"
-                ? scorecard.pending.probabilityHigher.toFixed(1)
-                : scorecard.pending.probabilityLower.toFixed(1)}
-              % — settles after that session&apos;s SPY close.
-            </p>
-          ) : (
-            <p className="score-pending">
-              {signal.dataMode === "live"
-                ? "No open prediction — open ArrowBeat on a weekday before the close to log today's lean."
-                : "Scorecard needs live market data to log new predictions."}
-            </p>
-          )}
-
-          {scorecard.recent.length ? (
-            <ol className="score-list">
-              {scorecard.recent.map((row) => {
-                const dateLabel = new Intl.DateTimeFormat("en-US", {
-                  timeZone: "America/New_York",
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                }).format(new Date(`${row.date}T12:00:00-04:00`));
-                const verdict =
-                  row.outcome === "flat"
-                    ? "flat"
-                    : row.correct
-                      ? "hit"
-                      : "miss";
-                return (
-                  <li
-                    key={row.date}
-                    className={
-                      verdict === "hit" ? "is-hit" : verdict === "miss" ? "is-miss" : "is-flat"
-                    }
-                  >
-                    <span className="score-list__date">{dateLabel}</span>
-                    <span className="score-list__pred">
-                      Pred {row.bias === "up" ? "▲" : "▼"} {row.probabilityHigher.toFixed(0)}%
-                    </span>
-                    <span className="score-list__act">
-                      {row.outcome === "flat"
-                        ? "Flat"
-                        : `${row.outcome === "up" ? "▲" : "▼"} ${
-                            row.changePct != null && row.changePct >= 0 ? "+" : ""
-                          }${row.changePct?.toFixed(2) ?? "—"}%`}
-                    </span>
-                    <span className="score-list__verdict">{verdict}</span>
-                  </li>
-                );
-              })}
-            </ol>
           ) : null}
-        </section>
+
+          <section className="panel panel--score" aria-labelledby="score-title">
+            <h2 id="score-title">Prediction scorecard</h2>
+            <p className="panel-lede">
+              Live leans saved on this device, graded when SPY&apos;s close vs prior is known. Hit =
+              direction correct. Brier = probability calibration (lower better; coin flip ≈ 0.25).
+            </p>
+            <div className="stat-grid score-grid">
+              <div className="stat-card">
+                <p className="stat-kicker">Hit rate</p>
+                <p className="stat-num">
+                  {scorecard.hitRate != null ? `${scorecard.hitRate.toFixed(1)}%` : "—"}
+                </p>
+                <p className="stat-note">
+                  {scorecard.settled
+                    ? `${scorecard.hits}/${scorecard.settled} settled`
+                    : "No settled days yet"}
+                </p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-kicker">Brier score</p>
+                <p className="stat-num">
+                  {scorecard.brier != null ? scorecard.brier.toFixed(3) : "—"}
+                </p>
+                <p className="stat-note">vs ~0.25 coin flip</p>
+              </div>
+            </div>
+
+            {scorecard.pending ? (
+              <p className="score-pending">
+                Pending {scorecard.pending.date}: lean{" "}
+                <strong>{scorecard.pending.bias === "up" ? "higher" : "lower"}</strong> at{" "}
+                {scorecard.pending.bias === "up"
+                  ? scorecard.pending.probabilityHigher.toFixed(1)
+                  : scorecard.pending.probabilityLower.toFixed(1)}
+                % — settles after that session&apos;s SPY close.
+              </p>
+            ) : (
+              <p className="score-pending">
+                {signal.dataMode === "live"
+                  ? "No open prediction — open ArrowBeat on a weekday before the close to log today's lean."
+                  : "Scorecard needs live market data to log new predictions."}
+              </p>
+            )}
+
+            {scorecard.recent.length ? (
+              <ol className="score-list">
+                {scorecard.recent.map((row) => {
+                  const dateLabel = new Intl.DateTimeFormat("en-US", {
+                    timeZone: "America/New_York",
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  }).format(new Date(`${row.date}T12:00:00-04:00`));
+                  const verdict =
+                    row.outcome === "flat"
+                      ? "flat"
+                      : row.correct
+                        ? "hit"
+                        : "miss";
+                  return (
+                    <li
+                      key={row.date}
+                      className={
+                        verdict === "hit" ? "is-hit" : verdict === "miss" ? "is-miss" : "is-flat"
+                      }
+                    >
+                      <span className="score-list__date">{dateLabel}</span>
+                      <span className="score-list__pred">
+                        Pred {row.bias === "up" ? "▲" : "▼"} {row.probabilityHigher.toFixed(0)}%
+                      </span>
+                      <span className="score-list__act">
+                        {row.outcome === "flat"
+                          ? "Flat"
+                          : `${row.outcome === "up" ? "▲" : "▼"} ${
+                              row.changePct != null && row.changePct >= 0 ? "+" : ""
+                            }${row.changePct?.toFixed(2) ?? "—"}%`}
+                      </span>
+                      <span className="score-list__verdict">{verdict}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : null}
+          </section>
         </div>
 
         {signal.weekdayOdds.length || signal.monthOdds.length ? (

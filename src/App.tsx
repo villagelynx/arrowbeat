@@ -409,8 +409,7 @@ export default function App() {
           <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
             <h2 id="mag7-title">Magnificent 7</h2>
             <p className="panel-lede">
-              Ranked by probability of a higher close. Compact ArrowBeat lean per name — Yahoo ~
-              15 min delayed.
+              Ranked highest → lowest by P(higher close). Day % vs prior close · ~15m delayed.
             </p>
             <ul className="mag7-grid">
               {signal.mag7.map((row) => {
@@ -472,9 +471,7 @@ export default function App() {
 
         <section className="panel panel--quote desk-row desk-row--quote" aria-labelledby="quote-title">
           <h2 id="quote-title">Stock quote</h2>
-          <p className="panel-lede">
-            Look up any ticker — Yahoo free data, typically about 15 minutes delayed.
-          </p>
+          <p className="panel-lede">Look up any ticker — free Yahoo quotes (~15m delayed).</p>
           <form
             className="quote-lookup"
             onSubmit={(e) => {

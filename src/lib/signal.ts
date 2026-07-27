@@ -959,8 +959,26 @@ export function buildMag7Signals(
 
   return MAG7_META.map((meta) => {
     const series = snapshot.mag7?.[meta.symbol];
-    const changeRaw = series ? pctChange(series.last, series.previousClose) : null;
-    const changePct = changeRaw != null ? Math.round(changeRaw * 10000) / 100 : null;
+    let changePct: number | null = null;
+    if (series) {
+      const raw = pctChange(series.last, series.previousClose);
+      changePct = raw != null ? Math.round(raw * 10000) / 100 : null;
+      // Guard against stale/bad previousClose (e.g. old chartPreviousClose ≈ YTD).
+      if (
+        (changePct == null || Math.abs(changePct) > 25) &&
+        series.bars.length >= 2
+      ) {
+        const tip = series.bars[series.bars.length - 1].close;
+        const barPrev = series.bars[series.bars.length - 2].close;
+        const last = series.last ?? tip;
+        const prior =
+          tip > 0 && Math.abs(last - tip) / tip < 0.0008 ? barPrev : tip;
+        const fixed = pctChange(last, prior);
+        if (fixed != null && Math.abs(fixed * 100) <= 25) {
+          changePct = Math.round(fixed * 10000) / 100;
+        }
+      }
+    }
 
     if (!series || series.bars.length < 20) {
       return {

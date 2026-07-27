@@ -228,22 +228,32 @@ function lastFromBars(bars: Bar[]): number | null {
   return bars.length ? bars[bars.length - 1].close : null;
 }
 
+/** Prior session close for day-change %. Never use meta.chartPreviousClose —
+ * on a 1y chart that is ~year-ago price and produces bogus YTD-sized "day" moves. */
+function priorSessionClose(data: YahooChart, bars: Bar[], last: number | null): number | null {
+  const metaPrev = Number(data.chart?.result?.[0]?.meta?.previousClose);
+  if (Number.isFinite(metaPrev) && metaPrev > 0) return metaPrev;
+
+  if (!bars.length) return null;
+  const tip = bars[bars.length - 1];
+  if (bars.length === 1) return tip.close;
+
+  // Tip bar is today's session (last ≈ tip) → prior is previous bar.
+  // Tip bar is still yesterday and last is a fresh print → tip is prior close.
+  if (last != null && Number.isFinite(last) && tip.close > 0) {
+    const sameBar = Math.abs(last - tip.close) / tip.close < 0.0008;
+    if (!sameBar) return tip.close;
+  }
+  const prev = bars[bars.length - 2].close;
+  return Number.isFinite(prev) && prev > 0 ? prev : null;
+}
+
 function mag7FromChart(data: YahooChart): Mag7Series {
   const bars = barsFromChart(data);
   const last = lastPrice(data, bars);
-  // Prefer prior session close — NOT meta.chartPreviousClose (that is the close
-  // before the chart range starts, e.g. ~1y ago on a 1y request → bogus "day" %).
-  const metaPrev = Number(data.chart?.result?.[0]?.meta?.previousClose);
-  const barPrev = bars.length > 1 ? bars[bars.length - 2].close : null;
-  const previousClose =
-    metaPrev && Number.isFinite(metaPrev)
-      ? metaPrev
-      : barPrev && Number.isFinite(barPrev)
-        ? barPrev
-        : null;
   return {
     last,
-    previousClose,
+    previousClose: priorSessionClose(data, bars, last),
     bars,
   };
 }
@@ -297,7 +307,7 @@ export async function buildStockQuote(rawSymbol: string): Promise<StockQuotePayl
     previousClose,
     change: change != null ? Math.round(change * 100) / 100 : null,
     changePct: changePct != null ? Math.round(changePct * 100) / 100 : null,
-    delayNote: "Yahoo free quotes ~15 minutes delayed",
+    delayNote: "~15m delayed (Yahoo free quotes)",
     fetchedAt: new Date().toISOString(),
     source: "yahoo-finance",
   };
@@ -382,7 +392,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
   return {
     source: "yahoo-finance+fred",
     fetchedAt: new Date().toISOString(),
-    delayNote: "Yahoo free quotes ~15 minutes delayed",
+    delayNote: "~15m delayed (Yahoo free quotes)",
     symbols: {
       spy: "SPY",
       futures: "ES=F",

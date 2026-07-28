@@ -21,9 +21,9 @@ export const SIGNAL_SHARE_ORIGIN = SCORE_SHARE_ORIGIN;
 /** Visible name for the hero / share-card probability score. */
 export const ARROW_SCORE_LABEL = "ArrowBeat Score";
 
-/** Portrait share card — close to phone / Stories aspect (not OG landscape). */
-export const SHARE_CARD_W = 1080;
-export const SHARE_CARD_H = 1350;
+/** Portrait share card — full Stories size so under-arrow type stays readable. */
+export const SHARE_CARD_W = 1280;
+export const SHARE_CARD_H = 1920;
 
 export function leanChipLabel(bias: Bias): string {
   return bias === "up" ? "Higher-close lean" : "Lower-close lean";
@@ -127,7 +127,7 @@ export function shareText(payload: SignalSharePayload): string {
 
 /**
  * Portrait PNG matching the website hero stack:
- * brand → ArrowBeat Score → big % → arrow → lean / details / confidence.
+ * brand → big % → ArrowBeat Score → arrow → lean / details / confidence.
  */
 export async function renderSignalSharePng(
   payload: SignalSharePayload,
@@ -150,6 +150,8 @@ export async function renderSignalSharePng(
   const W = SHARE_CARD_W;
   const H = SHARE_CARD_H;
   const cx = W / 2;
+  const font =
+    'Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   const up = payload.bias === "up";
   const glow = up ? "18, 212, 107" : "239, 51, 64";
   const signal = up ? "#12d46b" : "#ef3340";
@@ -163,7 +165,7 @@ export async function renderSignalSharePng(
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  const rad = ctx.createRadialGradient(cx, H * 0.42, 40, cx, H * 0.42, 520);
+  const rad = ctx.createRadialGradient(cx, H * 0.4, 48, cx, H * 0.4, 720);
   rad.addColorStop(0, `rgba(${glow}, 0.32)`);
   rad.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = rad;
@@ -172,13 +174,13 @@ export async function renderSignalSharePng(
   ctx.save();
   ctx.strokeStyle = "rgba(232, 238, 245, 0.045)";
   ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 32) {
+  for (let x = 0; x < W; x += 40) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, H);
     ctx.stroke();
   }
-  for (let y = 0; y < H; y += 32) {
+  for (let y = 0; y < H; y += 40) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(W, y);
@@ -188,8 +190,8 @@ export async function renderSignalSharePng(
 
   // Brand — top center
   ctx.textAlign = "center";
-  ctx.font = '800 64px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
-  const brandY = 110;
+  ctx.font = `800 80px ${font}`;
+  const brandY = 150;
   const arrowWord = "Arrow";
   const beatWord = "Beat";
   const arrowW = ctx.measureText(arrowWord).width;
@@ -202,82 +204,82 @@ export async function renderSignalSharePng(
   ctx.fillText(beatWord, brandLeft + arrowW, brandY);
 
   ctx.textAlign = "center";
-  ctx.font = '600 22px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `600 30px ${font}`;
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText("Daily market probability", cx, 158);
+  ctx.fillText("Daily market probability", cx, 215);
 
-  // Score → big % → arrow → lean / details
-  ctx.font = '800 34px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
-  ctx.fillStyle = "#e8eef5";
-  ctx.fillText(ARROW_SCORE_LABEL, cx, 230);
-
-  // Big probability — Inter tabular nums
-  const pctFont = '800 168px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
-  const pctMarkFont = '700 72px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  // Big % → ArrowBeat Score → arrow → lean / details
+  const pctFont = `800 210px ${font}`;
+  const pctMarkFont = `700 92px ${font}`;
   ctx.font = pctFont;
   ctx.fillStyle = "#e8eef5";
   const pct = payload.probability.toFixed(1);
   const pctW = ctx.measureText(pct).width;
   ctx.font = pctMarkFont;
   const pctMarkW = ctx.measureText("%").width;
-  const blockW = pctW + 12 + pctMarkW;
+  const blockW = pctW + 16 + pctMarkW;
   const pctLeft = cx - blockW / 2;
   ctx.textAlign = "left";
   ctx.font = pctFont;
   ctx.fillStyle = "#e8eef5";
-  ctx.fillText(pct, pctLeft, 400);
+  ctx.fillText(pct, pctLeft, 420);
   ctx.font = pctMarkFont;
   ctx.fillStyle = signal;
-  ctx.fillText("%", pctLeft + pctW + 12, 375);
+  ctx.fillText("%", pctLeft + pctW + 16, 390);
 
-  drawShareArrow(ctx, up, signalHi, signal, signalLo, cx, 620, 1.35);
+  ctx.textAlign = "center";
+  ctx.font = `800 44px ${font}`;
+  ctx.fillStyle = "#e8eef5";
+  ctx.fillText(ARROW_SCORE_LABEL, cx, 520);
 
-  // Lean pill
+  drawShareArrow(ctx, up, signalHi, signal, signalLo, cx, 820, 1.75);
+
+  // Lean pill — under-arrow type bumped for readability
   ctx.textAlign = "center";
   const lean = leanChipLabel(payload.bias).toUpperCase();
-  ctx.font = '700 24px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `700 36px ${font}`;
   const leanMetrics = ctx.measureText(lean);
-  const pillPadX = 28;
+  const pillPadX = 36;
   const pillW = leanMetrics.width + pillPadX * 2;
-  const pillH = 48;
+  const pillH = 68;
   const pillX = cx - pillW / 2;
-  const pillY = 820;
-  roundRect(ctx, pillX, pillY, pillW, pillH, 24);
+  const pillY = 1140;
+  roundRect(ctx, pillX, pillY, pillW, pillH, 34);
   ctx.fillStyle = `rgba(${glow}, 0.14)`;
   ctx.fill();
   ctx.strokeStyle = `rgba(${glow}, 0.45)`;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.stroke();
   ctx.fillStyle = signal;
-  ctx.fillText(lean, cx, pillY + 32);
+  ctx.fillText(lean, cx, pillY + 45);
 
   // Session label
-  ctx.font = '700 28px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `700 42px ${font}`;
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText(payload.label, cx, 920);
+  ctx.fillText(payload.label, cx, 1280);
 
-  ctx.font = '500 24px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `500 36px ${font}`;
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText(
     `Probability of ${up ? "higher" : "lower"} close`,
     cx,
-    965,
+    1360,
   );
 
   // Confidence
   ctx.textAlign = "center";
-  ctx.font = '600 22px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `600 34px ${font}`;
   ctx.fillStyle = "#8fa3b8";
-  ctx.fillText("Confidence", cx, 1045);
+  ctx.fillText("Confidence", cx, 1490);
 
-  const starGap = 52;
+  const starGap = 70;
   const starsW = starGap * 4;
   const starLeft = cx - starsW / 2;
-  ctx.font = '700 44px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `700 64px ${font}`;
   ctx.textAlign = "left";
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i < payload.confidence ? "#f0c24b" : "rgba(143, 163, 184, 0.35)";
-    ctx.fillText("★", starLeft + i * starGap, 1105);
+    ctx.fillText("★", starLeft + i * starGap, 1590);
   }
 
   // Footer
@@ -285,9 +287,9 @@ export async function renderSignalSharePng(
   const stamp = payload.updated?.trim()
     ? `Updated ${payload.updated.trim()}`
     : `Updated ${formatShareUpdated("")}`;
-  ctx.font = '500 22px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  ctx.font = `500 30px ${font}`;
   ctx.fillStyle = "rgba(143, 163, 184, 0.9)";
-  ctx.fillText(`${stamp}  ·  arrowbeat.com`, cx, H - 56);
+  ctx.fillText(`${stamp}  ·  arrowbeat.com`, cx, H - 80);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

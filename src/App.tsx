@@ -694,11 +694,11 @@ export default function App() {
             </div>
 
             <div className="hero-signal">
-              <p className="arrow-score-label">ArrowBeat Score</p>
               <p className="prob-value">
                 {leadPct.toFixed(1)}
                 <span>%</span>
               </p>
+              <p className="arrow-score-label">ArrowBeat Score</p>
 
               <div className="arrow-stage">
                 <MarketArrow bias={primary.bias} />

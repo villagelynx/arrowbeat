@@ -21,6 +21,9 @@ type NetlifyResult = {
   body: string;
 };
 
+const FONT =
+  "Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif";
+
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
@@ -48,18 +51,18 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResult> {
   const arrowPath = up
     ? "M0 -118 L78 18 H42 V128 H-42 V18 H-78 Z"
     : "M0 118 L-78 -18 H-42 V-128 H42 V-18 H78 Z";
+
+  const W = 1280;
+  const H = 1920;
+  const cx = W / 2;
+  const starGap = 70;
   const stars = Array.from({ length: 5 }, (_, i) => {
     const color = i < c ? "#f0c24b" : "rgba(143,163,184,0.35)";
-    const x = 540 - 104 + i * 52;
-    return `<text x="${x}" y="1110" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="44" font-weight="700" fill="${color}">★</text>`;
+    const x = cx - starGap * 2 + i * starGap;
+    return `<text x="${x}" y="1590" text-anchor="middle" font-family="${FONT}" font-size="64" font-weight="700" fill="${color}">★</text>`;
   }).join("");
-  const leanW = Math.max(220, lean.length * 14 + 56);
+  const leanW = Math.max(280, lean.length * 20 + 72);
   const stamp = asof ? `Updated ${asof}` : "arrowbeat.com";
-
-  const W = 1080;
-  const H = 1350;
-  const pctFont =
-    "Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif";
 
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
@@ -74,28 +77,28 @@ export async function handler(event: NetlifyEvent): Promise<NetlifyResult> {
       <stop offset="55%" stop-color="${signal}"/>
       <stop offset="100%" stop-color="${up ? "#0a8f48" : "#a51020"}"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="42%" r="48%">
+    <radialGradient id="glow" cx="50%" cy="40%" r="48%">
       <stop offset="0%" stop-color="rgba(${glow},0.32)"/>
       <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
     </radialGradient>
   </defs>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
-  <text x="540" y="110" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="72" font-weight="800" fill="#e8eef5">Arrow<tspan fill="${signal}">Beat</tspan></text>
-  <text x="540" y="160" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="26" font-weight="600" fill="#8fa3b8">Daily market probability</text>
-  <text x="540" y="230" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="34" font-weight="700" fill="#e8eef5">ArrowBeat Score</text>
-  <text x="540" y="390" text-anchor="middle" font-family="${pctFont}" font-size="148" font-weight="800" fill="#e8eef5" font-variant-numeric="tabular-nums">${p.toFixed(1)}<tspan font-size="64" fill="${signal}">%</tspan></text>
-  <g transform="translate(540 620) scale(1.55)">
+  <text x="${cx}" y="150" text-anchor="middle" font-family="${FONT}" font-size="80" font-weight="800" fill="#e8eef5">Arrow<tspan fill="${signal}">Beat</tspan></text>
+  <text x="${cx}" y="215" text-anchor="middle" font-family="${FONT}" font-size="30" font-weight="600" fill="#8fa3b8">Daily market probability</text>
+  <text x="${cx}" y="420" text-anchor="middle" font-family="${FONT}" font-size="210" font-weight="800" fill="#e8eef5" font-variant-numeric="tabular-nums">${p.toFixed(1)}<tspan font-size="92" fill="${signal}">%</tspan></text>
+  <text x="${cx}" y="520" text-anchor="middle" font-family="${FONT}" font-size="44" font-weight="800" fill="#e8eef5">ArrowBeat Score</text>
+  <g transform="translate(${cx} 820) scale(1.75)">
     <path fill="url(#arrow)" d="${arrowPath}"/>
   </g>
-  <rect x="${540 - leanW / 2}" y="820" rx="26" ry="26" width="${leanW}" height="52" fill="rgba(${glow},0.14)" stroke="rgba(${glow},0.45)" stroke-width="2"/>
-  <text x="540" y="854" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="${signal}">${lean}</text>
-  <text x="540" y="920" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="32" font-weight="700" fill="#8fa3b8">${label}</text>
-  <text x="540" y="970" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="24" font-weight="500" fill="#8fa3b8">Probability of ${up ? "higher" : "lower"} close</text>
-  <text x="540" y="1050" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="24" font-weight="600" fill="#8fa3b8">Confidence</text>
+  <rect x="${cx - leanW / 2}" y="1140" rx="34" ry="34" width="${leanW}" height="68" fill="rgba(${glow},0.14)" stroke="rgba(${glow},0.45)" stroke-width="2.5"/>
+  <text x="${cx}" y="1185" text-anchor="middle" font-family="${FONT}" font-size="36" font-weight="700" fill="${signal}">${lean}</text>
+  <text x="${cx}" y="1280" text-anchor="middle" font-family="${FONT}" font-size="42" font-weight="700" fill="#8fa3b8">${label}</text>
+  <text x="${cx}" y="1360" text-anchor="middle" font-family="${FONT}" font-size="36" font-weight="500" fill="#8fa3b8">Probability of ${up ? "higher" : "lower"} close</text>
+  <text x="${cx}" y="1490" text-anchor="middle" font-family="${FONT}" font-size="34" font-weight="600" fill="#8fa3b8">Confidence</text>
   ${stars}
-  <text x="540" y="${H - 72}" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="22" font-weight="500" fill="rgba(143,163,184,0.9)">${stamp}</text>
-  <text x="540" y="${H - 40}" text-anchor="middle" font-family="Inter,system-ui,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="22" font-weight="500" fill="rgba(143,163,184,0.9)">arrowbeat.com</text>
+  <text x="${cx}" y="${H - 100}" text-anchor="middle" font-family="${FONT}" font-size="30" font-weight="500" fill="rgba(143,163,184,0.9)">${stamp}</text>
+  <text x="${cx}" y="${H - 56}" text-anchor="middle" font-family="${FONT}" font-size="30" font-weight="500" fill="rgba(143,163,184,0.9)">arrowbeat.com</text>
 </svg>`;
 
   return {

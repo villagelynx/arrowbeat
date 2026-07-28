@@ -92,11 +92,11 @@ export function ShareView({ payload, onClose }: Props) {
 
         <div className="share-view__body">
           <div className="share-view__score">
-            <p className="arrow-score-label">ArrowBeat Score</p>
             <p className="share-view__prob">
               {payload.probability.toFixed(1)}
               <span>%</span>
             </p>
+            <p className="arrow-score-label">ArrowBeat Score</p>
           </div>
           <div className="share-view__arrow">
             <MarketArrow bias={payload.bias} idSuffix="share" />

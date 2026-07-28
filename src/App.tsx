@@ -3,6 +3,8 @@ import { AboutPage } from "./components/AboutPage";
 import { AppNav, type AppView } from "./components/AppNav";
 import { CorrectionOddsPage } from "./components/CorrectionOddsPage";
 import { CorrectionOddsPanel } from "./components/CorrectionOddsPanel";
+import { CrashOddsPage } from "./components/CrashOddsPage";
+import { CrashOddsPanel } from "./components/CrashOddsPanel";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -40,6 +42,7 @@ import {
   type SignalSharePayload,
 } from "./lib/signal-share";
 import { buildCorrectionOdds } from "./lib/correction-probability";
+import { buildCrashOdds } from "./lib/crash-probability";
 import { yearFromIso } from "./lib/spy-ytd";
 import { SharePreviewModal, ShareView } from "./components/ShareView";
 import "./App.css";
@@ -51,15 +54,19 @@ function readViewFromLocation(): AppView | null {
   if (typeof window === "undefined") return null;
   const hash = window.location.hash.replace(/^#/, "");
   if (hash === "correction") return "correction";
+  if (hash === "crash") return "crash";
   return null;
 }
 
 function syncViewHash(view: AppView) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
+  const currentHash = url.hash.replace(/^#/, "");
   if (view === "correction") {
     url.hash = "correction";
-  } else if (url.hash.replace(/^#/, "") === "correction") {
+  } else if (view === "crash") {
+    url.hash = "crash";
+  } else if (currentHash === "correction" || currentHash === "crash") {
     url.hash = "";
   }
   const next = `${url.pathname}${url.search}${url.hash}`;
@@ -186,7 +193,7 @@ export default function App() {
         setView(routeView);
         return;
       }
-      setView((current) => (current === "correction" ? "home" : current));
+      setView((current) => (current === "correction" || current === "crash" ? "home" : current));
     }
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
@@ -242,6 +249,15 @@ export default function App() {
     if (!spyBars.length) return null;
     try {
       return buildCorrectionOdds(spyBars, vixBars, vixLast);
+    } catch {
+      return null;
+    }
+  }, [spyBars, vixBars, vixLast]);
+
+  const crashOdds = useMemo(() => {
+    if (!spyBars.length) return null;
+    try {
+      return buildCrashOdds(spyBars, vixBars, vixLast);
     } catch {
       return null;
     }
@@ -447,7 +463,11 @@ export default function App() {
 
   if (!signal) {
     const pageClass =
-      view === "about" ? " app--about" : view === "correction" ? " app--correction" : "";
+      view === "about"
+        ? " app--about"
+        : view === "correction" || view === "crash"
+          ? " app--correction"
+          : "";
     return (
       <div className={`app theme-up${pageClass}`}>
         <div className="atmosphere" aria-hidden="true" />
@@ -470,6 +490,16 @@ export default function App() {
               odds={correctionOdds}
               loading={loading}
               onGoDashboard={() => navigateTo("home")}
+              onOpenCrash={() => navigateTo("crash")}
+            />
+          </main>
+        ) : view === "crash" ? (
+          <main className="correction-main">
+            <CrashOddsPage
+              odds={crashOdds}
+              loading={loading}
+              onGoDashboard={() => navigateTo("home")}
+              onOpenCorrection={() => navigateTo("correction")}
             />
           </main>
         ) : null}
@@ -534,7 +564,11 @@ export default function App() {
   };
 
   const pageClass =
-    view === "about" ? " app--about" : view === "correction" ? " app--correction" : "";
+    view === "about"
+      ? " app--about"
+      : view === "correction" || view === "crash"
+        ? " app--correction"
+        : "";
 
   return (
     <div className={`app ${up ? "theme-up" : "theme-down"}${pageClass}`}>
@@ -571,6 +605,16 @@ export default function App() {
             odds={correctionOdds}
             loading={loading || refreshing}
             onGoDashboard={() => navigateTo("home")}
+            onOpenCrash={() => navigateTo("crash")}
+          />
+        </main>
+      ) : view === "crash" ? (
+        <main className="correction-main">
+          <CrashOddsPage
+            odds={crashOdds}
+            loading={loading || refreshing}
+            onGoDashboard={() => navigateTo("home")}
+            onOpenCorrection={() => navigateTo("correction")}
           />
         </main>
       ) : (
@@ -1813,6 +1857,15 @@ export default function App() {
           <CorrectionOddsPanel
             odds={correctionOdds}
             onOpenFullPage={() => navigateTo("correction")}
+            onOpenCrash={() => navigateTo("crash")}
+          />
+        ) : null}
+
+        {crashOdds ? (
+          <CrashOddsPanel
+            odds={crashOdds}
+            onOpenFullPage={() => navigateTo("crash")}
+            onOpenCorrection={() => navigateTo("correction")}
           />
         ) : null}
 

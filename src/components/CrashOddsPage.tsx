@@ -1,24 +1,25 @@
-import type { CorrectionOdds } from "../lib/correction-probability";
-import { CorrectionOddsPanel } from "./CorrectionOddsPanel";
+import type { CrashOdds } from "../lib/crash-probability";
+import { CrashOddsPanel } from "./CrashOddsPanel";
 
 type Props = {
-  odds: CorrectionOdds | null;
+  odds: CrashOdds | null;
   loading: boolean;
   onGoDashboard: () => void;
-  onOpenCrash?: () => void;
+  onOpenCorrection?: () => void;
 };
 
-export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }: Props) {
+export function CrashOddsPage({ odds, loading, onGoDashboard, onOpenCorrection }: Props) {
   return (
-    <article className="correction-page" aria-labelledby="correction-page-title">
+    <article className="correction-page" aria-labelledby="crash-page-title">
       <header className="correction-page__hero">
         <p className="correction-page__kicker">ArrowBeat · historical context</p>
-        <h1 id="correction-page-title" className="correction-page__title">
-          Correction odds
+        <h1 id="crash-page-title" className="correction-page__title">
+          Crash odds
         </h1>
         <p className="correction-page__lede">
-          How often SPY fell at least 10% below its rolling ~52-week high within a forward window —
-          given where the market sits today. Descriptive history, not a crash forecast.
+          How often SPY fell at least 20% below its rolling ~52-week high within a forward window —
+          using the common crash / bear-market threshold (≥20%), not a precise crash definition.
+          Descriptive history, not a forecast.
         </p>
         <button type="button" className="correction-page__cta" onClick={onGoDashboard}>
           Back to dashboard
@@ -33,34 +34,35 @@ export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }
 
       {!loading && !odds ? (
         <p className="correction-page__status">
-          Not enough SPY history to compute correction frequencies yet. Try again after the market
+          Not enough SPY history to compute crash frequencies yet. Try again after the market
           snapshot loads.
         </p>
       ) : null}
 
-      {odds ? <CorrectionOddsPanel odds={odds} variant="page" /> : null}
+      {odds ? <CrashOddsPanel odds={odds} variant="page" /> : null}
 
-      {onOpenCrash ? (
+      {onOpenCorrection ? (
         <p className="correction-page__status">
           <a
-            href="#crash"
+            href="#correction"
             className="corr-odds__full-link"
             onClick={(e) => {
               e.preventDefault();
-              onOpenCrash();
+              onOpenCorrection();
             }}
           >
-            See crash odds (≥20%)
+            See correction odds (≥10%)
           </a>
         </p>
       ) : null}
 
-      <section className="panel correction-page__panel" aria-labelledby="correction-method">
-        <h2 id="correction-method">Methodology</h2>
+      <section className="panel correction-page__panel" aria-labelledby="crash-method">
+        <h2 id="crash-method">Methodology</h2>
         <p className="panel-lede">
           Every trading day in the sample gets a rolling ~252-session (≈52-week) peak. A{" "}
-          <strong>correction</strong> means SPY&apos;s close dropped to ≤90% of that day&apos;s peak
-          at some point in the forward window — including the start day if already in drawdown.
+          <strong>crash / bear-market hit</strong> means SPY&apos;s close dropped to ≤80% of that
+          day&apos;s peak at some point in the forward window — the common ≥20% decline threshold,
+          not a precise crash definition. Includes the start day if already in drawdown.
         </p>
         <ul className="correction-page__list">
           <li>
@@ -69,8 +71,7 @@ export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }
           </li>
           <li>
             <strong>Drawdown bucket</strong> — only days in the same distance-from-peak band as
-            today (within 2%, −2% to −5%, −5% to −10%, or already ≥10% off peak). Days already in
-            correction are excluded from conditional “entry” odds.
+            today. Days already ≥20% off peak are excluded from conditional “entry” odds.
           </li>
           <li>
             <strong>Drawdown + VIX</strong> — same drawdown band plus matching VIX regime (below 15,
@@ -83,8 +84,8 @@ export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }
         </ul>
       </section>
 
-      <section className="panel correction-page__panel" aria-labelledby="correction-buckets">
-        <h2 id="correction-buckets">Regime buckets</h2>
+      <section className="panel correction-page__panel" aria-labelledby="crash-buckets">
+        <h2 id="crash-buckets">Regime buckets</h2>
         <div className="correction-page__grid">
           <div>
             <h3 className="correction-page__subhead">Drawdown from 52w high</h3>
@@ -92,7 +93,8 @@ export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }
               <li>Within 2% of peak</li>
               <li>−2% to −5% off peak</li>
               <li>−5% to −10% off peak</li>
-              <li>Already ≥10% off peak (in correction)</li>
+              <li>−10% to −20% off peak</li>
+              <li>Already ≥20% off peak (crash / bear threshold)</li>
             </ul>
           </div>
           <div>
@@ -107,13 +109,14 @@ export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }
         </div>
       </section>
 
-      <section className="panel correction-page__panel" aria-labelledby="correction-caveats">
-        <h2 id="correction-caveats">What this is not</h2>
+      <section className="panel correction-page__panel" aria-labelledby="crash-caveats">
+        <h2 id="crash-caveats">What this is not</h2>
         <p className="correction-page__disclaimer">
-          Historical frequency only — not investment advice or a timing signal. Past drawdown and
-          VIX regimes do not guarantee future corrections. Data comes from free Yahoo Finance quotes
-          (~15 minutes delayed). Sample length and bucket counts limit precision; treat thin-sample
-          cells as directional context, not precise probabilities.
+          Historical frequency only — not investment advice or a timing signal. The ≥20% threshold
+          is a widely cited crash / bear-market reference, not a formal crash definition. Past
+          drawdown and VIX regimes do not guarantee future outcomes. Data comes from free Yahoo
+          Finance quotes (~15 minutes delayed). Sample length and bucket counts limit precision;
+          treat thin-sample cells as directional context, not precise probabilities.
         </p>
       </section>
     </article>

@@ -1,9 +1,6 @@
-import {
-  type CorrectionHorizon,
-  type CorrectionOdds,
-} from "../lib/correction-probability";
+import { type CrashHorizon, type CrashOdds } from "../lib/crash-probability";
 
-const HORIZON_LABELS: Record<CorrectionHorizon, string> = {
+const HORIZON_LABELS: Record<CrashHorizon, string> = {
   "3mo": "~3 months",
   "6mo": "~6 months",
   "12mo": "~12 months",
@@ -26,26 +23,31 @@ function pctCell(rate: { pct: number | null; total: number }, thin = false) {
 }
 
 type Props = {
-  odds: CorrectionOdds;
+  odds: CrashOdds;
   /** Dashboard embed vs dedicated page layout. */
   variant?: "dashboard" | "page";
   onOpenFullPage?: () => void;
-  onOpenCrash?: () => void;
+  onOpenCorrection?: () => void;
 };
 
-export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPage, onOpenCrash }: Props) {
-  const primaryHorizon: CorrectionHorizon = "6mo";
+export function CrashOddsPanel({
+  odds,
+  variant = "dashboard",
+  onOpenFullPage,
+  onOpenCorrection,
+}: Props) {
+  const primaryHorizon: CrashHorizon = "6mo";
   const h = odds.horizons?.[primaryHorizon];
   if (!h?.unconditional) return null;
   const cond =
-    !odds.alreadyInCorrection &&
+    !odds.alreadyInCrash &&
     (h.conditionalCombined.total >= 8 ? h.conditionalCombined : h.conditionalDrawdown);
   const condLabel =
     h.conditionalCombined.total >= 8 && odds.vixBucketLabel
       ? "Similar drawdown + VIX"
       : "Similar drawdown";
 
-  const titleId = variant === "page" ? "correction-panel-title" : "correction-title";
+  const titleId = variant === "page" ? "crash-panel-title" : "crash-title";
 
   return (
     <section
@@ -54,11 +56,11 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
     >
       <div className="corr-odds__head">
         <h2 id={titleId}>
-          {variant === "page" ? "Current snapshot" : "Correction odds (historical)"}
+          {variant === "page" ? "Current snapshot" : "Crash odds (historical)"}
         </h2>
         {variant === "dashboard" && onOpenFullPage ? (
           <a
-            href="#correction"
+            href="#crash"
             className="corr-odds__full-link"
             onClick={(e) => {
               e.preventDefault();
@@ -70,8 +72,8 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
         ) : null}
       </div>
       <p className="panel-lede">
-        How often SPY fell ≥10% below its rolling ~52-week high within a forward window — not a
-        crash forecast.
+        How often SPY fell ≥20% below its rolling ~52-week high within a forward window — crash /
+        bear-market threshold (≥20%), not a precise crash forecast.
       </p>
 
       <div className="corr-odds__snapshot">
@@ -79,9 +81,9 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
           <p className="corr-odds__kicker">Distance from 52w high</p>
           <p
             className={`corr-odds__hero ${
-              odds.drawdownPct <= -10
+              odds.drawdownPct <= -20
                 ? "is-down"
-                : odds.drawdownPct <= -5
+                : odds.drawdownPct <= -10
                   ? "is-warn"
                   : "is-up"
             }`}
@@ -104,24 +106,25 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
           ) : (
             <p className="corr-odds__sub">VIX unavailable</p>
           )}
-          {odds.daysSinceCorrection != null && odds.daysSinceCorrection > 0 ? (
+          {odds.daysSinceCrash != null && odds.daysSinceCrash > 0 ? (
             <p className="corr-odds__sub">
-              ~{odds.daysSinceCorrection} sessions since last ≥10% drawdown
+              ~{odds.daysSinceCrash} sessions since last ≥20% drawdown
             </p>
           ) : null}
         </div>
       </div>
 
-      {odds.alreadyInCorrection ? (
+      {odds.alreadyInCrash ? (
         <p className="corr-odds__flag" role="status">
-          SPY is already in a ≥10% correction vs its 52-week high. Conditional “entry” odds below
-          apply to days that had not yet corrected; compare to baseline for context.
+          SPY is already at or past the ≥20% crash / bear-market threshold vs its 52-week high.
+          Conditional “entry” odds below apply to days that had not yet reached that level; compare
+          to baseline for context.
         </p>
       ) : null}
 
       <div className="corr-odds__hero-stat">
         <p className="corr-odds__kicker">
-          P(≥10% correction within {HORIZON_LABELS[primaryHorizon]})
+          P(≥20% drawdown within {HORIZON_LABELS[primaryHorizon]})
         </p>
         <div className="corr-odds__compare">
           {cond && cond.total >= 8 ? (
@@ -159,7 +162,7 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
           </tr>
         </thead>
         <tbody>
-          {(Object.keys(HORIZON_LABELS) as CorrectionHorizon[]).map((key) => {
+          {(Object.keys(HORIZON_LABELS) as CrashHorizon[]).map((key) => {
             const row = odds.horizons?.[key];
             if (!row) return null;
             return (
@@ -167,9 +170,7 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
                 <th scope="row">{HORIZON_LABELS[key]}</th>
                 <td>{pctCell(row.unconditional)}</td>
                 <td>{pctCell(row.conditionalDrawdown, true)}</td>
-                {odds.vixBucket ? (
-                  <td>{pctCell(row.conditionalCombined, true)}</td>
-                ) : null}
+                {odds.vixBucket ? <td>{pctCell(row.conditionalCombined, true)}</td> : null}
               </tr>
             );
           })}
@@ -179,17 +180,17 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
       <p className="corr-odds__interp">{odds.interpretation}</p>
       <p className="corr-odds__caveat">{odds.caveat}</p>
 
-      {variant === "dashboard" && onOpenCrash ? (
+      {variant === "dashboard" && onOpenCorrection ? (
         <p className="corr-odds__crosslink">
           <a
-            href="#crash"
+            href="#correction"
             className="corr-odds__full-link"
             onClick={(e) => {
               e.preventDefault();
-              onOpenCrash();
+              onOpenCorrection();
             }}
           >
-            See crash odds (≥20%)
+            See correction odds (≥10%)
           </a>
         </p>
       ) : null}

@@ -457,6 +457,10 @@ main.correction-main {
   text-decoration: underline;
 }
 
+.corr-odds__crosslink {
+  margin: 0.75rem 0 0;
+}
+
 .panel--correction-page {
   margin-top: 0.5rem;
 }

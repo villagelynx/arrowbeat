@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "tsx scripts/write-market-snapshot.ts",
+    "prebuild": "tsx scripts/write-market-snapshot.ts && tsx scripts/write-sp500-history.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",

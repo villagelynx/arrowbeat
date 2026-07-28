@@ -50,14 +50,13 @@ export type CorrectionHistory = {
   chartSeries: CorrectionHistoryPoint[];
 };
 
-function tradingDaysBetween(dates: string[], fromIdx: number, toIdx: number): number {
+function tradingDaysBetween(fromIdx: number, toIdx: number): number {
   if (toIdx <= fromIdx) return 0;
   return toIdx - fromIdx;
 }
 
 function buildEpisode(
   dates: string[],
-  closes: number[],
   startIdx: number,
   troughIdx: number,
   endIdx: number | null,
@@ -67,9 +66,9 @@ function buildEpisode(
     maxDepth <= -CRASH_THRESHOLD_PCT ? "crash" : "correction";
   const endDate = endIdx != null ? dates[endIdx] : null;
   const durationDays =
-    endIdx != null ? tradingDaysBetween(dates, startIdx, endIdx) : null;
+    endIdx != null ? tradingDaysBetween(startIdx, endIdx) : null;
   const recoveryDays =
-    endIdx != null ? tradingDaysBetween(dates, troughIdx, endIdx) : null;
+    endIdx != null ? tradingDaysBetween(troughIdx, endIdx) : null;
 
   return {
     startDate: dates[startIdx],
@@ -77,7 +76,7 @@ function buildEpisode(
     endDate,
     maxDepthPct: Math.round(maxDepth * 100) / 100,
     severity,
-    declineDays: tradingDaysBetween(dates, startIdx, troughIdx),
+    declineDays: tradingDaysBetween(startIdx, troughIdx),
     durationDays,
     recoveryDays,
   };
@@ -126,7 +125,7 @@ export function detectCorrectionEpisodes(bars: Bar[]): CorrectionEpisode[] {
         troughIdx = i;
       }
       if (exited) {
-        episodes.push(buildEpisode(dates, closes, startIdx, troughIdx, i, maxDepth));
+        episodes.push(buildEpisode(dates, startIdx, troughIdx, i, maxDepth));
         inEpisode = false;
       }
     }
@@ -134,7 +133,7 @@ export function detectCorrectionEpisodes(bars: Bar[]): CorrectionEpisode[] {
 
   if (inEpisode) {
     episodes.push(
-      buildEpisode(dates, closes, startIdx, troughIdx, null, maxDepth),
+      buildEpisode(dates, startIdx, troughIdx, null, maxDepth),
     );
   }
 

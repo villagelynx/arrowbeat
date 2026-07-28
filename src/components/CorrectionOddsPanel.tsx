@@ -179,6 +179,21 @@ export function CorrectionOddsPanel({ odds, variant = "dashboard", onOpenFullPag
       <p className="corr-odds__interp">{odds.interpretation}</p>
       <p className="corr-odds__caveat">{odds.caveat}</p>
 
+      {variant === "dashboard" && onOpenFullPage ? (
+        <p className="corr-odds__crosslink">
+          <a
+            href="#correction"
+            className="corr-odds__full-link"
+            onClick={(e) => {
+              e.preventDefault();
+              onOpenFullPage();
+            }}
+          >
+            ~100-year correction timeline (S&amp;P 500)
+          </a>
+        </p>
+      ) : null}
+
       {variant === "dashboard" && onOpenCrash ? (
         <p className="corr-odds__crosslink">
           <a

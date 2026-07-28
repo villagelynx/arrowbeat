@@ -10,11 +10,11 @@
   --down-deep: #a51020;
   --glow: 18, 212, 107;
   --signal: var(--up);
-  --font-display: "Syne", "Avenir Next", "Segoe UI", sans-serif;
-  --font-body: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
-  /* Syne’s descenders sit deep in the em box — keep display lines open. */
-  --display-line: 1.45;
-  --display-pad-y: 0.1em 0.22em;
+  /* Inter + Helvetica Neue — practical Yahoo Finance look without Yahoo Sans. */
+  --font-display: "Inter", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Inter", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --display-line: 1.35;
+  --display-pad-y: 0.06em 0.12em;
   color: var(--paper);
   background: var(--ink);
   font-family: var(--font-body);
@@ -24,8 +24,7 @@
 }
 
 /*
- * Global display-heading safety: Syne + tight defaults mid-line crop g/y/p.
- * Prefer this over per-component whack-a-mole (panel h2, About, hero, factors).
+ * Display-heading safety: keep overflow visible so tight clamps never crop glyphs.
  */
 .panel h2,
 .about__title,

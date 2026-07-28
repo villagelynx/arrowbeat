@@ -17,12 +17,12 @@
   </defs>
   <rect width="1080" height="1350" fill="url(#bg)"/>
   <rect width="1080" height="1350" fill="url(#glow)"/>
-  <text x="540" y="110" text-anchor="middle" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="72" font-weight="800" fill="#e8eef5">Arrow<tspan fill="#12d46b">Beat</tspan></text>
-  <text x="540" y="160" text-anchor="middle" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="26" font-weight="600" fill="#8fa3b8">Daily market probability</text>
-  <text x="540" y="280" text-anchor="middle" font-family="Syne, Avenir Next, Segoe UI, sans-serif" font-size="34" font-weight="700" fill="#e8eef5">ArrowBeat Score</text>
-  <text x="540" y="420" text-anchor="middle" font-family="Manrope, ui-rounded, system-ui, sans-serif" font-size="56" font-weight="800" fill="#e8eef5">Share today’s lean</text>
+  <text x="540" y="110" text-anchor="middle" font-family="Inter, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="72" font-weight="800" fill="#e8eef5">Arrow<tspan fill="#12d46b">Beat</tspan></text>
+  <text x="540" y="160" text-anchor="middle" font-family="Inter, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" font-weight="600" fill="#8fa3b8">Daily market probability</text>
+  <text x="540" y="280" text-anchor="middle" font-family="Inter, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#e8eef5">ArrowBeat Score</text>
+  <text x="540" y="420" text-anchor="middle" font-family="Inter, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="56" font-weight="800" fill="#e8eef5">Share today's lean</text>
   <g transform="translate(540 680) scale(1.4)">
     <path fill="url(#arrow)" d="M0 -118 L78 18 H42 V128 H-42 V18 H-78 Z"/>
   </g>
-  <text x="540" y="980" text-anchor="middle" font-family="Manrope, Avenir Next, Segoe UI, sans-serif" font-size="26" fill="#8fa3b8">arrowbeat.com</text>
+  <text x="540" y="980" text-anchor="middle" font-family="Inter, system-ui, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" fill="#8fa3b8">arrowbeat.com</text>
 </svg>

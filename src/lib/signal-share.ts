@@ -127,7 +127,7 @@ export function shareText(payload: SignalSharePayload): string {
 
 /**
  * Portrait PNG matching the website hero stack:
- * brand → arrow + score label → lean / label / probability / confidence.
+ * brand → ArrowBeat Score → big % → arrow → lean / details / confidence.
  */
 export async function renderSignalSharePng(
   payload: SignalSharePayload,
@@ -137,6 +137,15 @@ export async function renderSignalSharePng(
   canvas.height = SHARE_CARD_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
+
+  // Ensure Inter is available before measuring/drawing (esp. big %).
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      /* proceed with fallbacks */
+    }
+  }
 
   const W = SHARE_CARD_W;
   const H = SHARE_CARD_H;
@@ -154,7 +163,7 @@ export async function renderSignalSharePng(
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  const rad = ctx.createRadialGradient(cx, H * 0.28, 40, cx, H * 0.28, 520);
+  const rad = ctx.createRadialGradient(cx, H * 0.42, 40, cx, H * 0.42, 520);
   rad.addColorStop(0, `rgba(${glow}, 0.32)`);
   rad.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = rad;
@@ -179,7 +188,7 @@ export async function renderSignalSharePng(
 
   // Brand — top center
   ctx.textAlign = "center";
-  ctx.font = '800 64px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '800 64px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   const brandY = 110;
   const arrowWord = "Arrow";
   const beatWord = "Beat";
@@ -193,18 +202,18 @@ export async function renderSignalSharePng(
   ctx.fillText(beatWord, brandLeft + arrowW, brandY);
 
   ctx.textAlign = "center";
-  ctx.font = '600 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '600 22px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText("Daily market probability", cx, 158);
 
   // Score → big % → arrow → lean / details
-  ctx.font = '800 34px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '800 34px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.fillStyle = "#e8eef5";
   ctx.fillText(ARROW_SCORE_LABEL, cx, 230);
 
-  // Big probability — Manrope tabular (Syne 8 sits high)
-  const pctFont = '800 168px Manrope, "Avenir Next", ui-rounded, system-ui, sans-serif';
-  const pctMarkFont = '700 72px Manrope, "Avenir Next", ui-rounded, system-ui, sans-serif';
+  // Big probability — Inter tabular nums
+  const pctFont = '800 168px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  const pctMarkFont = '700 72px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.font = pctFont;
   ctx.fillStyle = "#e8eef5";
   const pct = payload.probability.toFixed(1);
@@ -226,7 +235,7 @@ export async function renderSignalSharePng(
   // Lean pill
   ctx.textAlign = "center";
   const lean = leanChipLabel(payload.bias).toUpperCase();
-  ctx.font = '700 24px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '700 24px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   const leanMetrics = ctx.measureText(lean);
   const pillPadX = 28;
   const pillW = leanMetrics.width + pillPadX * 2;
@@ -243,11 +252,11 @@ export async function renderSignalSharePng(
   ctx.fillText(lean, cx, pillY + 32);
 
   // Session label
-  ctx.font = '700 28px Syne, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '700 28px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText(payload.label, cx, 920);
 
-  ctx.font = '500 24px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '500 24px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText(
     `Probability of ${up ? "higher" : "lower"} close`,
@@ -257,14 +266,14 @@ export async function renderSignalSharePng(
 
   // Confidence
   ctx.textAlign = "center";
-  ctx.font = '600 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '600 22px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.fillStyle = "#8fa3b8";
   ctx.fillText("Confidence", cx, 1045);
 
   const starGap = 52;
   const starsW = starGap * 4;
   const starLeft = cx - starsW / 2;
-  ctx.font = '700 44px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '700 44px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.textAlign = "left";
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i < payload.confidence ? "#f0c24b" : "rgba(143, 163, 184, 0.35)";
@@ -276,7 +285,7 @@ export async function renderSignalSharePng(
   const stamp = payload.updated?.trim()
     ? `Updated ${payload.updated.trim()}`
     : `Updated ${formatShareUpdated("")}`;
-  ctx.font = '500 22px Manrope, "Avenir Next", "Segoe UI", sans-serif';
+  ctx.font = '500 22px Inter, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
   ctx.fillStyle = "rgba(143, 163, 184, 0.9)";
   ctx.fillText(`${stamp}  ·  arrowbeat.com`, cx, H - 56);
 

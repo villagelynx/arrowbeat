@@ -5,7 +5,7 @@
   min-height: 100dvh;
   /* Do not set overflow-x: clip/hidden here — if one axis is clip/hidden and
      the other is visible, CSS computes the visible axis to clip too, which
-     mid-line crops About pitch text and Syne descenders on animated children. */
+     mid-line crops About pitch text on animated children. */
   overflow: visible;
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(var(--glow), 0.22), transparent 55%),
@@ -19,14 +19,16 @@
 
 .atmosphere {
   pointer-events: none;
-  position: fixed;
+  /* Absolute (not fixed) so the grid scrolls with the page and doesn’t
+     create a viewport spotlight that makes content look suspended. */
+  position: absolute;
   inset: 0;
   background-image:
     linear-gradient(rgba(232, 238, 245, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(232, 238, 245, 0.03) 1px, transparent 1px);
   background-size: 28px 28px;
-  mask-image: radial-gradient(circle at 50% 20%, #000 20%, transparent 75%);
-  opacity: 0.7;
+  mask-image: linear-gradient(180deg, #000 0%, #000 50%, transparent 100%);
+  opacity: 0.4;
 }
 
 .topbar {
@@ -36,7 +38,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 1.15rem 1.25rem 0.35rem;
+  /* Safe-area for notch; keep bottom padding tight so hero sits under brand. */
+  padding: max(0.5rem, env(safe-area-inset-top, 0px)) 1.15rem 0.1rem;
   text-align: left;
 }
 
@@ -49,10 +52,10 @@
 .brand {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2.4rem, 11vw, 3.4rem);
+  font-size: clamp(1.9rem, 8vw, 2.55rem);
   font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 0.95;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
 }
 
 .brand--btn {
@@ -70,12 +73,12 @@
 }
 
 .brand-tag {
-  margin: 0.35rem 0 0;
+  margin: 0.2rem 0 0;
   max-width: 36rem;
   color: var(--muted);
   font-size: 0.82rem;
   letter-spacing: 0.12em;
-  line-height: 1.45;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 
@@ -162,7 +165,7 @@
   color: var(--paper);
   font-family: var(--font-body);
   font-size: 0.88rem;
-  font-weight: 650;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
@@ -344,7 +347,7 @@ main.about-main {
 
 .data-pill {
   display: inline-block;
-  margin: 0.65rem 0 0;
+  margin: 0.4rem 0 0;
   padding: 0.28rem 0.7rem;
   border-radius: 999px;
   font-size: 0.72rem;
@@ -462,7 +465,7 @@ main.about-main {
 .session-date {
   color: var(--paper);
   font-size: 0.68rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
@@ -938,7 +941,7 @@ main {
   z-index: 1;
   width: min(100%, 28rem);
   margin: 0 auto;
-  padding: 0.5rem 1.15rem 2.5rem;
+  padding: 0 1.15rem 2.5rem;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -1041,7 +1044,7 @@ main {
 .bulletin__cta {
   margin: 0.75rem 0 0;
   font-size: 0.88rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .bulletin__cta a {
@@ -1057,7 +1060,7 @@ main {
   display: grid;
   justify-items: center;
   text-align: center;
-  padding: 0.5rem 0 1.5rem;
+  padding: 0.15rem 0 1.25rem;
   animation: rise 0.7s ease-out both;
   order: 1;
 }
@@ -1115,7 +1118,7 @@ main {
 .market-clock__time {
   font-variant-numeric: tabular-nums;
   color: var(--paper);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .market-clock__sep {
@@ -1152,7 +1155,7 @@ main {
 }
 
 .arrow-score-label {
-  margin: 0.85rem 0 0;
+  margin: 0.35rem 0 0;
   color: var(--paper);
   font-family: var(--font-display);
   font-size: clamp(0.95rem, 3.6vw, 1.15rem);
@@ -1186,6 +1189,7 @@ main {
   height: auto;
   display: block;
   filter: drop-shadow(0 18px 40px rgba(var(--glow), 0.35));
+  /* Opacity/scale only — no translateY (avoids mobile “floating” offset). */
   animation: arrow-in 0.85s cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
@@ -1323,6 +1327,8 @@ main {
 
 .panel--quote {
   order: 0;
+  /* First mobile block — don’t float away from the brand. */
+  margin-top: 0.35rem;
 }
 
 .quote-top {
@@ -1476,7 +1482,7 @@ main {
 .quote-result__chg {
   margin: 0.35rem 0 0;
   font-size: 0.88rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .quote-result.is-up .quote-result__chg {
@@ -1720,8 +1726,8 @@ main {
 
 .prob-value {
   margin: 0.15rem 0 0;
-  /* Tabular/neutral face — Syne numerals (esp. 8) sit on uneven baselines. */
-  font-family: var(--font-body), ui-rounded, system-ui, sans-serif;
+  /* Inter tabular nums — even digit widths (fixes uneven 8). */
+  font-family: var(--font-body);
   font-size: clamp(3.4rem, 16vw, 4.6rem);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -2073,7 +2079,7 @@ main {
   border: 1px solid var(--line);
   border-radius: 1rem;
   /* Blur lives on ::before — backdrop-filter on this box forces overflow clip
-     and mid-line crops Syne/Manrope descenders (g/y/p) inside the panel. */
+     and can mid-line crop descenders inside the panel. */
   background: transparent;
   overflow: visible;
   isolation: isolate;
@@ -2152,7 +2158,7 @@ main {
 .factor-label {
   margin: 0;
   padding-bottom: 0.15em;
-  font-weight: 650;
+  font-weight: 600;
   font-size: 0.92rem;
   line-height: 1.45;
   overflow: visible;
@@ -2252,8 +2258,6 @@ main {
 @keyframes rise {
   from {
     opacity: 0;
-    /* Opacity only — transform + backdrop/compositor layers mid-line crop
-       descenders on panel titles and factor labels (Syne/Manrope). */
   }
   to {
     opacity: 1;
@@ -2263,11 +2267,9 @@ main {
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -2283,11 +2285,9 @@ main {
 @keyframes arrow-in {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.92);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -2304,7 +2304,7 @@ main {
 @media (min-width: 720px) {
   main {
     width: min(100%, 34rem);
-    padding-top: 0.75rem;
+    padding-top: 0.25rem;
   }
 
   .arrow-stage {
@@ -2322,7 +2322,7 @@ main {
     flex-wrap: nowrap;
     max-width: 72rem;
     margin: 0 auto;
-    padding: 1.5rem 1.75rem 0.5rem;
+    padding: max(0.85rem, env(safe-area-inset-top, 0px)) 1.75rem 0.35rem;
     text-align: left;
   }
 
@@ -2335,7 +2335,7 @@ main {
   }
 
   .brand {
-    font-size: 2.85rem;
+    font-size: 2.4rem;
   }
 
   .brand-tag {
@@ -2804,7 +2804,7 @@ main {
 
 .share-view__prob {
   margin: 0;
-  font-family: var(--font-body), ui-rounded, system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: clamp(3rem, 14vw, 4rem);
   font-weight: 800;
   font-variant-numeric: tabular-nums;

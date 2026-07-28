@@ -1,4 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
+import { buildCorrectionHistory } from "../lib/correction-history";
 import type { CrashOdds } from "../lib/crash-probability";
+import { fetchSp500History } from "../lib/sp500-history";
+import { CrashHistoryChart } from "./CrashHistoryChart";
 import { CrashOddsPanel } from "./CrashOddsPanel";
 
 type Props = {
@@ -9,6 +13,44 @@ type Props = {
 };
 
 export function CrashOddsPage({ odds, loading, onGoDashboard, onOpenCorrection }: Props) {
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyLabel, setHistoryLabel] = useState("S&P 500");
+  const [historyBars, setHistoryBars] = useState<{ date: string; close: number }[]>([]);
+  const [historyRange, setHistoryRange] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const payload = await fetchSp500History();
+        if (cancelled) return;
+        setHistoryBars(payload.bars);
+        setHistoryLabel(payload.label || "S&P 500");
+        setHistoryRange(payload.rangeLabel);
+      } catch (e) {
+        if (cancelled) return;
+        setHistoryBars([]);
+        setHistoryError(
+          e instanceof Error ? e.message : "Could not load long-run S&P 500 history.",
+        );
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const crashHistory = useMemo(() => {
+    if (!historyBars.length) return null;
+    return buildCorrectionHistory(historyBars, historyRange || "long sample");
+  }, [historyBars, historyRange]);
+
   return (
     <article className="correction-page" aria-labelledby="crash-page-title">
       <header className="correction-page__hero">
@@ -40,6 +82,28 @@ export function CrashOddsPage({ odds, loading, onGoDashboard, onOpenCorrection }
       ) : null}
 
       {odds ? <CrashOddsPanel odds={odds} variant="page" /> : null}
+
+      <section
+        className="panel correction-page__panel panel--corr-history"
+        aria-labelledby="crash-history-title"
+      >
+        <h2 id="crash-history-title">~100 years of crashes</h2>
+        <p className="panel-lede">
+          Daily {historyLabel} closes vs a rolling ~52-week high — crash / bear episodes only (≥20%
+          drawdown), same rule as the odds above.
+        </p>
+        {historyLoading ? (
+          <p className="correction-page__status" role="status">
+            Loading long-run index history…
+          </p>
+        ) : null}
+        {!historyLoading && historyError ? (
+          <p className="correction-page__status">{historyError}</p>
+        ) : null}
+        {!historyLoading && crashHistory ? (
+          <CrashHistoryChart history={crashHistory} label={historyLabel} variant="page" />
+        ) : null}
+      </section>
 
       {onOpenCorrection ? (
         <p className="correction-page__status">

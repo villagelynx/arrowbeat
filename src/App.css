@@ -1565,6 +1565,10 @@ main {
   margin-bottom: 0.35rem;
 }
 
+.corr-history--crash .corr-history__shade {
+  fill: rgba(239, 51, 64, 0.28);
+}
+
 .disclaimer {
   order: 9;
 }

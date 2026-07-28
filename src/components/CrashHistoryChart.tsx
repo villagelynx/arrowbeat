@@ -7,6 +7,6 @@ type Props = {
   variant?: "page" | "teaser";
 };
 
-export function CorrectionsHistoryChart(props: Props) {
-  return <DrawdownHistoryChart {...props} mode="correction" />;
+export function CrashHistoryChart(props: Props) {
+  return <DrawdownHistoryChart {...props} mode="crash" />;
 }

@@ -197,6 +197,15 @@ export default function App() {
     syncViewHash(next);
   }
 
+  function goScorecard() {
+    if (view !== "home") {
+      navigateTo("home");
+      setScoreFocus(true);
+      return;
+    }
+    scorePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   useEffect(() => {
     if (!scoreFocus || !signal || view !== "home") return;
     const el = scorePanelRef.current;
@@ -549,7 +558,7 @@ export default function App() {
             </p>
           ) : null}
         </div>
-        <AppNav view={view} onNavigate={navigateTo} />
+        <AppNav view={view} onNavigate={navigateTo} onGoScorecard={goScorecard} />
       </header>
 
       {view === "about" ? (

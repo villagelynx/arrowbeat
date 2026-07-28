@@ -35,17 +35,18 @@
   position: relative;
   z-index: 40;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
   /* Safe-area for notch; keep bottom padding tight so hero sits under brand. */
-  padding: max(0.5rem, env(safe-area-inset-top, 0px)) 1.15rem 0.1rem;
+  padding: max(0.5rem, env(safe-area-inset-top, 0px)) 0 0;
   text-align: left;
 }
 
 .topbar__brand {
   flex: 1;
   min-width: 0;
+  padding-inline: 1.15rem;
   text-align: center;
 }
 
@@ -82,101 +83,65 @@
   text-transform: uppercase;
 }
 
-/* Top-right hamburger */
+/* Horizontal top nav */
 .app-nav {
   position: relative;
-  flex: 0 0 auto;
   z-index: 50;
+  width: 100%;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 16, 26, 0.55);
+  backdrop-filter: blur(10px);
 }
 
-.app-nav__toggle {
+.app-nav__links {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
-  border-radius: 0.55rem;
-  border: 1px solid var(--line);
-  background: rgba(8, 16, 26, 0.72);
-  color: var(--paper);
-  cursor: pointer;
-  backdrop-filter: blur(8px);
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 0.35rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.app-nav__toggle:hover,
-.app-nav.is-open .app-nav__toggle {
-  border-color: rgba(var(--glow), 0.4);
-  background: rgba(var(--glow), 0.1);
-}
-
-.app-nav__bars {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.28rem;
-  width: 1.05rem;
-}
-
-.app-nav__bars span {
-  display: block;
-  height: 2px;
-  border-radius: 1px;
-  background: currentColor;
-  transition: transform 0.18s ease, opacity 0.18s ease;
-}
-
-.app-nav.is-open .app-nav__bars span:nth-child(1) {
-  transform: translateY(0.34rem) rotate(45deg);
-}
-
-.app-nav.is-open .app-nav__bars span:nth-child(2) {
-  opacity: 0;
-}
-
-.app-nav.is-open .app-nav__bars span:nth-child(3) {
-  transform: translateY(-0.34rem) rotate(-45deg);
-}
-
-.app-nav__panel {
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 10.5rem;
-  padding: 0.4rem;
-  border-radius: 0.7rem;
-  border: 1px solid var(--line);
-  background: rgba(8, 16, 26, 0.96);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
+.app-nav__links::-webkit-scrollbar {
+  display: none;
 }
 
 .app-nav__link {
-  display: block;
-  width: 100%;
-  padding: 0.55rem 0.7rem;
+  flex: 0 0 auto;
+  padding: 0.62rem 0.85rem;
   border: 0;
-  border-radius: 0.45rem;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
-  color: var(--paper);
+  color: var(--muted);
   font-family: var(--font-body);
-  font-size: 0.88rem;
-  font-weight: 600;
-  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .app-nav__link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--paper);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .app-nav__link.is-active {
   color: var(--signal);
-  background: rgba(var(--glow), 0.12);
+  border-bottom-color: var(--signal);
+  background: rgba(var(--glow), 0.08);
 }
 
 .about {
@@ -2699,13 +2664,12 @@ main {
 @media (min-width: 960px) {
   .topbar {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
     max-width: 72rem;
     margin: 0 auto;
-    padding: max(0.85rem, env(safe-area-inset-top, 0px)) 1.75rem 0.35rem;
+    padding: max(0.85rem, env(safe-area-inset-top, 0px)) 0 0.35rem;
     text-align: left;
   }
 
@@ -2714,6 +2678,7 @@ main {
     align-items: baseline;
     flex-wrap: wrap;
     gap: 0.65rem 1rem;
+    padding-inline: 1.75rem;
     text-align: left;
   }
 
@@ -2729,8 +2694,14 @@ main {
     margin: 0;
   }
 
-  .app-nav {
-    margin-top: 0.35rem;
+  .app-nav__links {
+    justify-content: center;
+    padding-inline: 1.75rem;
+  }
+
+  .app-nav__link {
+    padding: 0.68rem 1.05rem;
+    font-size: 0.8rem;
   }
 
   main {

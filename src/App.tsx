@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AboutPage } from "./components/AboutPage";
 import { AppNav, type AppView } from "./components/AppNav";
+import { CorrectionOddsPage } from "./components/CorrectionOddsPage";
+import { CorrectionOddsPanel } from "./components/CorrectionOddsPanel";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -37,12 +39,34 @@ import {
   shareSignalCard,
   type SignalSharePayload,
 } from "./lib/signal-share";
+import { buildCorrectionOdds } from "./lib/correction-probability";
 import { yearFromIso } from "./lib/spy-ytd";
 import { SharePreviewModal, ShareView } from "./components/ShareView";
 import "./App.css";
 
 /** Aligns with Yahoo free delayed quotes (~15 minutes). */
 const REFRESH_MS = 15 * 60 * 1000;
+
+function readViewFromLocation(): AppView | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  if (hash === "correction") return "correction";
+  return null;
+}
+
+function syncViewHash(view: AppView) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (view === "correction") {
+    url.hash = "correction";
+  } else if (url.hash.replace(/^#/, "") === "correction") {
+    url.hash = "";
+  }
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== next) {
+    window.history.replaceState({}, "", next);
+  }
+}
 
 function readScoreShareFromLocation(): {
   focusScore: boolean;
@@ -111,6 +135,8 @@ function stars(n: number) {
 export default function App() {
   const [signal, setSignal] = useState<DailySignal | null>(null);
   const [spyBars, setSpyBars] = useState<Bar[]>([]);
+  const [vixBars, setVixBars] = useState<Bar[]>([]);
+  const [vixLast, setVixLast] = useState<number | null>(null);
   const [dayBars, setDayBars] = useState<IntradayBar[]>([]);
   const [dayPrevClose, setDayPrevClose] = useState<number | null>(null);
   const [scorecard, setScorecard] = useState<ScorecardSummary>(() => emptyScorecard(""));
@@ -121,7 +147,7 @@ export default function App() {
   const [quoteResult, setQuoteResult] = useState<StockQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
-  const [view, setView] = useState<AppView>("home");
+  const [view, setView] = useState<AppView>(() => readViewFromLocation() ?? "home");
   const [sharedScore, setSharedScore] = useState<SharedScoreSnapshot | null>(null);
   const [scoreFocus, setScoreFocus] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
@@ -147,8 +173,29 @@ export default function App() {
     if (focusScore) {
       setView("home");
       setScoreFocus(true);
+      return;
     }
+    const routeView = readViewFromLocation();
+    if (routeView) setView(routeView);
   }, []);
+
+  useEffect(() => {
+    function onHashChange() {
+      const routeView = readViewFromLocation();
+      if (routeView) {
+        setView(routeView);
+        return;
+      }
+      setView((current) => (current === "correction" ? "home" : current));
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  function navigateTo(next: AppView) {
+    setView(next);
+    syncViewHash(next);
+  }
 
   useEffect(() => {
     if (!scoreFocus || !signal || view !== "home") return;
@@ -182,6 +229,15 @@ export default function App() {
     };
   }, [sharePreviewUrl]);
 
+  const correctionOdds = useMemo(() => {
+    if (!spyBars.length) return null;
+    try {
+      return buildCorrectionOdds(spyBars, vixBars, vixLast);
+    } catch {
+      return null;
+    }
+  }, [spyBars, vixBars, vixLast]);
+
   useEffect(() => {
     let cancelled = false;
     // Local to this effect instance so React Strict Mode remounts can still load
@@ -204,6 +260,8 @@ export default function App() {
         const bars = snap.spy.bars.length ? snap.spy.bars : snap.spy.recentBars;
         setSignal(live);
         setSpyBars(bars);
+        setVixBars(snap.vix.bars ?? []);
+        setVixLast(snap.vix.last ?? null);
         setDayBars(snap.spy.dayBars ?? []);
         setDayPrevClose(snap.spy.dayPrevClose ?? null);
         setScorecard(syncScorecard(live, bars));
@@ -216,6 +274,8 @@ export default function App() {
           const demo = buildDemoSignal();
           setSignal(demo);
           setSpyBars([]);
+          setVixBars([]);
+          setVixLast(null);
           setDayBars([]);
           setDayPrevClose(null);
           setScorecard(syncScorecard(demo, []));
@@ -365,7 +425,7 @@ export default function App() {
             view={view}
             onNavigate={(next) => {
               dismissSharedSignal();
-              setView(next);
+              navigateTo(next);
             }}
           />
         </header>
@@ -377,8 +437,10 @@ export default function App() {
   }
 
   if (!signal) {
+    const pageClass =
+      view === "about" ? " app--about" : view === "correction" ? " app--correction" : "";
     return (
-      <div className={`app theme-up${view === "about" ? " app--about" : ""}`}>
+      <div className={`app theme-up${pageClass}`}>
         <div className="atmosphere" aria-hidden="true" />
         <header className="topbar">
           <div className="topbar__brand">
@@ -387,11 +449,19 @@ export default function App() {
             </p>
             <p className="brand-tag">turns historical stats into daily market probability</p>
           </div>
-          <AppNav view={view} onNavigate={setView} />
+          <AppNav view={view} onNavigate={navigateTo} />
         </header>
         {view === "about" ? (
           <main className="about-main">
-            <AboutPage onGoDashboard={() => setView("home")} />
+            <AboutPage onGoDashboard={() => navigateTo("home")} />
+          </main>
+        ) : view === "correction" ? (
+          <main className="correction-main">
+            <CorrectionOddsPage
+              odds={correctionOdds}
+              loading={loading}
+              onGoDashboard={() => navigateTo("home")}
+            />
           </main>
         ) : null}
       </div>
@@ -439,6 +509,7 @@ export default function App() {
   const leadPct = up ? primary.probabilityHigher : primary.probabilityLower;
   const todayUp = signal.bias === "up";
   const todayLeadPct = todayUp ? signal.probabilityHigher : signal.probabilityLower;
+
   const signalSharePayload: SignalSharePayload = {
     bias: primary.bias,
     probability: leadPct,
@@ -453,13 +524,16 @@ export default function App() {
     ),
   };
 
+  const pageClass =
+    view === "about" ? " app--about" : view === "correction" ? " app--correction" : "";
+
   return (
-    <div className={`app ${up ? "theme-up" : "theme-down"}${view === "about" ? " app--about" : ""}`}>
+    <div className={`app ${up ? "theme-up" : "theme-down"}${pageClass}`}>
       <div className="atmosphere" aria-hidden="true" />
 
       <header className="topbar">
         <div className="topbar__brand">
-          <button type="button" className="brand brand--btn" onClick={() => setView("home")}>
+          <button type="button" className="brand brand--btn" onClick={() => navigateTo("home")}>
             Arrow<span>Beat</span>
           </button>
           <p className="brand-tag">
@@ -475,12 +549,20 @@ export default function App() {
             </p>
           ) : null}
         </div>
-        <AppNav view={view} onNavigate={setView} />
+        <AppNav view={view} onNavigate={navigateTo} />
       </header>
 
       {view === "about" ? (
         <main className="about-main">
-          <AboutPage onGoDashboard={() => setView("home")} />
+          <AboutPage onGoDashboard={() => navigateTo("home")} />
+        </main>
+      ) : view === "correction" ? (
+        <main className="correction-main">
+          <CorrectionOddsPage
+            odds={correctionOdds}
+            loading={loading || refreshing}
+            onGoDashboard={() => navigateTo("home")}
+          />
         </main>
       ) : (
       <main>
@@ -1717,6 +1799,13 @@ export default function App() {
             </div>
           </section>
         </div>
+
+        {correctionOdds ? (
+          <CorrectionOddsPanel
+            odds={correctionOdds}
+            onOpenFullPage={() => navigateTo("correction")}
+          />
+        ) : null}
 
         <p className="disclaimer">{signal.disclaimer}</p>
       </main>

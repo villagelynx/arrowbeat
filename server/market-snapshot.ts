@@ -374,7 +374,7 @@ export async function buildMarketSnapshot(): Promise<MarketSnapshotPayload> {
     softYahoo("SPY", "5y"),
     softYahoo("SPY", "3mo"),
     softYahoo("SPY", "1d", "15m"),
-    softYahoo("^VIX", "3mo"),
+    softYahoo("^VIX", "5y"),
     softYahoo("ES=F", "5d"),
     softYahoo("RSP", "1mo"),
     softYahoo("^TNX", "1mo"),

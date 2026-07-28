@@ -345,6 +345,156 @@ main.about-main {
   mask-image: none;
 }
 
+/* Correction odds route */
+.correction-page {
+  width: min(100%, 42rem);
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+}
+
+.correction-page__hero {
+  margin-bottom: 1.25rem;
+  padding: 1.1rem 0 0.5rem;
+}
+
+.correction-page__kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.correction-page__title {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 4vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.correction-page__lede {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  max-width: 38rem;
+}
+
+.correction-page__cta {
+  margin-top: 0.85rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--glow), 0.35);
+  background: rgba(var(--glow), 0.1);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.correction-page__cta:hover {
+  background: rgba(var(--glow), 0.16);
+}
+
+.correction-page__status {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.correction-page__panel {
+  margin-top: 1rem;
+}
+
+.correction-page__list {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.correction-page__list li + li {
+  margin-top: 0.45rem;
+}
+
+.correction-page__list--compact li + li {
+  margin-top: 0.3rem;
+}
+
+.correction-page__list strong {
+  color: var(--paper);
+  font-weight: 750;
+}
+
+.correction-page__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.correction-page__subhead {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.correction-page__disclaimer {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+main.correction-main {
+  overflow: visible;
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+}
+
+.app--correction {
+  overflow: visible;
+}
+
+.app--correction .atmosphere {
+  mask-image: none;
+}
+
+.corr-odds__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.corr-odds__head h2 {
+  margin: 0;
+}
+
+.corr-odds__full-link {
+  color: var(--signal);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.corr-odds__full-link:hover {
+  text-decoration: underline;
+}
+
+.panel--correction-page {
+  margin-top: 0.5rem;
+}
+
 .data-pill {
   display: inline-block;
   margin: 0.4rem 0 0;
@@ -1041,6 +1191,200 @@ main {
 .cashflow-edu__cite strong {
   color: var(--text);
   font-weight: 750;
+}
+
+.desk-row--correction {
+  order: 8;
+}
+
+.panel--correction {
+  margin-top: 1.15rem;
+}
+
+.corr-odds__snapshot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin-top: 0.65rem;
+}
+
+.corr-odds__metric {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--line);
+  background: rgba(8, 16, 26, 0.45);
+}
+
+.corr-odds__kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.corr-odds__hero {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.corr-odds__hero.is-up {
+  color: var(--up);
+}
+
+.corr-odds__hero.is-warn {
+  color: #e8b84a;
+}
+
+.corr-odds__hero.is-down {
+  color: var(--down);
+}
+
+.corr-odds__regime {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.corr-odds__sub {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.corr-odds__flag {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(232, 184, 74, 0.35);
+  background: rgba(232, 184, 74, 0.08);
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.corr-odds__hero-stat {
+  margin-top: 0.95rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(var(--glow), 0.22);
+  background: rgba(var(--glow), 0.06);
+}
+
+.corr-odds__compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.65rem;
+  align-items: center;
+  margin-top: 0.45rem;
+}
+
+.corr-odds__compare--solo {
+  grid-column: 1 / -1;
+}
+
+.corr-odds__compare-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.corr-odds__compare-value {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--signal);
+}
+
+.corr-odds__compare-value--muted {
+  color: var(--text);
+  opacity: 0.85;
+}
+
+.corr-odds__compare-n {
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.corr-odds__vs {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.corr-odds__pct {
+  font: inherit;
+}
+
+.corr-odds__pct.is-secondary {
+  opacity: 0.92;
+}
+
+.corr-odds__thin {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.corr-odds__table {
+  width: 100%;
+  margin-top: 0.95rem;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.corr-odds__caption {
+  caption-side: top;
+  margin-bottom: 0.45rem;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.corr-odds__table th,
+.corr-odds__table td {
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.corr-odds__table th[scope="col"] {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.corr-odds__table th[scope="row"] {
+  font-weight: 650;
+  color: var(--text);
+}
+
+.corr-odds__interp {
+  margin: 0.85rem 0 0;
+  color: var(--text);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.corr-odds__caveat {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
 }
 
 .disclaimer {
@@ -2404,6 +2748,7 @@ main {
   .panel--score,
   .panel--factors,
   .panel--cashflow-edu,
+  .panel--correction,
   .panel--mag7,
   .panel--alts,
   .panel--quote,

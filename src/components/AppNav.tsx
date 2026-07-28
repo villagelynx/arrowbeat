@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-export type AppView = "home" | "about";
+export type AppView = "home" | "about" | "correction";
 
 type AppNavProps = {
   view: AppView;
@@ -66,6 +66,13 @@ export function AppNav({ view, onNavigate }: AppNavProps) {
             onClick={() => go("home")}
           >
             Dashboard
+          </button>
+          <button
+            type="button"
+            className={`app-nav__link ${view === "correction" ? "is-active" : ""}`}
+            onClick={() => go("correction")}
+          >
+            Correction odds
           </button>
           <button
             type="button"

@@ -982,30 +982,60 @@ export default function App() {
             </aside>
           </section>
 
-          <section className="panel panel--factors" aria-labelledby="factors-title">
-            <h2 id="factors-title">Why this signal</h2>
-            <p className="panel-lede">
-              {tomorrowAsPrimary
-                ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
-                : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
-            </p>
-            <ul className="factor-list">
-              {primary.factors.map((f) => {
-                const good = f.supports === primary.bias;
-                return (
-                  <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
-                    <span className="factor-mark" aria-hidden="true">
-                      {good ? "✓" : "✗"}
-                    </span>
-                    <div>
-                      <p className="factor-label">{f.label}</p>
-                      <p className="factor-detail">{f.detail}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+          <div className="desk-stack desk-stack--factors">
+            <section className="panel panel--factors" aria-labelledby="factors-title">
+              <h2 id="factors-title">Why this signal</h2>
+              <p className="panel-lede">
+                {tomorrowAsPrimary
+                  ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
+                  : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
+              </p>
+              <ul className="factor-list">
+                {primary.factors.map((f) => {
+                  const good = f.supports === primary.bias;
+                  return (
+                    <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
+                      <span className="factor-mark" aria-hidden="true">
+                        {good ? "✓" : "✗"}
+                      </span>
+                      <div>
+                        <p className="factor-label">{f.label}</p>
+                        <p className="factor-detail">{f.detail}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <aside
+              className="panel panel--cashflow-edu"
+              aria-labelledby="cashflow-edu-title"
+            >
+              <p id="cashflow-edu-title" className="cashflow-edu__kicker">
+                Did you know?
+              </p>
+              <p className="cashflow-edu__body">
+                Historically, the <strong>30th and 31st</strong> rank among SPY&apos;s
+                softer days — rent and bills coming due. The{" "}
+                <strong>1st and 15th</strong> rank among the stronger ones — classic
+                payday windows. When money leaves accounts, the market has tended to
+                struggle more; when paychecks land, it has tended to firm up.
+              </p>
+              {signal.cashflowCycle ? (
+                <p className="cashflow-edu__cite">
+                  Based on ~10y SPY · payday window beats late-month by{" "}
+                  <strong>
+                    {signal.cashflowCycle.spreadPts >= 0 ? "+" : ""}
+                    {signal.cashflowCycle.spreadPts.toFixed(1)} pts
+                  </strong>{" "}
+                  historically.
+                </p>
+              ) : signal.dayOfMonthOdds.length ? (
+                <p className="cashflow-edu__cite">Based on ~10y SPY by calendar day.</p>
+              ) : null}
+            </aside>
+          </div>
         </div>
 
         {signal.mag7.length ? (

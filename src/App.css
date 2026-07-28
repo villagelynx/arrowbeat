@@ -83,11 +83,12 @@
   text-transform: uppercase;
 }
 
-/* Horizontal top nav */
+/* Horizontal top nav — full-bleed strip under brand */
 .app-nav {
   position: relative;
   z-index: 50;
-  width: 100%;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: rgba(8, 16, 26, 0.55);

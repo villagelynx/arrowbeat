@@ -8,8 +8,8 @@ import {
   scanSeriesForCorrection,
   summarizeCorrectionRows,
   type StockCorrectionsScan,
-} from "../src/lib/stock-corrections";
-import { barsFromChart, lastPrice, softYahoo } from "./market-snapshot";
+} from "../src/lib/stock-corrections.js";
+import { barsFromChart, lastPrice, softYahoo } from "./market-snapshot.js";
 
 export async function buildStockCorrectionsScan(): Promise<StockCorrectionsScan> {
   const charts = await Promise.all(

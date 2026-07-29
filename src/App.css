@@ -419,6 +419,125 @@ main.about-main {
   line-height: 1.55;
 }
 
+.stock-corr__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.stock-corr__metric {
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stock-corr__table-wrap {
+  margin-top: 0.85rem;
+  overflow-x: auto;
+}
+
+.stock-corr__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.stock-corr__table th,
+.stock-corr__table td {
+  padding: 0.65rem 0.55rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: top;
+}
+
+.stock-corr__table th[scope="col"] {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.stock-corr__sym {
+  display: block;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.stock-corr__name {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.stock-corr__num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stock-corr__dd {
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stock-corr__dd.is-near-high {
+  color: #9ef0c2;
+}
+
+.stock-corr__dd.is-pullback {
+  color: #f0c24b;
+}
+
+.stock-corr__dd.is-correction,
+.stock-corr__dd.is-crash {
+  color: #ff9d94;
+}
+
+.stock-corr__badge {
+  display: inline-block;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.stock-corr__badge.is-near-high {
+  color: #9ef0c2;
+  background: rgba(18, 212, 107, 0.12);
+  border: 1px solid rgba(18, 212, 107, 0.28);
+}
+
+.stock-corr__badge.is-pullback {
+  color: #f0c24b;
+  background: rgba(240, 194, 75, 0.12);
+  border: 1px solid rgba(240, 194, 75, 0.28);
+}
+
+.stock-corr__badge.is-correction,
+.stock-corr__badge.is-crash {
+  color: #ffb4ae;
+  background: rgba(239, 51, 64, 0.12);
+  border: 1px solid rgba(239, 51, 64, 0.3);
+}
+
+.stock-corr__row.is-correction,
+.stock-corr__row.is-crash {
+  background: rgba(239, 51, 64, 0.05);
+}
+
+@media (max-width: 720px) {
+  .stock-corr__metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
 main.correction-main {
   overflow: visible;
   padding-top: 1rem;

@@ -1,5 +1,6 @@
 import type { Plugin } from "vite";
 import { buildMarketSnapshot, buildStockQuote } from "./server/market-snapshot.ts";
+import { buildStockCorrectionsScan } from "./server/stock-corrections.ts";
 import { fetchLatestSportsBulletin } from "./server/sports-bulletin.ts";
 
 function json(res: import("http").ServerResponse, status: number, body: unknown) {
@@ -32,6 +33,10 @@ async function handleApi(
           symbol,
         });
       }
+      return;
+    }
+    if (path === "/api/market/corrections") {
+      json(res, 200, await buildStockCorrectionsScan());
       return;
     }
     if (path === "/api/sports/bulletin") {

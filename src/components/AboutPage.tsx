@@ -59,6 +59,10 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
             prints (eve / day / +1 / +2 vs quiet days), with a dedicated page for methodology.
           </li>
           <li>
+            <strong>Stock corrections</strong> — which names on a liquid watchlist (Mag7, indexes,
+            and selected large caps) are ≥10% off their rolling ~52-week high right now.
+          </li>
+          <li>
             <strong>Correction &amp; crash odds</strong> — historical frequencies of ≥10% and ≥20%
             drawdowns from the rolling ~52-week high, by regime.
           </li>

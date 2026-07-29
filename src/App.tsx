@@ -7,6 +7,7 @@ import { CpiOddsPage } from "./components/CpiOddsPage";
 import { CpiOddsPanel } from "./components/CpiOddsPanel";
 import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
+import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -58,6 +59,7 @@ function readViewFromLocation(): AppView | null {
   if (hash === "correction") return "correction";
   if (hash === "crash") return "crash";
   if (hash === "cpi") return "cpi";
+  if (hash === "stock-corrections") return "stock-corrections";
   return null;
 }
 
@@ -71,7 +73,14 @@ function syncViewHash(view: AppView) {
     url.hash = "crash";
   } else if (view === "cpi") {
     url.hash = "cpi";
-  } else if (currentHash === "correction" || currentHash === "crash" || currentHash === "cpi") {
+  } else if (view === "stock-corrections") {
+    url.hash = "stock-corrections";
+  } else if (
+    currentHash === "correction" ||
+    currentHash === "crash" ||
+    currentHash === "cpi" ||
+    currentHash === "stock-corrections"
+  ) {
     url.hash = "";
   }
   const next = `${url.pathname}${url.search}${url.hash}`;
@@ -199,7 +208,12 @@ export default function App() {
         return;
       }
       setView((current) =>
-        current === "correction" || current === "crash" || current === "cpi" ? "home" : current,
+        current === "correction" ||
+        current === "crash" ||
+        current === "cpi" ||
+        current === "stock-corrections"
+          ? "home"
+          : current,
       );
     }
     window.addEventListener("hashchange", onHashChange);
@@ -472,7 +486,10 @@ export default function App() {
     const pageClass =
       view === "about"
         ? " app--about"
-        : view === "correction" || view === "crash" || view === "cpi"
+        : view === "correction" ||
+            view === "crash" ||
+            view === "cpi" ||
+            view === "stock-corrections"
           ? " app--correction"
           : "";
     return (
@@ -514,6 +531,14 @@ export default function App() {
             <CpiOddsPage
               insight={null}
               loading={loading}
+              onGoDashboard={() => navigateTo("home")}
+              onOpenCorrection={() => navigateTo("correction")}
+              onOpenCrash={() => navigateTo("crash")}
+            />
+          </main>
+        ) : view === "stock-corrections" ? (
+          <main className="correction-main">
+            <StockCorrectionsPage
               onGoDashboard={() => navigateTo("home")}
               onOpenCorrection={() => navigateTo("correction")}
               onOpenCrash={() => navigateTo("crash")}
@@ -583,7 +608,10 @@ export default function App() {
   const pageClass =
     view === "about"
       ? " app--about"
-      : view === "correction" || view === "crash" || view === "cpi"
+      : view === "correction" ||
+          view === "crash" ||
+          view === "cpi" ||
+          view === "stock-corrections"
         ? " app--correction"
         : "";
 
@@ -639,6 +667,14 @@ export default function App() {
           <CpiOddsPage
             insight={signal.cpiWindow}
             loading={loading || refreshing}
+            onGoDashboard={() => navigateTo("home")}
+            onOpenCorrection={() => navigateTo("correction")}
+            onOpenCrash={() => navigateTo("crash")}
+          />
+        </main>
+      ) : view === "stock-corrections" ? (
+        <main className="correction-main">
+          <StockCorrectionsPage
             onGoDashboard={() => navigateTo("home")}
             onOpenCorrection={() => navigateTo("correction")}
             onOpenCrash={() => navigateTo("crash")}

@@ -150,7 +150,7 @@ async function softFred(seriesId: string): Promise<Bar[]> {
   }
 }
 
-async function softYahoo(
+export async function softYahoo(
   symbol: string,
   range: string,
   interval = "1d",
@@ -162,7 +162,7 @@ async function softYahoo(
   }
 }
 
-function barsFromChart(data: YahooChart): Bar[] {
+export function barsFromChart(data: YahooChart): Bar[] {
   const result = data.chart?.result?.[0];
   if (!result?.timestamp?.length) return [];
   const closes = result.indicators?.quote?.[0]?.close || [];
@@ -220,7 +220,7 @@ function withDelayedLast(bars: Bar[], last: number | null, asOfDate: string): Ba
   return next;
 }
 
-function lastPrice(data: YahooChart, bars: Bar[]): number | null {
+export function lastPrice(data: YahooChart, bars: Bar[]): number | null {
   const meta = data.chart?.result?.[0]?.meta;
   if (meta?.regularMarketPrice != null && Number.isFinite(meta.regularMarketPrice)) {
     return Number(meta.regularMarketPrice);

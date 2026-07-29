@@ -14,6 +14,9 @@
 [functions."market-quote"]
   timeout = 6
 
+[functions."market-corrections"]
+  timeout = 10
+
 [functions."sports-bulletin"]
   timeout = 8
 
@@ -35,6 +38,12 @@
 [[redirects]]
   from = "/api/market/quote"
   to = "/.netlify/functions/market-quote"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/market/corrections"
+  to = "/.netlify/functions/market-corrections"
   status = 200
   force = true
 

@@ -1,3 +1,5 @@
+import type { StockCorrectionsScan } from "./stock-corrections";
+
 export type Bar = { date: string; close: number };
 
 export type IntradayBar = {
@@ -125,6 +127,25 @@ export async function fetchStockQuote(symbol: string): Promise<StockQuote> {
     const data = (await res.json()) as StockQuote & { error?: string };
     if (!res.ok || data.last == null) {
       throw new Error(data.error || `No quote for ${ticker}.`);
+    }
+    return data;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+/** Curated watchlist vs rolling ~52-week peak (≥10% = correction). */
+export async function fetchStockCorrectionsScan(): Promise<StockCorrectionsScan> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const res = await fetch("/api/market/corrections", {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const data = (await res.json()) as StockCorrectionsScan & { error?: string };
+    if (!res.ok || !Array.isArray(data.rows)) {
+      throw new Error(data.error || `Corrections scan unavailable (${res.status}).`);
     }
     return data;
   } finally {

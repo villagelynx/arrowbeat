@@ -1,14 +1,14 @@
-import type { Bar } from "./market-data";
+import type { Bar } from "./market-data.js";
 import {
   CORRECTION_THRESHOLD_PCT,
   CRASH_THRESHOLD_PCT,
-} from "./correction-history";
+} from "./correction-history.js";
 import {
   PEAK_LOOKBACK,
   drawdownPct,
   rollingPeak,
   validBars,
-} from "./drawdown-probability";
+} from "./drawdown-probability.js";
 
 export { CORRECTION_THRESHOLD_PCT, CRASH_THRESHOLD_PCT };
 

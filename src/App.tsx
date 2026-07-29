@@ -3,6 +3,8 @@ import { AboutPage } from "./components/AboutPage";
 import { AppNav, type AppView } from "./components/AppNav";
 import { CorrectionOddsPage } from "./components/CorrectionOddsPage";
 import { CorrectionOddsPanel } from "./components/CorrectionOddsPanel";
+import { CpiOddsPage } from "./components/CpiOddsPage";
+import { CpiOddsPanel } from "./components/CpiOddsPanel";
 import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
 import { MarketArrow } from "./components/MarketArrow";
@@ -55,6 +57,7 @@ function readViewFromLocation(): AppView | null {
   const hash = window.location.hash.replace(/^#/, "");
   if (hash === "correction") return "correction";
   if (hash === "crash") return "crash";
+  if (hash === "cpi") return "cpi";
   return null;
 }
 
@@ -66,7 +69,9 @@ function syncViewHash(view: AppView) {
     url.hash = "correction";
   } else if (view === "crash") {
     url.hash = "crash";
-  } else if (currentHash === "correction" || currentHash === "crash") {
+  } else if (view === "cpi") {
+    url.hash = "cpi";
+  } else if (currentHash === "correction" || currentHash === "crash" || currentHash === "cpi") {
     url.hash = "";
   }
   const next = `${url.pathname}${url.search}${url.hash}`;
@@ -193,7 +198,9 @@ export default function App() {
         setView(routeView);
         return;
       }
-      setView((current) => (current === "correction" || current === "crash" ? "home" : current));
+      setView((current) =>
+        current === "correction" || current === "crash" || current === "cpi" ? "home" : current,
+      );
     }
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
@@ -465,7 +472,7 @@ export default function App() {
     const pageClass =
       view === "about"
         ? " app--about"
-        : view === "correction" || view === "crash"
+        : view === "correction" || view === "crash" || view === "cpi"
           ? " app--correction"
           : "";
     return (
@@ -500,6 +507,16 @@ export default function App() {
               loading={loading}
               onGoDashboard={() => navigateTo("home")}
               onOpenCorrection={() => navigateTo("correction")}
+            />
+          </main>
+        ) : view === "cpi" ? (
+          <main className="correction-main">
+            <CpiOddsPage
+              insight={null}
+              loading={loading}
+              onGoDashboard={() => navigateTo("home")}
+              onOpenCorrection={() => navigateTo("correction")}
+              onOpenCrash={() => navigateTo("crash")}
             />
           </main>
         ) : null}
@@ -566,7 +583,7 @@ export default function App() {
   const pageClass =
     view === "about"
       ? " app--about"
-      : view === "correction" || view === "crash"
+      : view === "correction" || view === "crash" || view === "cpi"
         ? " app--correction"
         : "";
 
@@ -615,6 +632,16 @@ export default function App() {
             loading={loading || refreshing}
             onGoDashboard={() => navigateTo("home")}
             onOpenCorrection={() => navigateTo("correction")}
+          />
+        </main>
+      ) : view === "cpi" ? (
+        <main className="correction-main">
+          <CpiOddsPage
+            insight={signal.cpiWindow}
+            loading={loading || refreshing}
+            onGoDashboard={() => navigateTo("home")}
+            onOpenCorrection={() => navigateTo("correction")}
+            onOpenCrash={() => navigateTo("crash")}
           />
         </main>
       ) : (
@@ -1747,86 +1774,10 @@ export default function App() {
         ) : null}
 
         {signal.cpiWindow?.odds.length ? (
-          <section className="panel" aria-labelledby="cpi-title">
-            <h2 id="cpi-title">CPI release window odds</h2>
-            <p className="panel-lede">
-              ~10y SPY around mid-month inflation prints — ranked by historical higher-close rate.
-              Proxy: weekday nearest the 12th (not official BLS dates).
-            </p>
-
-            <div className="cashflow cpi-window">
-              <p className="cashflow__title">Inflation print window</p>
-              <div className="cashflow__grid">
-                <div
-                  className={`cashflow__card ${
-                    signal.cpiWindow.windowVsQuietPts >= 0 ? "is-payday" : "is-rent"
-                  }`}
-                >
-                  <p className="cashflow__kicker">Window vs quiet</p>
-                  <p className="cashflow__num">
-                    {signal.cpiWindow.windowVsQuietPts >= 0 ? "+" : ""}
-                    {signal.cpiWindow.windowVsQuietPts.toFixed(1)}
-                    <span className="cashflow__unit"> pts</span>
-                  </p>
-                  <p className="cashflow__note">eve / day / +1 / +2 vs other days</p>
-                </div>
-                <div
-                  className={`cashflow__card ${
-                    signal.cpiWindow.todayKind !== "quiet" ? "is-rent" : "is-payday"
-                  }`}
-                >
-                  <p className="cashflow__kicker">Today</p>
-                  <p className="cashflow__num cashflow__num--sm">
-                    {signal.cpiWindow.odds.find((o) => o.kind === signal.cpiWindow!.todayKind)
-                      ?.label ?? "Quiet"}
-                  </p>
-                  <p className="cashflow__note">
-                    Next proxy {signal.cpiWindow.nextCpi ?? "—"}
-                  </p>
-                </div>
-              </div>
-              <p className="cashflow__spread">
-                CPI weeks are when inflation headlines hit — history can lean either way. Treat the
-                ranks as a calendar lens, not a forecast.
-              </p>
-            </div>
-
-            <ol className="odds-rank">
-              {signal.cpiWindow.odds.map((row) => {
-                const leanUp = row.upPct >= 50;
-                const isToday = signal.cpiWindow!.todayKind === row.kind;
-                const isWindow = row.kind !== "quiet";
-                return (
-                  <li
-                    key={row.kind}
-                    className={`${leanUp ? "is-up" : "is-down"}${isToday ? " is-today" : ""}${
-                      isWindow ? " is-cpi" : ""
-                    }`}
-                  >
-                    <span className="odds-rank__n">#{row.rank}</span>
-                    <div className="odds-rank__body">
-                      <p className="odds-rank__name">
-                        {row.label}
-                        {isToday ? <span className="odds-rank__tag"> today</span> : null}
-                        {isWindow ? <span className="odds-rank__tag is-cpi"> CPI</span> : null}
-                      </p>
-                      <p className="odds-rank__meta">
-                        Higher {row.upPct.toFixed(1)}% · Lower {row.downPct.toFixed(1)}% · n=
-                        {row.n.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="odds-rank__stats">
-                      <span className="odds-rank__up">{row.upPct.toFixed(1)}%</span>
-                      <span className="odds-rank__avg">
-                        avg {row.avgMovePct >= 0 ? "+" : ""}
-                        {row.avgMovePct.toFixed(2)}%
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
+          <CpiOddsPanel
+            insight={signal.cpiWindow}
+            onOpenFullPage={() => navigateTo("cpi")}
+          />
         ) : null}
           </div>
         ) : null}

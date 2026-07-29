@@ -55,6 +55,14 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
             timing slices, scored against historical SPY ups and downs.
           </li>
           <li>
+            <strong>CPI odds</strong> — how often SPY finished higher around mid-month inflation
+            prints (eve / day / +1 / +2 vs quiet days), with a dedicated page for methodology.
+          </li>
+          <li>
+            <strong>Correction &amp; crash odds</strong> — historical frequencies of ≥10% and ≥20%
+            drawdowns from the rolling ~52-week high, by regime.
+          </li>
+          <li>
             <strong>Magnificent 7</strong> — compact per-name leans ranked by P(higher close),
             with day % vs prior close.
           </li>

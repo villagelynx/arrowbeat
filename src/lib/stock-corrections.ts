@@ -1,16 +1,32 @@
-import type { Bar } from "./market-data.js";
-import {
-  CORRECTION_THRESHOLD_PCT,
-  CRASH_THRESHOLD_PCT,
-} from "./correction-history.js";
-import {
-  PEAK_LOOKBACK,
-  drawdownPct,
-  rollingPeak,
-  validBars,
-} from "./drawdown-probability.js";
+type CorrectionBar = { date: string; close: number };
 
-export { CORRECTION_THRESHOLD_PCT, CRASH_THRESHOLD_PCT };
+/** Keep these aligned with the SPY correction / crash definitions. */
+export const PEAK_LOOKBACK = 252;
+export const CORRECTION_THRESHOLD_PCT = 10;
+export const CRASH_THRESHOLD_PCT = 20;
+
+function validBars(bars: CorrectionBar[]): CorrectionBar[] {
+  return bars.filter(
+    (bar) =>
+      Boolean(bar?.date) &&
+      typeof bar.close === "number" &&
+      Number.isFinite(bar.close) &&
+      bar.close > 0,
+  );
+}
+
+function rollingPeak(closes: number[], index: number): number {
+  const start = Math.max(0, index - PEAK_LOOKBACK + 1);
+  let peak = closes[start];
+  for (let i = start + 1; i <= index; i += 1) {
+    if (closes[i] > peak) peak = closes[i];
+  }
+  return peak;
+}
+
+function drawdownPct(close: number, peak: number): number {
+  return peak > 0 ? (close / peak - 1) * 100 : 0;
+}
 
 export type StockCorrectionStatus = "near-high" | "pullback" | "correction" | "crash";
 
@@ -77,7 +93,7 @@ export function classifyStockDrawdown(ddPct: number): StockCorrectionStatus {
 export function scanSeriesForCorrection(
   symbol: string,
   name: string,
-  bars: Bar[],
+  bars: CorrectionBar[],
   lastOverride?: number | null,
 ): StockCorrectionRow | null {
   const clean = validBars(bars);

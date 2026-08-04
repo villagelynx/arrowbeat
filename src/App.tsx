@@ -768,13 +768,16 @@ export default function App() {
         ? signal.probabilityHigher
         : signal.probabilityLower;
 
-  const sessionStrip = deskIsEquity && deskEquity ? deskEquity.lastSessions : signal.lastSessions;
+  const sessionStrip =
+    deskIsEquity && deskEquity
+      ? deskEquity.lastSessions ?? []
+      : signal.lastSessions ?? [];
   const chartBars = deskChart?.bars?.length ? deskChart.bars : spyBars;
   const chartSymbol = deskChart?.symbol ?? "SPY";
   const forwardStrip =
     deskIsEquity && deskEquity?.forwardLeans?.length
       ? deskEquity.forwardLeans
-      : signal.forwardLeans;
+      : signal.forwardLeans ?? [];
 
   /** Top snapshot: active name quote + next-5-session leans (SPY or Mag7 / quote desk). */
   // Plain object (not useMemo) — this sits after early returns for !signal / share view.
@@ -1771,7 +1774,7 @@ export default function App() {
                     : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
               </p>
               <ul className="factor-list">
-                {primary.factors.map((f) => {
+                {primary.factors?.map((f) => {
                   const good = f.supports === primary.bias;
                   return (
                     <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>

@@ -4516,8 +4516,13 @@ a.news-impact__title:hover {
     max-width: min(42rem, 58vw);
   }
 
-  .app-nav__bar {
-    padding-inline: 1.75rem;
+  .app-nav__row {
+    padding-inline: 1.25rem 1rem;
+  }
+
+  .app-nav__link {
+    padding: 0.68rem 1.05rem;
+    font-size: 0.8rem;
   }
 
   main {

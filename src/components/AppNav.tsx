@@ -27,7 +27,7 @@ type NavItem = {
 
 /** Always visible across the top strip. */
 const PRIMARY_ITEMS: NavItem[] = [
-  { id: "home", label: "Home", view: "home" },
+  { id: "home", label: "Home / Dashboard", view: "home" },
   { id: "about", label: "About", view: "about" },
   { id: "brief", label: "Morning brief", view: "brief" },
   { id: "model", label: "Financial model", view: "model" },

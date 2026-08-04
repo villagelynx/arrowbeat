@@ -672,9 +672,11 @@ export function buildTomorrowSignal(
     streaks?: { up: number; down: number };
     afterDownWinRate?: number;
     afterDownN?: number;
+    /** Override next session date (for holiday gaps / scorecard backfill). */
+    targetDate?: string;
   },
 ): TomorrowSignal {
-  const nextIso = nextTradingDayIso(asOfDate);
+  const nextIso = opts.targetDate ?? nextTradingDayIso(asOfDate);
   const skippedWeekend = nextIso !== shiftIsoDays(asOfDate, 1);
   const label = skippedWeekend ? "Next session lean" : "Tomorrow's lean";
   const weekdayName = longWeekdayNy(nextIso);
@@ -844,6 +846,59 @@ export function buildTomorrowSignal(
     confidenceLabel,
     factors,
     calendarEdge,
+  };
+}
+
+/**
+ * Reconstruct the session lean for `targetDate` from prior SPY closes only
+ * (no same-day peek). Used to backfill the scorecard when nobody opened the site.
+ */
+export function reconstructSessionLean(
+  targetDate: string,
+  spyBars: Bar[],
+): {
+  bias: Bias;
+  probabilityHigher: number;
+  probabilityLower: number;
+  confidence: number;
+} | null {
+  const priorBars = spyBars.filter((b) => b.date < targetDate);
+  if (priorBars.length < 40) return null;
+  const priorAsOf = priorBars[priorBars.length - 1]?.date;
+  if (!priorAsOf) return null;
+
+  const spyRets = dailyReturns(priorBars);
+  if (spyRets.length < 30) return null;
+
+  const weekdayOdds = weekdayOddsFromReturns(spyRets);
+  const monthOdds = monthOddsFromReturns(spyRets);
+  const dayOfMonthOdds = dayOfMonthOddsFromReturns(spyRets);
+  const decade = decadeStatsFromSpy(priorBars);
+  const streaks = streakFromReturns(spyRets);
+  const afterDown = afterDownDayStats(priorBars);
+  const cashflowCycle = buildCashflowCycleInsight(dayOfMonthOdds, targetDate);
+  const taxSeason = buildTaxSeasonInsight(monthOdds, targetDate);
+  const cpiWindow = buildCpiWindowInsight(spyRets, targetDate);
+
+  const lean = buildTomorrowSignal(priorAsOf, {
+    decadeUpPct: decade.upPct,
+    weekdayOdds,
+    monthOdds,
+    dayOfMonthOdds,
+    cashflowCycle,
+    taxSeason,
+    cpiWindow,
+    streaks,
+    afterDownWinRate: afterDown.winRate,
+    afterDownN: afterDown.n,
+    targetDate,
+  });
+
+  return {
+    bias: lean.bias,
+    probabilityHigher: lean.probabilityHigher,
+    probabilityLower: lean.probabilityLower,
+    confidence: lean.confidence,
   };
 }
 

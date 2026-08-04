@@ -2057,7 +2057,7 @@ export default function App() {
             ) : (
               <p className="score-pending">
                 {signal.dataMode === "live"
-                  ? "No open prediction — open ArrowBeat on a weekday before the close to log today's lean."
+                  ? "No open prediction — weekdays appear automatically from the model once SPY history is in."
                   : "Scorecard needs live market data to log new predictions."}
               </p>
             )}

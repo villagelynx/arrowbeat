@@ -1,8 +1,11 @@
 import type { Bar } from "./market-data";
 import type { Bias, DailySignal } from "./signal";
+import { reconstructSessionLean } from "./signal";
 
 const STORAGE_KEY = "arrowbeat.scorecard.v2";
 const LEGACY_STORAGE_KEY = "arrowbeat.scorecard.v1";
+/** How many recent SPY sessions to ensure appear on the scorecard. */
+const BACKFILL_SESSIONS = 15;
 
 export type PredictionRecord = {
   date: string;
@@ -172,8 +175,46 @@ function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSumm
 }
 
 /**
- * Persist today's live lean (Mon–Fri only) and settle days once a *later* SPY bar exists
- * (official close is frozen). Never grade unfinished same-day Yahoo bars.
+ * Ensure recent SPY sessions have a lean even if nobody opened ArrowBeat that day.
+ * Uses prior-close reconstruction (no same-day peek). Does not overwrite existing rows.
+ */
+function backfillMissingSessions(
+  records: PredictionRecord[],
+  spyBars: Bar[],
+  asOfDate: string,
+): PredictionRecord[] {
+  const byDate = new Map(records.map((r) => [r.date, r]));
+  const sessionDates = spyBars
+    .map((b) => b.date)
+    .filter((d) => isWeekday(d) && d <= asOfDate)
+    .slice(-BACKFILL_SESSIONS);
+
+  // Also cover today before Yahoo publishes today's bar.
+  if (isWeekday(asOfDate) && !sessionDates.includes(asOfDate)) {
+    sessionDates.push(asOfDate);
+  }
+
+  const now = new Date().toISOString();
+  for (const date of sessionDates) {
+    if (byDate.has(date)) continue;
+    const lean = reconstructSessionLean(date, spyBars);
+    if (!lean) continue;
+    byDate.set(date, {
+      date,
+      bias: lean.bias,
+      probabilityHigher: lean.probabilityHigher,
+      probabilityLower: lean.probabilityLower,
+      confidence: lean.confidence,
+      recordedAt: now,
+    });
+  }
+  return [...byDate.values()];
+}
+
+/**
+ * Persist today's live lean (Mon–Fri only), backfill recent sessions from SPY history,
+ * and settle days once a *later* SPY bar exists (official close is frozen).
+ * Never grade unfinished same-day Yahoo bars.
  */
 export function syncScorecard(signal: DailySignal, spyBars: Bar[]): ScorecardSummary {
   if (signal.dataMode !== "live") {
@@ -186,7 +227,10 @@ export function syncScorecard(signal: DailySignal, spyBars: Bar[]): ScorecardSum
   const date = signal.asOfDate;
   const readyToSettle = isSessionReadyToSettle(date, spyBars);
 
-  // Keep updating the open session lean until a later bar proves the close is final.
+  // Fill gaps for recent sessions (visit not required).
+  records = backfillMissingSessions(records, spyBars, date);
+
+  // Keep updating the open session lean from the live desk until the close is final.
   if (isWeekday(date) && !readyToSettle) {
     const existing = records.find((r) => r.date === date);
     const next: PredictionRecord = {

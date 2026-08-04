@@ -714,6 +714,7 @@ export default function App() {
             <MorningBriefPage
               signal={null}
               loading={loading}
+              initialSymbol={deskSymbol}
               onGoHome={() => navigateTo("home")}
             />
           </main>
@@ -1038,6 +1039,8 @@ export default function App() {
           <MorningBriefPage
             signal={signal}
             loading={loading || refreshing}
+            spyBars={spyBars}
+            initialSymbol={deskSymbol}
             onGoHome={() => navigateTo("home")}
           />
         </main>

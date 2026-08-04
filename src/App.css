@@ -305,6 +305,37 @@
   font-size: 1.05rem;
 }
 
+.brief-picker {
+  margin-top: 0.35rem;
+}
+
+.brief-picker__label,
+.brief-picker__ticker-label {
+  display: block;
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.brief-picker__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.brief-picker__form {
+  margin-top: 0.75rem;
+}
+
+.brief-picker__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .brief-hero {
   text-align: center;
 }

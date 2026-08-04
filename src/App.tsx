@@ -394,14 +394,39 @@ export default function App() {
     if (!sym) return;
     setDeskSymbol(sym);
     setQuoteInput(sym);
+    setQuoteError(null);
+    if (sym !== "SPY") {
+      const mag = signal?.mag7.find((r) => r.symbol === sym);
+      const hasBars = Boolean(mag?.bars && mag.bars.length >= 40);
+      if (!hasBars || !quoteResult || quoteResult.symbol !== sym) {
+        void hydrateDeskHistory(sym);
+      }
+    }
     window.requestAnimationFrame(() => {
       document.getElementById("desk-top")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
+  /** Silent history hydrate so Mag7 taps fill the SPY chart slot with that name's graph. */
+  async function hydrateDeskHistory(symbol: string) {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym || sym === "SPY") return;
+    try {
+      const q = await fetchStockQuote(sym);
+      setQuoteResult(q);
+    } catch {
+      // Keep any Mag7 bars already on the snapshot.
+    }
+  }
+
   /** Per-ticker ArrowBeat lean for the quote desk (same family as Mag7 / SPY-style edges). */
   const quoteSignal: EquitySignal | null = useMemo(() => {
     if (!quoteResult) return null;
+    const mag = signal?.mag7.find((r) => r.symbol === quoteResult.symbol);
+    const quoteBars = quoteResult.bars ?? [];
+    const magBars = mag?.bars ?? [];
+    // Prefer longer history so lean + chart have enough daily closes.
+    const bars = magBars.length > quoteBars.length ? magBars : quoteBars;
     const tone = signal
       ? {
           futuresChg: null as number | null,
@@ -414,10 +439,10 @@ export default function App() {
     return buildEquitySignal(
       {
         symbol: quoteResult.symbol,
-        name: quoteResult.symbol,
-        last: quoteResult.last,
-        previousClose: quoteResult.previousClose,
-        bars: quoteResult.bars ?? [],
+        name: mag?.name ?? quoteResult.symbol,
+        last: quoteResult.last ?? mag?.last ?? null,
+        previousClose: quoteResult.previousClose ?? null,
+        bars,
       },
       signal?.asOfDate,
       tone,
@@ -457,6 +482,37 @@ export default function App() {
   }, [deskSymbol, quoteSignal, signal, spyBars]);
 
   const deskIsEquity = Boolean(deskEquity?.available);
+
+  /**
+   * Daily bars for the SPY graph slot when a stock is selected.
+   * Independent of lean availability so Apple can still chart if only history is ready.
+   */
+  const deskChart = useMemo(() => {
+    const sym = deskSymbol.trim().toUpperCase();
+    if (!sym || sym === "SPY") return null;
+
+    if (deskEquity?.bars && deskEquity.bars.length >= 2) {
+      return {
+        symbol: deskEquity.symbol,
+        name: deskEquity.name,
+        bars: deskEquity.bars,
+      };
+    }
+    if (quoteResult?.symbol === sym && (quoteResult.bars?.length ?? 0) >= 2) {
+      return {
+        symbol: sym,
+        name: signal?.mag7.find((r) => r.symbol === sym)?.name ?? sym,
+        bars: quoteResult.bars ?? [],
+      };
+    }
+    const mag = signal?.mag7.find((r) => r.symbol === sym);
+    if (mag?.bars && mag.bars.length >= 2) {
+      return { symbol: mag.symbol, name: mag.name, bars: mag.bars };
+    }
+    return { symbol: sym, name: sym, bars: [] as Bar[] };
+  }, [deskSymbol, deskEquity, quoteResult, signal]);
+
+  const deskShowEquityChart = deskSymbol.trim().toUpperCase() !== "SPY";
 
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
@@ -713,8 +769,8 @@ export default function App() {
         : signal.probabilityLower;
 
   const sessionStrip = deskIsEquity && deskEquity ? deskEquity.lastSessions : signal.lastSessions;
-  const chartBars = deskIsEquity && deskEquity?.bars.length ? deskEquity.bars : spyBars;
-  const chartSymbol = deskIsEquity && deskEquity ? deskEquity.symbol : "SPY";
+  const chartBars = deskChart?.bars?.length ? deskChart.bars : spyBars;
+  const chartSymbol = deskChart?.symbol ?? "SPY";
   const forwardStrip =
     deskIsEquity && deskEquity?.forwardLeans?.length
       ? deskEquity.forwardLeans
@@ -1095,7 +1151,7 @@ export default function App() {
             <ul className="mag7-grid">
               {signal.mag7.map((row) => {
                 const leanUp = row.bias === "up";
-                const isFocus = deskSymbol === row.symbol && deskIsEquity;
+                const isFocus = deskSymbol === row.symbol && deskShowEquityChart;
                 return (
                   <li key={row.symbol}>
                     <button
@@ -1103,11 +1159,7 @@ export default function App() {
                       className={`mag7-card ${
                         !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
                       }${isFocus ? " is-focus" : ""}${deskSymbol === "SPY" ? "" : ""}`}
-                      onClick={() => {
-                        if (!row.available) return;
-                        focusDeskSymbol(row.symbol);
-                      }}
-                      disabled={!row.available}
+                      onClick={() => focusDeskSymbol(row.symbol)}
                       aria-pressed={isFocus}
                       aria-label={`${row.symbol} ${row.name}${
                         row.available
@@ -1192,28 +1244,30 @@ export default function App() {
 
         <div className="desk-top" id="desk-top">
           <div className="desk-stack desk-stack--day">
-            {deskIsEquity && deskEquity ? (
+            {deskShowEquityChart ? (
               <section className="panel panel--day" aria-labelledby="equity-chart-title">
                 <h2 id="equity-chart-title">
-                  {deskEquity.symbol}
-                  {deskEquity.name && deskEquity.name !== deskEquity.symbol
-                    ? ` · ${deskEquity.name}`
+                  {deskChart?.symbol ?? deskSymbol}
+                  {deskChart?.name && deskChart.name !== deskChart.symbol
+                    ? ` · ${deskChart.name}`
                     : ""}{" "}
                   this year
                 </h2>
                 <p className="panel-lede">
-                  {deskEquity.symbol} daily closes — year to date · replaces SPY when this name is
-                  selected.
+                  {(deskChart?.symbol ?? deskSymbol)} daily closes — year to date. Same chart slot as
+                  S&amp;P 500 today when SPY is selected.
                 </p>
-                {deskEquity.bars.length >= 2 ? (
+                {deskChart && deskChart.bars.length >= 2 ? (
                   <SpyYearChart
-                    bars={deskEquity.bars}
+                    bars={deskChart.bars}
                     year={yearFromIso(signal.asOfDate)}
-                    symbol={deskEquity.symbol}
-                    gradientId={`ytd-desk-${deskEquity.symbol}`}
+                    symbol={deskChart.symbol}
+                    gradientId={`ytd-desk-${deskChart.symbol}`}
                   />
                 ) : (
-                  <p className="spy-chart__empty">Not enough {deskEquity.symbol} history for a chart.</p>
+                  <p className="spy-chart__empty">
+                    Loading {deskSymbol} chart from Yahoo history…
+                  </p>
                 )}
               </section>
             ) : dayBars.length > 1 ? (
@@ -1857,13 +1911,13 @@ export default function App() {
           {chartBars.length ? (
             <section className="panel panel--ytd" aria-labelledby="spy-chart-title">
               <h2 id="spy-chart-title">
-                {deskIsEquity && deskEquity
-                  ? `${deskEquity.symbol} this year`
+                {deskShowEquityChart
+                  ? `${chartSymbol} this year`
                   : "S&P 500 this year"}
               </h2>
               <p className="panel-lede">
-                {deskIsEquity && deskEquity
-                  ? `${deskEquity.symbol} daily closes — year to date.`
+                {deskShowEquityChart
+                  ? `${chartSymbol} daily closes — year to date.`
                   : "SPY daily closes — year to date."}
               </p>
               <SpyYearChart

@@ -373,6 +373,8 @@ export default function App() {
     const symbol = ticker.trim().toUpperCase();
     if (!symbol) return;
     setQuoteInput(symbol);
+    // Put this name on the main desk immediately (Mag7 lean if cached; quote bars refine later).
+    setDeskSymbol(symbol);
     setQuoteLoading(true);
     setQuoteError(null);
     try {
@@ -385,6 +387,16 @@ export default function App() {
     } finally {
       setQuoteLoading(false);
     }
+  }
+
+  function focusDeskSymbol(symbol: string) {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym) return;
+    setDeskSymbol(sym);
+    setQuoteInput(sym);
+    window.requestAnimationFrame(() => {
+      document.getElementById("desk-top")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   /** Per-ticker ArrowBeat lean for the quote desk (same family as Mag7 / SPY-style edges). */
@@ -414,20 +426,37 @@ export default function App() {
 
   /**
    * Selected name for the main SPY slots (arrow, last 10, YTD chart, factors).
-   * Null when desk is on SPY or the name has no usable lean yet.
+   * Mag7 snapshot history wins over the quote path — quote often has price but
+   * thin/missing bars and must not pin the desk on SPY.
    */
   const deskEquity: EquitySignal | null = useMemo(() => {
     const sym = deskSymbol.trim().toUpperCase();
     if (!sym || sym === "SPY") return null;
-    if (quoteSignal && quoteSignal.symbol === sym) {
-      return quoteSignal.available ? quoteSignal : null;
-    }
+
     const mag = signal?.mag7.find((r) => r.symbol === sym);
     if (mag?.available) return mag;
-    return null;
-  }, [deskSymbol, quoteSignal, signal]);
 
-  const deskIsEquity = deskEquity != null;
+    if (quoteSignal?.symbol === sym && quoteSignal.available) return quoteSignal;
+
+    // Rebuild from Mag7 bars if the lean flagged unavailable but history exists
+    // (edge case after a partial soft-fetch).
+    if (mag && mag.bars.length >= 40) {
+      return buildEquitySignal(
+        {
+          symbol: mag.symbol,
+          name: mag.name,
+          last: mag.last,
+          previousClose: null,
+          bars: mag.bars,
+        },
+        signal?.asOfDate,
+        { spyBars },
+      );
+    }
+    return null;
+  }, [deskSymbol, quoteSignal, signal, spyBars]);
+
+  const deskIsEquity = Boolean(deskEquity?.available);
 
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
@@ -821,16 +850,8 @@ export default function App() {
                 <button
                   key={sym}
                   type="button"
-                  className={`quote-chip${deskSymbol === sym && deskIsEquity ? " is-on" : ""}`}
-                  onClick={() => {
-                    setDeskSymbol(sym);
-                    window.requestAnimationFrame(() => {
-                      document
-                        .getElementById("bias-title")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    });
-                  }}
-                  disabled={quoteLoading || !signal.mag7.some((r) => r.symbol === sym && r.available)}
+                  className={`quote-chip${deskSymbol === sym ? " is-on" : ""}`}
+                  onClick={() => focusDeskSymbol(sym)}
                 >
                   {sym}
                 </button>
@@ -838,8 +859,7 @@ export default function App() {
               <button
                 type="button"
                 className={`quote-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
-                onClick={() => setDeskSymbol("SPY")}
-                disabled={quoteLoading}
+                onClick={() => focusDeskSymbol("SPY")}
               >
                 SPY
               </button>
@@ -901,7 +921,7 @@ export default function App() {
                   <button
                     type="button"
                     className="quote-desk__spy-btn"
-                    onClick={() => setDeskSymbol("SPY")}
+                    onClick={() => focusDeskSymbol("SPY")}
                   >
                     Back to SPY
                   </button>
@@ -916,7 +936,7 @@ export default function App() {
               <button
                 type="button"
                 className="quote-desk__spy-btn"
-                onClick={() => setDeskSymbol("SPY")}
+                onClick={() => focusDeskSymbol("SPY")}
               >
                 Back to SPY
               </button>
@@ -944,13 +964,9 @@ export default function App() {
                       }${isFocus ? " is-focus" : ""}${deskSymbol === "SPY" ? "" : ""}`}
                       onClick={() => {
                         if (!row.available) return;
-                        setDeskSymbol(row.symbol);
-                        window.requestAnimationFrame(() => {
-                          document
-                            .getElementById("bias-title")
-                            ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        });
+                        focusDeskSymbol(row.symbol);
                       }}
+                      disabled={!row.available}
                       aria-pressed={isFocus}
                       aria-label={`${row.symbol} ${row.name}${
                         row.available
@@ -1017,7 +1033,7 @@ export default function App() {
               <button
                 type="button"
                 className={`mag7-spy-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
-                onClick={() => setDeskSymbol("SPY")}
+                onClick={() => focusDeskSymbol("SPY")}
                 aria-pressed={deskSymbol === "SPY"}
               >
                 SPY desk
@@ -1033,9 +1049,33 @@ export default function App() {
           </section>
         ) : null}
 
-        <div className="desk-top">
+        <div className="desk-top" id="desk-top">
           <div className="desk-stack desk-stack--day">
-            {!deskIsEquity && dayBars.length > 1 ? (
+            {deskIsEquity && deskEquity ? (
+              <section className="panel panel--day" aria-labelledby="equity-chart-title">
+                <h2 id="equity-chart-title">
+                  {deskEquity.symbol}
+                  {deskEquity.name && deskEquity.name !== deskEquity.symbol
+                    ? ` · ${deskEquity.name}`
+                    : ""}{" "}
+                  this year
+                </h2>
+                <p className="panel-lede">
+                  {deskEquity.symbol} daily closes — year to date · replaces SPY when this name is
+                  selected.
+                </p>
+                {deskEquity.bars.length >= 2 ? (
+                  <SpyYearChart
+                    bars={deskEquity.bars}
+                    year={yearFromIso(signal.asOfDate)}
+                    symbol={deskEquity.symbol}
+                    gradientId={`ytd-desk-${deskEquity.symbol}`}
+                  />
+                ) : (
+                  <p className="spy-chart__empty">Not enough {deskEquity.symbol} history for a chart.</p>
+                )}
+              </section>
+            ) : dayBars.length > 1 ? (
               <section className="panel panel--day" aria-labelledby="spy-day-title">
                 <h2 id="spy-day-title">S&amp;P 500 today</h2>
                 <p className="panel-lede">
@@ -1139,7 +1179,11 @@ export default function App() {
             )}
           </div>
 
-          <section className="hero" aria-labelledby="bias-title">
+          <section
+            className={`hero${deskIsEquity ? " hero--equity" : ""}`}
+            aria-labelledby="bias-title"
+            data-desk={deskIsEquity && deskEquity ? deskEquity.symbol : "SPY"}
+          >
             <div className="hero-head">
               <div className="hero-session">
                 <p className="hero-kicker">
@@ -1184,10 +1228,14 @@ export default function App() {
                 {leadPct.toFixed(1)}
                 <span>%</span>
               </p>
-              <p className="arrow-score-label">ArrowBeat Score</p>
+              <p className="arrow-score-label">
+                ArrowBeat Score
+                {deskIsEquity && deskEquity ? ` · ${deskEquity.symbol}` : " · SPY"}
+              </p>
 
               <div className="arrow-stage">
                 <MarketArrow
+                  key={deskIsEquity && deskEquity ? deskEquity.symbol : "spy"}
                   bias={primary.bias}
                   idSuffix={deskIsEquity && deskEquity ? deskEquity.symbol : "spy"}
                 />

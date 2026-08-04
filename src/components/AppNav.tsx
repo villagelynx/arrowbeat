@@ -50,10 +50,7 @@ export function AppNav({ view, onNavigate, onGoScorecard }: AppNavProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  const moreActive =
-    MORE_ITEMS.some((item) => item.view != null && item.view === view) ||
-    // scorecard lives on home, so don't mark More active for score focus
-    false;
+  const moreActive = MORE_ITEMS.some((item) => item.view != null && item.view === view);
 
   useEffect(() => {
     if (!open) return;

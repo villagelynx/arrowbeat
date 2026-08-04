@@ -586,7 +586,9 @@ export default function App() {
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
     const hit =
-      scorecard.hitRate != null ? `${scorecard.hitRate.toFixed(1)}% hit rate` : "ArrowBeat scorecard";
+      scorecard.hitRate10.hitRate != null
+        ? `${scorecard.hitRate10.hitRate.toFixed(1)}% hit (last 10)`
+        : "ArrowBeat scorecard";
     let copied = false;
     try {
       await navigator.clipboard.writeText(url);
@@ -1972,17 +1974,17 @@ export default function App() {
               </div>
             </div>
             <p className="panel-lede">
-              Live leans saved on this device, graded when a later SPY daily bar freezes that
-              session&apos;s official close vs prior (not the unfinished Yahoo bar during the day).
-              Hit = direction correct. Brier = probability calibration (lower better; coin flip ≈
-              0.25).
+              Session leans are filled automatically from the model (visit not required), then graded
+              when a later SPY daily bar freezes that session&apos;s official close vs prior. Hit =
+              direction correct. Hit rates use the last 10 and last 100 settled sessions. Brier =
+              probability calibration on the last 100 (lower better; coin flip ≈ 0.25).
             </p>
 
             {sharedScore ? (
               <div className="score-shared" role="status">
                 <p className="score-shared__label">Shared score snapshot</p>
                 <p className="score-shared__stats">
-                  {sharedScore.h != null ? `${sharedScore.h.toFixed(1)}%` : "—"} hit rate
+                  {sharedScore.h != null ? `${sharedScore.h.toFixed(1)}%` : "—"} hit rate (last 10)
                   {sharedScore.s
                     ? ` · ${sharedScore.i}/${sharedScore.s} settled`
                     : " · no settled days"}
@@ -2024,20 +2026,35 @@ export default function App() {
               </div>
             ) : null}
 
-            <div className="stat-grid score-grid">
+            <div className="stat-grid score-grid score-grid--triple">
               <div className="stat-card">
-                <p className="stat-kicker">Hit rate</p>
+                <p className="stat-kicker">Hit rate · last 10</p>
                 <p className="stat-num">
-                  {scorecard.hitRate != null ? `${scorecard.hitRate.toFixed(1)}%` : "—"}
+                  {scorecard.hitRate10.hitRate != null
+                    ? `${scorecard.hitRate10.hitRate.toFixed(1)}%`
+                    : "—"}
                 </p>
                 <p className="stat-note">
-                  {scorecard.settled
-                    ? `${scorecard.hits}/${scorecard.settled} settled`
+                  {scorecard.hitRate10.settled
+                    ? `${scorecard.hitRate10.hits}/${scorecard.hitRate10.settled} settled`
                     : "No settled days yet"}
                 </p>
               </div>
               <div className="stat-card">
-                <p className="stat-kicker">Brier score</p>
+                <p className="stat-kicker">Hit rate · last 100</p>
+                <p className="stat-num">
+                  {scorecard.hitRate100.hitRate != null
+                    ? `${scorecard.hitRate100.hitRate.toFixed(1)}%`
+                    : "—"}
+                </p>
+                <p className="stat-note">
+                  {scorecard.hitRate100.settled
+                    ? `${scorecard.hitRate100.hits}/${scorecard.hitRate100.settled} settled`
+                    : "No settled days yet"}
+                </p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-kicker">Brier · last 100</p>
                 <p className="stat-num">
                   {scorecard.brier != null ? scorecard.brier.toFixed(3) : "—"}
                 </p>

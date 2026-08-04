@@ -4,8 +4,10 @@ import { reconstructSessionLean } from "./signal";
 
 const STORAGE_KEY = "arrowbeat.scorecard.v2";
 const LEGACY_STORAGE_KEY = "arrowbeat.scorecard.v1";
-/** How many recent SPY sessions to ensure appear on the scorecard. */
-const BACKFILL_SESSIONS = 15;
+/** Enough SPY sessions for a last-100 hit rate (+ buffer for today / flats). */
+const BACKFILL_SESSIONS = 110;
+const HIT_WINDOW_10 = 10;
+const HIT_WINDOW_100 = 100;
 
 export type PredictionRecord = {
   date: string;
@@ -21,11 +23,20 @@ export type PredictionRecord = {
   settledAt?: string;
 };
 
-export type ScorecardSummary = {
+export type HitWindow = {
   settled: number;
   hits: number;
   hitRate: number | null;
-  /** Mean Brier score on P(higher); lower is better. Coin flip ≈ 0.25. */
+};
+
+export type ScorecardSummary = {
+  /** @deprecated Prefer hitRate10 — kept for share / older UI paths. */
+  settled: number;
+  hits: number;
+  hitRate: number | null;
+  hitRate10: HitWindow;
+  hitRate100: HitWindow;
+  /** Mean Brier score on P(higher) over last-100 graded days; lower is better. Coin flip ≈ 0.25. */
   brier: number | null;
   pending: PredictionRecord | null;
   recent: PredictionRecord[];
@@ -137,21 +148,41 @@ function settleRecords(
   });
 }
 
-function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSummary {
-  const graded = records.filter((r) => r.outcome === "up" || r.outcome === "down");
-  const hits = graded.filter((r) => r.correct === true).length;
-  const settled = graded.length;
-  const hitRate = settled ? Math.round((hits / settled) * 1000) / 10 : null;
+function emptyHitWindow(): HitWindow {
+  return { settled: 0, hits: 0, hitRate: null };
+}
 
-  let brier: number | null = null;
-  if (settled) {
-    const sum = graded.reduce((acc, r) => {
-      const p = r.probabilityHigher / 100;
-      const y = r.outcome === "up" ? 1 : 0;
-      return acc + (p - y) ** 2;
-    }, 0);
-    brier = Math.round((sum / settled) * 1000) / 1000;
-  }
+function hitWindow(gradedNewestFirst: PredictionRecord[], n: number): HitWindow {
+  const slice = gradedNewestFirst.slice(0, n);
+  const settled = slice.length;
+  if (!settled) return emptyHitWindow();
+  const hits = slice.filter((r) => r.correct === true).length;
+  return {
+    settled,
+    hits,
+    hitRate: Math.round((hits / settled) * 1000) / 10,
+  };
+}
+
+function brierFor(gradedNewestFirst: PredictionRecord[], n: number): number | null {
+  const slice = gradedNewestFirst.slice(0, n);
+  if (!slice.length) return null;
+  const sum = slice.reduce((acc, r) => {
+    const p = r.probabilityHigher / 100;
+    const y = r.outcome === "up" ? 1 : 0;
+    return acc + (p - y) ** 2;
+  }, 0);
+  return Math.round((sum / slice.length) * 1000) / 1000;
+}
+
+function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSummary {
+  const gradedNewestFirst = [...records]
+    .filter((r) => r.outcome === "up" || r.outcome === "down")
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  const hitRate10 = hitWindow(gradedNewestFirst, HIT_WINDOW_10);
+  const hitRate100 = hitWindow(gradedNewestFirst, HIT_WINDOW_100);
+  const brier = brierFor(gradedNewestFirst, HIT_WINDOW_100);
 
   const pending =
     records.find((r) => r.date === asOfDate && r.outcome == null) ??
@@ -161,12 +192,15 @@ function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSumm
   const recent = [...records]
     .filter((r) => r.outcome != null)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 10);
+    .slice(0, HIT_WINDOW_10);
 
   return {
-    settled,
-    hits,
-    hitRate,
+    // Primary headline = last 10 (what the list below shows).
+    settled: hitRate10.settled,
+    hits: hitRate10.hits,
+    hitRate: hitRate10.hitRate,
+    hitRate10,
+    hitRate100,
     brier,
     pending,
     recent,
@@ -254,6 +288,8 @@ export function emptyScorecard(_asOfDate = ""): ScorecardSummary {
     settled: 0,
     hits: 0,
     hitRate: null,
+    hitRate10: emptyHitWindow(),
+    hitRate100: emptyHitWindow(),
     brier: null,
     pending: null,
     recent: [],

@@ -64,7 +64,7 @@ export function CrashOddsPage({ odds, loading, onGoDashboard, onOpenCorrection }
           Descriptive history, not a forecast.
         </p>
         <button type="button" className="correction-page__cta" onClick={onGoDashboard}>
-          Back to dashboard
+          Back to home
         </button>
       </header>
 

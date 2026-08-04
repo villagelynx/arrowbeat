@@ -21,7 +21,7 @@ export function AppNav({ view, onNavigate, onGoScorecard }: AppNavProps) {
           className={`app-nav__link ${view === "home" ? "is-active" : ""}`}
           onClick={() => onNavigate("home")}
         >
-          Dashboard
+          Home
         </button>
         {onGoScorecard ? (
           <button type="button" className="app-nav__link" onClick={onGoScorecard}>

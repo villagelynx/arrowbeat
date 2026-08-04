@@ -28,7 +28,7 @@ export function CpiOddsPage({
           two sessions after, versus quiet days. Descriptive calendar history, not a forecast.
         </p>
         <button type="button" className="correction-page__cta" onClick={onGoDashboard}>
-          Back to dashboard
+          Back to home
         </button>
       </header>
 

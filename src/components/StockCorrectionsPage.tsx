@@ -106,7 +106,7 @@ export function StockCorrectionsPage({
           not a full-market screener.
         </p>
         <button type="button" className="correction-page__cta" onClick={onGoDashboard}>
-          Back to dashboard
+          Back to home
         </button>
       </header>
 

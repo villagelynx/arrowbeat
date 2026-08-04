@@ -62,7 +62,7 @@ export function CorrectionOddsPage({ odds, loading, onGoDashboard, onOpenCrash }
           given where the market sits today. Descriptive history, not a crash forecast.
         </p>
         <button type="button" className="correction-page__cta" onClick={onGoDashboard}>
-          Back to dashboard
+          Back to home
         </button>
       </header>
 

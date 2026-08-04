@@ -15,7 +15,6 @@ import { SpyYearChart } from "./components/SpyYearChart";
 import {
   fetchMarketSnapshot,
   fetchStockQuote,
-  MAG7_SYMBOLS,
   type Bar,
   type IntradayBar,
   type StockQuote,
@@ -986,7 +985,7 @@ export default function App() {
             <div className="quote-top__head">
               <h2 id="quote-title">Desk snapshot</h2>
               <p className="panel-lede">
-                Active name quote + next 5 session leans · ~15m delayed · pick a name or type a ticker
+                Active name quote + next 5 session leans · ~15m delayed · type a ticker
               </p>
             </div>
             <form
@@ -1015,33 +1014,6 @@ export default function App() {
                 </button>
               </div>
             </form>
-            <div className="quote-chips" role="group" aria-label="Quick select">
-              {MAG7_SYMBOLS.map((sym) => (
-                <button
-                  key={sym}
-                  type="button"
-                  className={`quote-chip${deskSymbol === sym ? " is-on" : ""}`}
-                  onClick={() => focusDeskSymbol(sym)}
-                >
-                  {sym}
-                </button>
-              ))}
-              <button
-                type="button"
-                className={`quote-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
-                onClick={() => focusDeskSymbol("SPY")}
-              >
-                SPY
-              </button>
-              <button
-                type="button"
-                className="quote-chip"
-                onClick={() => void lookupQuote("BTC-USD")}
-                disabled={quoteLoading}
-              >
-                BTC
-              </button>
-            </div>
           </div>
           {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
 

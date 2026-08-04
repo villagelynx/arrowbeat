@@ -41,6 +41,11 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
         </p>
         <ul className="about__list">
           <li>
+            <strong>Full financial model</strong> — base rates, clamps, SPY live tilts, stock desk
+            scoring, and tomorrow / next-5 math on the <strong>Model</strong> page (and the home
+            button “How the financial model works”).
+          </li>
+          <li>
             <strong>Streaks (up / down days in a row)</strong> — consecutive green or red closes
             nudge the lean (mean reversion after soft runs, cooling after long winning runs). Full
             write-up on the <strong>Streaks</strong> page in the menu.

@@ -9,6 +9,7 @@ import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
 import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { StreaksPage } from "./components/StreaksPage";
+import { FinancialModelPage } from "./components/FinancialModelPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -64,6 +65,7 @@ function readViewFromLocation(): AppView | null {
   if (hash === "cpi") return "cpi";
   if (hash === "stock-corrections") return "stock-corrections";
   if (hash === "streaks") return "streaks";
+  if (hash === "model") return "model";
   if (hash === "about") return "about";
   return null;
 }
@@ -82,6 +84,8 @@ function syncViewHash(view: AppView) {
     url.hash = "stock-corrections";
   } else if (view === "streaks") {
     url.hash = "streaks";
+  } else if (view === "model") {
+    url.hash = "model";
   } else if (view === "about") {
     url.hash = "about";
   } else if (
@@ -90,6 +94,7 @@ function syncViewHash(view: AppView) {
     currentHash === "cpi" ||
     currentHash === "stock-corrections" ||
     currentHash === "streaks" ||
+    currentHash === "model" ||
     currentHash === "about"
   ) {
     url.hash = "";
@@ -226,6 +231,7 @@ export default function App() {
         current === "cpi" ||
         current === "stock-corrections" ||
         current === "streaks" ||
+        current === "model" ||
         current === "about"
           ? "home"
           : current,
@@ -624,7 +630,7 @@ export default function App() {
 
   if (!signal) {
     const pageClass =
-      view === "about" || view === "streaks"
+      view === "about" || view === "streaks" || view === "model"
         ? " app--about"
         : view === "correction" ||
             view === "crash" ||
@@ -647,6 +653,13 @@ export default function App() {
         {view === "about" ? (
           <main className="about-main">
             <AboutPage onGoDashboard={() => navigateTo("home")} />
+          </main>
+        ) : view === "model" ? (
+          <main className="about-main">
+            <FinancialModelPage
+              onGoHome={() => navigateTo("home")}
+              onOpenStreaks={() => navigateTo("streaks")}
+            />
           </main>
         ) : view === "streaks" ? (
           <main className="about-main">
@@ -853,7 +866,7 @@ export default function App() {
   };
 
   const pageClass =
-    view === "about" || view === "streaks"
+    view === "about" || view === "streaks" || view === "model"
       ? " app--about"
       : view === "correction" ||
           view === "crash" ||
@@ -953,6 +966,13 @@ export default function App() {
         <main className="about-main">
           <AboutPage onGoDashboard={() => navigateTo("home")} />
         </main>
+      ) : view === "model" ? (
+        <main className="about-main">
+          <FinancialModelPage
+            onGoHome={() => navigateTo("home")}
+            onOpenStreaks={() => navigateTo("streaks")}
+          />
+        </main>
       ) : view === "streaks" ? (
         <main className="about-main">
           <StreaksPage onGoHome={() => navigateTo("home")} />
@@ -1004,6 +1024,13 @@ export default function App() {
               <p className="panel-lede">
                 Active name quote + next 5 session leans · ~15m delayed · pick a name or type a ticker
               </p>
+              <button
+                type="button"
+                className="model-home-btn"
+                onClick={() => navigateTo("model")}
+              >
+                How the financial model works
+              </button>
             </div>
             <form
               className="quote-lookup"

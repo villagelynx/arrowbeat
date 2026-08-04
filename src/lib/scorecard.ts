@@ -1,7 +1,8 @@
 import type { Bar } from "./market-data";
 import type { Bias, DailySignal } from "./signal";
 
-const STORAGE_KEY = "arrowbeat.scorecard.v1";
+const STORAGE_KEY = "arrowbeat.scorecard.v2";
+const LEGACY_STORAGE_KEY = "arrowbeat.scorecard.v1";
 
 export type PredictionRecord = {
   date: string;
@@ -53,7 +54,7 @@ function dailyReturns(bars: Bar[]): Map<string, number> {
 
 function loadRecords(): PredictionRecord[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as PredictionRecord[];
     return Array.isArray(parsed) ? parsed : [];
@@ -65,25 +66,61 @@ function loadRecords(): PredictionRecord[] {
 function saveRecords(records: PredictionRecord[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    // Keep v1 in sync so older tabs don't resurrect a stale wrong grade list.
+    localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(records));
   } catch {
     // Quota / private mode — scorecard stays in-memory for this session only.
   }
 }
 
-function settleRecords(records: PredictionRecord[], returns: Map<string, number>): PredictionRecord[] {
+/** Drop settlement fields so a provisional intraday grade can be reopened. */
+function clearSettlement(rec: PredictionRecord): PredictionRecord {
+  return {
+    date: rec.date,
+    bias: rec.bias,
+    probabilityHigher: rec.probabilityHigher,
+    probabilityLower: rec.probabilityLower,
+    confidence: rec.confidence,
+    recordedAt: rec.recordedAt,
+  };
+}
+
+/**
+ * Grade only after a later SPY daily bar exists.
+ * Yahoo often publishes an unfinished “today” bar during RTH — treating that as a final
+ * close permanently marked wrong hits/misses. Wait for the next session’s bar so the prior
+ * close is frozen before we score.
+ */
+function isSessionReadyToSettle(dateIso: string, bars: Bar[]): boolean {
+  return bars.some((b) => b.date > dateIso);
+}
+
+function settleRecords(
+  records: PredictionRecord[],
+  returns: Map<string, number>,
+  bars: Bar[],
+): PredictionRecord[] {
   const now = new Date().toISOString();
   return records.map((rec) => {
-    if (rec.outcome != null) return rec;
+    if (!isSessionReadyToSettle(rec.date, bars)) {
+      // Strip any grade that was frozen from an unfinished same-day bar.
+      return rec.outcome != null ? clearSettlement(rec) : rec;
+    }
+
     const ret = returns.get(rec.date);
-    if (ret == null) return rec;
+    if (ret == null) {
+      return rec.outcome != null ? clearSettlement(rec) : rec;
+    }
+
     const changePct = Math.round(ret * 10000) / 100;
+    // Always recompute — even previously settled rows — so official closes overwrite bad grades.
     if (ret === 0) {
       return {
         ...rec,
         outcome: "flat" as const,
         changePct,
         correct: null,
-        settledAt: now,
+        settledAt: rec.settledAt ?? now,
       };
     }
     const outcome: Bias = ret > 0 ? "up" : "down";
@@ -92,7 +129,7 @@ function settleRecords(records: PredictionRecord[], returns: Map<string, number>
       outcome,
       changePct,
       correct: rec.bias === outcome,
-      settledAt: now,
+      settledAt: rec.settledAt ?? now,
     };
   });
 }
@@ -135,8 +172,8 @@ function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSumm
 }
 
 /**
- * Persist today's live lean (Mon–Fri only) and settle any past days once SPY closes exist.
- * Skips recording after that session's close is already in the bar series (no look-ahead).
+ * Persist today's live lean (Mon–Fri only) and settle days once a *later* SPY bar exists
+ * (official close is frozen). Never grade unfinished same-day Yahoo bars.
  */
 export function syncScorecard(signal: DailySignal, spyBars: Bar[]): ScorecardSummary {
   if (signal.dataMode !== "live") {
@@ -144,12 +181,13 @@ export function syncScorecard(signal: DailySignal, spyBars: Bar[]): ScorecardSum
   }
 
   const returns = dailyReturns(spyBars);
-  let records = settleRecords(loadRecords(), returns);
+  let records = settleRecords(loadRecords(), returns, spyBars);
 
   const date = signal.asOfDate;
-  const sessionClosed = returns.has(date);
+  const readyToSettle = isSessionReadyToSettle(date, spyBars);
 
-  if (isWeekday(date) && !sessionClosed) {
+  // Keep updating the open session lean until a later bar proves the close is final.
+  if (isWeekday(date) && !readyToSettle) {
     const existing = records.find((r) => r.date === date);
     const next: PredictionRecord = {
       date,
@@ -159,12 +197,10 @@ export function syncScorecard(signal: DailySignal, spyBars: Bar[]): ScorecardSum
       confidence: signal.confidence,
       recordedAt: existing?.recordedAt ?? new Date().toISOString(),
     };
-    // Update lean until the session closes so the scorecard matches what you last saw.
     records = [...records.filter((r) => r.date !== date), next];
   }
 
-  // If today's bar just appeared, settle after optionally locking the last pre-close lean.
-  records = settleRecords(records, returns);
+  records = settleRecords(records, returns, spyBars);
   saveRecords(records);
   return summarize(records, date);
 }

@@ -986,7 +986,7 @@ export default function App() {
             <div className="quote-top__head">
               <h2 id="quote-title">Desk snapshot</h2>
               <p className="panel-lede">
-                Active name quote + next 5 session leans · ~15m delayed · pick a Mag7 or type a ticker
+                Active name quote + next 5 session leans · ~15m delayed · pick a name or type a ticker
               </p>
             </div>
             <form
@@ -1128,107 +1128,6 @@ export default function App() {
             </div>
           </div>
         </section>
-
-        {signal.mag7.length ? (
-          <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
-            <h2 id="mag7-title">Magnificent 7</h2>
-            <p className="panel-lede">
-              Tap a name to fill the main ArrowBeat slots below — same graph, arrow, probability, and
-              last 10 days as SPY, from that stock&apos;s own history.
-            </p>
-            <ul className="mag7-grid">
-              {signal.mag7.map((row) => {
-                const leanUp = row.bias === "up";
-                const isFocus = deskSymbol === row.symbol && deskShowEquityChart;
-                return (
-                  <li key={row.symbol}>
-                    <button
-                      type="button"
-                      className={`mag7-card ${
-                        !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
-                      }${isFocus ? " is-focus" : ""}${deskSymbol === "SPY" ? "" : ""}`}
-                      onClick={() => focusDeskSymbol(row.symbol)}
-                      aria-pressed={isFocus}
-                      aria-label={`${row.symbol} ${row.name}${
-                        row.available
-                          ? `, ${leanUp ? "higher" : "lower"} ${row.probabilityHigher.toFixed(1)} percent`
-                          : ", data unavailable"
-                      }`}
-                    >
-                      <div className="mag7-card__top">
-                        <span className="mag7-card__symbol">{row.symbol}</span>
-                        {row.available ? (
-                          <span className="mag7-card__chev" aria-hidden="true">
-                            {leanUp ? "▲" : "▼"}
-                          </span>
-                        ) : (
-                          <span className="mag7-card__chev is-na" aria-hidden="true">
-                            —
-                          </span>
-                        )}
-                      </div>
-                      <p className="mag7-card__name">{row.name}</p>
-                      <p className="mag7-card__bias">
-                        {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
-                      </p>
-                      <p className="mag7-card__prob">
-                        {row.available ? (
-                          <>
-                            {row.probabilityHigher.toFixed(1)}
-                            <span>%</span>
-                          </>
-                        ) : (
-                          "—"
-                        )}
-                      </p>
-                      {row.available ? (
-                        <p
-                          className="mag7-card__stars"
-                          aria-label={`${row.confidence} of 5 stars`}
-                        >
-                          {stars(row.confidence)}
-                        </p>
-                      ) : null}
-                      <p className="mag7-card__quote">
-                        <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
-                        <span
-                          className={
-                            row.changePct == null
-                              ? ""
-                              : row.changePct >= 0
-                                ? "is-up"
-                                : "is-down"
-                          }
-                        >
-                          {row.changePct == null
-                            ? "—"
-                            : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
-                        </span>
-                      </p>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="mag7-desk-switch">
-              <button
-                type="button"
-                className={`mag7-spy-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
-                onClick={() => focusDeskSymbol("SPY")}
-                aria-pressed={deskSymbol === "SPY"}
-              >
-                SPY desk
-              </button>
-              {deskIsEquity && deskEquity ? (
-                <span className="mag7-desk-switch__hint">
-                  Showing <strong>{deskEquity.symbol}</strong> in the main arrow &amp; chart
-                </span>
-              ) : (
-                <span className="mag7-desk-switch__hint">Showing S&amp;P (SPY) in the main desk</span>
-              )}
-            </div>
-          </section>
-        ) : null}
 
         <div className="desk-top" id="desk-top">
           <div className="desk-stack desk-stack--day">

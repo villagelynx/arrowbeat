@@ -242,6 +242,11 @@ export default function App() {
   }, []);
 
   function navigateTo(next: AppView) {
+    if (next === "home") {
+      setDeskSymbol("SPY");
+      setQuoteInput("");
+      setQuoteError(null);
+    }
     setView(next);
     syncViewHash(next);
   }

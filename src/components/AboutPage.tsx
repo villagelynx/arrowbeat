@@ -41,6 +41,11 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
         </p>
         <ul className="about__list">
           <li>
+            <strong>Streaks (up / down days in a row)</strong> — consecutive green or red closes
+            nudge the lean (mean reversion after soft runs, cooling after long winning runs). Full
+            write-up on the <strong>Streaks</strong> page in the menu.
+          </li>
+          <li>
             <strong>Bias &amp; probability</strong> — P(higher close) vs P(lower close), plus a
             confidence rating from edge and factor agreement. A compact{" "}
             <strong>Tomorrow&apos;s lean</strong> uses calendar &amp; historical edges known now

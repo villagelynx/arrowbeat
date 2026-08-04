@@ -8,6 +8,7 @@ import { CpiOddsPanel } from "./components/CpiOddsPanel";
 import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
 import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
+import { StreaksPage } from "./components/StreaksPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -61,6 +62,8 @@ function readViewFromLocation(): AppView | null {
   if (hash === "crash") return "crash";
   if (hash === "cpi") return "cpi";
   if (hash === "stock-corrections") return "stock-corrections";
+  if (hash === "streaks") return "streaks";
+  if (hash === "about") return "about";
   return null;
 }
 
@@ -76,11 +79,17 @@ function syncViewHash(view: AppView) {
     url.hash = "cpi";
   } else if (view === "stock-corrections") {
     url.hash = "stock-corrections";
+  } else if (view === "streaks") {
+    url.hash = "streaks";
+  } else if (view === "about") {
+    url.hash = "about";
   } else if (
     currentHash === "correction" ||
     currentHash === "crash" ||
     currentHash === "cpi" ||
-    currentHash === "stock-corrections"
+    currentHash === "stock-corrections" ||
+    currentHash === "streaks" ||
+    currentHash === "about"
   ) {
     url.hash = "";
   }
@@ -214,7 +223,9 @@ export default function App() {
         current === "correction" ||
         current === "crash" ||
         current === "cpi" ||
-        current === "stock-corrections"
+        current === "stock-corrections" ||
+        current === "streaks" ||
+        current === "about"
           ? "home"
           : current,
       );
@@ -585,7 +596,7 @@ export default function App() {
 
   if (!signal) {
     const pageClass =
-      view === "about"
+      view === "about" || view === "streaks"
         ? " app--about"
         : view === "correction" ||
             view === "crash" ||
@@ -608,6 +619,10 @@ export default function App() {
         {view === "about" ? (
           <main className="about-main">
             <AboutPage onGoDashboard={() => navigateTo("home")} />
+          </main>
+        ) : view === "streaks" ? (
+          <main className="about-main">
+            <StreaksPage onGoHome={() => navigateTo("home")} />
           </main>
         ) : view === "correction" ? (
           <main className="correction-main">
@@ -810,7 +825,7 @@ export default function App() {
   };
 
   const pageClass =
-    view === "about"
+    view === "about" || view === "streaks"
       ? " app--about"
       : view === "correction" ||
           view === "crash" ||
@@ -909,6 +924,10 @@ export default function App() {
       {view === "about" ? (
         <main className="about-main">
           <AboutPage onGoDashboard={() => navigateTo("home")} />
+        </main>
+      ) : view === "streaks" ? (
+        <main className="about-main">
+          <StreaksPage onGoHome={() => navigateTo("home")} />
         </main>
       ) : view === "correction" ? (
         <main className="correction-main">

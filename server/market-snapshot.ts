@@ -271,6 +271,8 @@ export type StockQuotePayload = {
   delayNote: string;
   fetchedAt: string;
   source: string;
+  /** ~1y daily closes for on-device equity signal (may be short if Yahoo soft-fails). */
+  bars: Bar[];
 };
 
 /** Normalize user ticker input for Yahoo chart paths. */
@@ -279,8 +281,7 @@ export function sanitizeTicker(raw: string): string {
 }
 
 /**
- * On-demand delayed quote for an arbitrary ticker (single soft Yahoo call).
- * Fast enough for Netlify free-tier; returns nulls when Yahoo fails.
+ * On-demand delayed quote + ~1y bars for stock-level ArrowBeat signals.
  */
 export async function buildStockQuote(rawSymbol: string): Promise<StockQuotePayload> {
   const symbol = sanitizeTicker(rawSymbol);
@@ -288,7 +289,8 @@ export async function buildStockQuote(rawSymbol: string): Promise<StockQuotePayl
     throw new Error("Enter a valid ticker (letters, numbers, . ^ = -).");
   }
 
-  const chart = await softYahoo(symbol, "5d");
+  // 1y history feeds per-ticker weekday / seasonality edges (same family as Mag7).
+  const chart = await softYahoo(symbol, "1y");
   const series = mag7FromChart(chart);
   const last = series.last;
   const previousClose = series.previousClose;
@@ -314,6 +316,7 @@ export async function buildStockQuote(rawSymbol: string): Promise<StockQuotePayl
     delayNote: "~15m delayed (Yahoo free quotes)",
     fetchedAt: new Date().toISOString(),
     source: "yahoo-finance",
+    bars: series.bars,
   };
 }
 

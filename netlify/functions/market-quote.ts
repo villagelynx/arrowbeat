@@ -26,11 +26,7 @@ function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-/** Single-symbol delayed quote — short deadline for Netlify free tier. */
-export async function handler(event: NetlifyEvent): Promise<NetlifyResult> {
-  const symbol = event.queryStringParameters?.symbol ?? "";
-  try {
-    const payload = await withDeadline(buildStockQuote(symbol), 5000);
+  // Soft Mag7 may still be in flight under free-tier deadline — tolerate a bit longer.
     return {
       statusCode: 200,
       headers: {

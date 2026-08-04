@@ -26,6 +26,40 @@ export type Mag7Signal = {
   changePct: number | null;
   /** False when Yahoo soft-failed or history is too thin. */
   available: boolean;
+  /** SPY-style factors for this name. */
+  factors: Factor[];
+  /** Today's calendar edge for this ticker's own history. */
+  calendarEdge: CalendarEdge | null;
+  /** Next-session calendar lean for this ticker. */
+  tomorrow: TomorrowSignal | null;
+  /** Next five trading sessions for this ticker. */
+  forwardLeans: TomorrowSignal[];
+};
+
+/** Any-ticker lean (quote desk / Mag7). */
+export type EquitySignal = {
+  symbol: string;
+  name: string;
+  bias: Bias;
+  probabilityHigher: number;
+  probabilityLower: number;
+  confidence: 1 | 2 | 3 | 4 | 5;
+  confidenceLabel: string;
+  last: number | null;
+  changePct: number | null;
+  available: boolean;
+  factors: Factor[];
+  calendarEdge: CalendarEdge | null;
+  tomorrow: TomorrowSignal | null;
+  forwardLeans: TomorrowSignal[];
+};
+
+export type MarketTone = {
+  futuresChg: number | null;
+  futuresPositive: boolean;
+  vixChg: number | null;
+  vixFalling: boolean;
+  spyBars: Bar[];
 };
 
 export type AltAssetSignal = {
@@ -1312,21 +1346,262 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
 }
 
 /**
- * Per-ticker ArrowBeat lean for Mag7 — lighter cousin of buildLiveSignal:
- * own price action + streaks + relative vs SPY, plus a mild shared risk tone
- * (ES / VIX) from the market snapshot. Always returns all 7 names (soft-fail → available:false).
+ * Per-name ArrowBeat signal — same family as SPY:
+ * own ~1y higher-close base rate, weekday/month/day edges, streaks, relative
+ * vs SPY momentum, plus shared ES / VIX risk tone. Includes next-session lean
+ * and a 5-session calendar path for the ticker.
+ */
+export function buildEquitySignal(
+  input: {
+    symbol: string;
+    name: string;
+    last: number | null;
+    previousClose?: number | null;
+    bars: Bar[];
+  },
+  dateIso = nyDateIso(),
+  tone?: Partial<MarketTone>,
+): EquitySignal {
+  const empty: EquitySignal = {
+    symbol: input.symbol,
+    name: input.name,
+    bias: "up",
+    probabilityHigher: 50,
+    probabilityLower: 50,
+    confidence: 1,
+    confidenceLabel: "Tentative",
+    last: input.last,
+    changePct: null,
+    available: false,
+    factors: [],
+    calendarEdge: null,
+    tomorrow: null,
+    forwardLeans: [],
+  };
+
+  let changePct: number | null = null;
+  const bars = input.bars;
+  const previousClose = input.previousClose ?? null;
+  {
+    const raw = pctChange(input.last, previousClose);
+    changePct = raw != null ? Math.round(raw * 10000) / 100 : null;
+    if ((changePct == null || Math.abs(changePct) > 25) && bars.length >= 2) {
+      const tip = bars[bars.length - 1].close;
+      const barPrev = bars[bars.length - 2].close;
+      const last = input.last ?? tip;
+      const prior = tip > 0 && Math.abs(last - tip) / tip < 0.0008 ? barPrev : tip;
+      const fixed = pctChange(last, prior);
+      if (fixed != null && Math.abs(fixed * 100) <= 25) {
+        changePct = Math.round(fixed * 10000) / 100;
+      }
+    }
+  }
+  empty.changePct = changePct;
+
+  if (bars.length < 40) {
+    return { ...empty, last: input.last ?? (bars.length ? bars[bars.length - 1].close : null) };
+  }
+
+  const rets = dailyReturns(bars);
+  if (rets.length < 30) {
+    return { ...empty, last: input.last ?? bars[bars.length - 1].close };
+  }
+
+  const dow = weekdayInNy(dateIso);
+  const weekdayOdds = weekdayOddsFromReturns(rets);
+  const monthOdds = monthOddsFromReturns(rets);
+  const dayOfMonthOdds = dayOfMonthOddsFromReturns(rets);
+  const cashflowCycle = buildCashflowCycleInsight(dayOfMonthOdds, dateIso);
+  const taxSeason = buildTaxSeasonInsight(monthOdds, dateIso);
+  const calendarEdge = buildCalendarEdge(dateIso, weekdayOdds, monthOdds, dayOfMonthOdds);
+  const cpiWindow = buildCpiWindowInsight(rets, dateIso);
+  const streaks = streakFromReturns(rets);
+  const afterDown = afterDownDayStats(bars);
+
+  const sample = rets.slice(-252);
+  const upShare = sample.filter((r) => r.ret > 0).length / (sample.length || 1);
+  const decadeUpPct = Math.round(upShare * 1000) / 10;
+
+  const thisMonth = monthOdds.find((m) => m.monthIndex === monthIndexFromIso(dateIso));
+  const thisDom = dayOfMonthOdds.find((d) => d.day === dayOfMonthFromIso(dateIso));
+  const thisWeekday = weekdayOdds.find((w) => w.weekdayIndex === dow);
+
+  const tip = bars[bars.length - 1].close;
+  const fiveAgo = bars.length >= 6 ? bars[bars.length - 6].close : null;
+  const mom5 = fiveAgo && fiveAgo > 0 ? (tip - fiveAgo) / fiveAgo : 0;
+
+  const spyBars = tone?.spyBars ?? [];
+  let vsSpy = 0;
+  if (spyBars.length >= 6) {
+    const spyTip = spyBars[spyBars.length - 1].close;
+    const spyFive = spyBars[spyBars.length - 6].close;
+    const spy5 = spyFive > 0 ? (spyTip - spyFive) / spyFive : 0;
+    vsSpy = mom5 - spy5;
+  }
+
+  const futuresChg = tone?.futuresChg ?? null;
+  const futuresPositive = tone?.futuresPositive ?? false;
+  const vixChg = tone?.vixChg ?? null;
+  const vixFalling = tone?.vixFalling ?? false;
+
+  let score = upShare;
+  if (dow === 1) score -= 0.02;
+  if (dow === 5) score += 0.01;
+  if (streaks.down >= 3) score += 0.055;
+  else if (streaks.down === 2) score += 0.03;
+  if (streaks.up >= 4) score -= 0.035;
+  if (thisWeekday) score += ((thisWeekday.upPct - 50) / 100) * 0.28;
+  if (thisMonth) score += ((thisMonth.upPct - 50) / 100) * 0.18;
+  if (thisDom) score += ((thisDom.upPct - 50) / 100) * 0.16;
+  if (mom5 > 0.02) score += 0.02;
+  else if (mom5 < -0.02) score += 0.015;
+  if (vsSpy > 0.01) score += 0.015;
+  else if (vsSpy < -0.01) score -= 0.015;
+  if (futuresChg != null) {
+    if (futuresPositive) score += 0.02;
+    else score -= 0.02;
+  }
+  if (vixChg != null) {
+    if (vixFalling) score += 0.015;
+    else score -= 0.012;
+  }
+  if (cashflowCycle?.todayKind === "payday") {
+    score += ((cashflowCycle.paydayAvgUpPct - 50) / 100) * 0.1;
+  } else if (cashflowCycle?.todayKind === "rent") {
+    score += ((cashflowCycle.rentAvgUpPct - 50) / 100) * 0.1;
+  }
+
+  score = Math.min(0.78, Math.max(0.28, score));
+  const bias: Bias = score >= 0.5 ? "up" : "down";
+  const probabilityHigher = Math.round(score * 1000) / 10;
+  const probabilityLower = Math.round((100 - probabilityHigher) * 10) / 10;
+
+  const factors: Factor[] = [];
+  factors.push({
+    id: `${input.symbol}-base`,
+    label: `${input.symbol} own history ${decadeUpPct.toFixed(1)}% higher closes (~1y)`,
+    supports: decadeUpPct >= 50 ? "up" : "down",
+    detail: `Sample of ${sample.length.toLocaleString()} sessions for this name — not the SPY market base rate.`,
+  });
+  if (thisWeekday) {
+    factors.push({
+      id: `${input.symbol}-weekday`,
+      label: `${thisWeekday.weekday} historically ${thisWeekday.upPct.toFixed(1)}% higher for ${input.symbol} (#${thisWeekday.rank}/5)`,
+      supports: thisWeekday.upPct >= 50 ? "up" : "down",
+      detail: "Weekday slice from this ticker's daily closes.",
+    });
+  }
+  if (thisMonth) {
+    factors.push({
+      id: `${input.symbol}-month`,
+      label: `${thisMonth.month} historically ${thisMonth.upPct.toFixed(1)}% higher (#${thisMonth.rank}/12)`,
+      supports: thisMonth.upPct >= 50 ? "up" : "down",
+      detail: "Calendar-month seasonality for this ticker.",
+    });
+  }
+  if (thisDom) {
+    factors.push({
+      id: `${input.symbol}-dom`,
+      label: `Day ${thisDom.label}: historically ${thisDom.upPct.toFixed(1)}% higher`,
+      supports: thisDom.upPct >= 50 ? "up" : "down",
+      detail: "Day-of-month higher-close rate for this ticker.",
+    });
+  }
+  if (streaks.down >= 2) {
+    factors.push({
+      id: `${input.symbol}-streak-down`,
+      label: `${streaks.down} down day${streaks.down > 1 ? "s" : ""} into today`,
+      supports: "up",
+      detail:
+        afterDown.n > 0
+          ? `After down days, ${input.symbol} finished higher about ${afterDown.winRate}% of the time (n=${afterDown.n.toLocaleString()}).`
+          : "Mean-reversion check after a soft stretch.",
+    });
+  }
+  if (streaks.up >= 4) {
+    factors.push({
+      id: `${input.symbol}-streak-up`,
+      label: `${streaks.up}-day winning streak`,
+      supports: "down",
+      detail: "Extended upside streaks often cool.",
+    });
+  }
+  if (Math.abs(mom5) >= 0.015) {
+    factors.push({
+      id: `${input.symbol}-mom5`,
+      label: `5-session move ${(mom5 * 100).toFixed(1)}%`,
+      supports: mom5 >= 0 ? "up" : "down",
+      detail: "Short-horizon price path for this name.",
+    });
+  }
+  if (spyBars.length >= 6 && Math.abs(vsSpy) >= 0.008) {
+    factors.push({
+      id: `${input.symbol}-vsspy`,
+      label: vsSpy >= 0 ? "Beating SPY over 5 sessions" : "Trailing SPY over 5 sessions",
+      supports: vsSpy >= 0 ? "up" : "down",
+      detail: `Relative 5-day: ${(vsSpy * 100).toFixed(1)} pts vs SPY.`,
+    });
+  }
+  if (futuresChg != null) {
+    factors.push({
+      id: `${input.symbol}-es`,
+      label: futuresPositive ? "ES futures bid (risk-on tone)" : "ES futures soft (risk-off tone)",
+      supports: futuresPositive ? "up" : "down",
+      detail: "Shared market tone for liquid equity names.",
+    });
+  }
+  if (vixChg != null) {
+    factors.push({
+      id: `${input.symbol}-vix`,
+      label: vixFalling ? "VIX easing" : "VIX rising",
+      supports: vixFalling ? "up" : "down",
+      detail: "Vol day-to-day lean shared with the SPY desk.",
+    });
+  }
+
+  const aligned = factors.filter((f) => f.supports === bias).length;
+  const edge = Math.abs(probabilityHigher - 50);
+  const { confidence, confidenceLabel } = confidenceFrom(edge, aligned);
+
+  const forwardLeans = buildForwardSessionLeans(dateIso, 5, {
+    decadeUpPct,
+    weekdayOdds,
+    monthOdds,
+    dayOfMonthOdds,
+    streaks,
+    afterDownWinRate: afterDown.winRate,
+    afterDownN: afterDown.n,
+    spyReturns: rets,
+  });
+  const tomorrow = forwardLeans[0] ?? null;
+
+  return {
+    symbol: input.symbol,
+    name: input.name,
+    bias,
+    probabilityHigher,
+    probabilityLower,
+    confidence,
+    confidenceLabel,
+    last: input.last ?? tip,
+    changePct,
+    available: true,
+    factors,
+    calendarEdge,
+    tomorrow,
+    forwardLeans,
+  };
+}
+
+/**
+ * Per-ticker ArrowBeat lean for Mag7 — full equity signal (same family as SPY).
+ * Always returns all 7 names (soft-fail → available:false).
  */
 export function buildMag7Signals(
   snapshot: MarketSnapshot,
   dateIso = nyDateIso(),
 ): Mag7Signal[] {
-  const dow = weekdayInNy(dateIso);
   const spyBars = snapshot.spy.bars.length ? snapshot.spy.bars : snapshot.spy.recentBars;
-  const spy5 =
-    spyBars.length >= 6
-      ? (spyBars[spyBars.length - 1].close - spyBars[spyBars.length - 6].close) /
-        spyBars[spyBars.length - 6].close
-      : 0;
 
   const esPrev =
     snapshot.futures.previousClose ??
@@ -1341,122 +1616,32 @@ export function buildMag7Signals(
   const vixChg = pctChange(snapshot.vix.last, vixPrev);
   const vixFalling = (vixChg ?? 0) < 0;
 
+  const tone: MarketTone = {
+    futuresChg,
+    futuresPositive,
+    vixChg,
+    vixFalling,
+    spyBars,
+  };
+
   return MAG7_META.map((meta) => {
     const series = snapshot.mag7?.[meta.symbol];
-    let changePct: number | null = null;
-    if (series) {
-      const raw = pctChange(series.last, series.previousClose);
-      changePct = raw != null ? Math.round(raw * 10000) / 100 : null;
-      // Guard against stale/bad previousClose (e.g. old chartPreviousClose ≈ YTD).
-      if (
-        (changePct == null || Math.abs(changePct) > 25) &&
-        series.bars.length >= 2
-      ) {
-        const tip = series.bars[series.bars.length - 1].close;
-        const barPrev = series.bars[series.bars.length - 2].close;
-        const last = series.last ?? tip;
-        const prior =
-          tip > 0 && Math.abs(last - tip) / tip < 0.0008 ? barPrev : tip;
-        const fixed = pctChange(last, prior);
-        if (fixed != null && Math.abs(fixed * 100) <= 25) {
-          changePct = Math.round(fixed * 10000) / 100;
-        }
-      }
-    }
-
-    if (!series || series.bars.length < 20) {
-      return {
+    const lean = buildEquitySignal(
+      {
         symbol: meta.symbol,
         name: meta.name,
-        bias: "up" as Bias,
-        probabilityHigher: 50,
-        probabilityLower: 50,
-        confidence: 1 as const,
-        confidenceLabel: "Tentative",
         last: series?.last ?? null,
-        changePct,
-        available: false,
-      };
-    }
-
-    const bars = series.bars;
-    const rets = dailyReturns(bars);
-    if (rets.length < 15) {
-      return {
-        symbol: meta.symbol,
-        name: meta.name,
-        bias: "up" as Bias,
-        probabilityHigher: 50,
-        probabilityLower: 50,
-        confidence: 1 as const,
-        confidenceLabel: "Tentative",
-        last: series.last,
-        changePct,
-        available: false,
-      };
-    }
-
-    const sample = rets.slice(-252);
-    const upShare = sample.filter((r) => r.ret > 0).length / (sample.length || 1);
-    const streaks = streakFromReturns(rets);
-    const afterDown = afterDownDayStats(bars);
-
-    const tip = bars[bars.length - 1].close;
-    const fiveAgo = bars.length >= 6 ? bars[bars.length - 6].close : null;
-    const mom5 = fiveAgo && fiveAgo > 0 ? (tip - fiveAgo) / fiveAgo : 0;
-    const vsSpy = mom5 - spy5;
-
-    let score = upShare;
-    if (dow === 1) score -= 0.02;
-    if (dow === 5) score += 0.01;
-    if (streaks.down >= 3) score += 0.055;
-    else if (streaks.down === 2) score += 0.03;
-    if (streaks.up >= 4) score -= 0.035;
-    // Mild momentum: short-term strength helps slightly; overheat fades
-    if (mom5 > 0.02) score += 0.02;
-    else if (mom5 < -0.02) score += 0.015; // mild mean-reversion after a soft week
-    if (vsSpy > 0.01) score += 0.015;
-    else if (vsSpy < -0.01) score -= 0.015;
-    // Shared market tone (lighter weight than SPY hero signal)
-    if (futuresChg != null) {
-      if (futuresPositive) score += 0.02;
-      else score -= 0.02;
-    }
-    if (vixChg != null) {
-      if (vixFalling) score += 0.015;
-      else score -= 0.012;
-    }
-
-    score = Math.min(0.78, Math.max(0.28, score));
-    const bias: Bias = score >= 0.5 ? "up" : "down";
-    const probabilityHigher = Math.round(score * 1000) / 10;
-    const probabilityLower = Math.round((100 - probabilityHigher) * 10) / 10;
-
-    let aligned = 0;
-    if ((streaks.down >= 2 && bias === "up") || (streaks.up >= 3 && bias === "down")) aligned += 1;
-    if ((mom5 >= 0 && bias === "up") || (mom5 < 0 && bias === "down")) aligned += 1;
-    if ((vsSpy >= 0 && bias === "up") || (vsSpy < 0 && bias === "down")) aligned += 1;
-    if ((futuresPositive && bias === "up") || (!futuresPositive && bias === "down")) aligned += 1;
-    if ((vixFalling && bias === "up") || (!vixFalling && bias === "down")) aligned += 1;
-    if (streaks.down >= 2 && afterDown.winRate >= 52 && bias === "up") aligned += 1;
-
-    const edge = Math.abs(probabilityHigher - 50);
-    const { confidence, confidenceLabel } = confidenceFrom(edge, aligned);
-
+        previousClose: series?.previousClose ?? null,
+        bars: series?.bars ?? [],
+      },
+      dateIso,
+      tone,
+    );
     return {
+      ...lean,
       symbol: meta.symbol,
-      name: meta.name,
-      bias,
-      probabilityHigher,
-      probabilityLower,
-      confidence,
-      confidenceLabel,
-      last: series.last,
-      changePct,
-      available: true,
     };
   }).sort((a, b) => {
-    // Rank by P(higher close); unavailable names sink to the end.
     if (a.available !== b.available) return a.available ? -1 : 1;
     return b.probabilityHigher - a.probabilityHigher || a.symbol.localeCompare(b.symbol);
   });
@@ -1552,7 +1737,6 @@ export function buildAltAssetSignals(snapshot: MarketSnapshot): AltAssetSignal[]
     if (mom5 > 0.02) score += 0.025;
     else if (mom5 < -0.02) score -= 0.02;
     if (futuresChg != null) {
-      // Risk-on (ES up) mildly helps oil/crypto; gold/silver get a softer opposite nudge.
       if (meta.key === "gold" || meta.key === "silver") {
         if (futuresPositive) score -= 0.01;
         else score += 0.015;

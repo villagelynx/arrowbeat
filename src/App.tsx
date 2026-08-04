@@ -881,19 +881,147 @@ export default function App() {
                 </p>
               </div>
 
-              {quoteSignal ? (
-                <EquitySignalDesk
-                  lean={quoteSignal}
-                  asOfDate={signal?.asOfDate ?? new Date().toISOString().slice(0, 10)}
-                />
+              {quoteResult && deskSymbol === quoteResult.symbol && !deskIsEquity ? (
+                <p className="quote-lookup__error">
+                  {quoteResult.symbol}: not enough history for a full lean yet. Quote shown; main desk stays
+                  on SPY until more sessions load.
+                </p>
+              ) : null}
+              {deskIsEquity && deskEquity && deskSymbol !== "SPY" ? (
+                <p className="quote-desk__focus">
+                  Main desk: <strong>{deskEquity.symbol}</strong> lean · chart · last 10 · arrow
+                  {" · "}
+                  <button
+                    type="button"
+                    className="quote-desk__spy-btn"
+                    onClick={() => setDeskSymbol("SPY")}
+                  >
+                    Back to SPY
+                  </button>
+                </p>
               ) : null}
             </div>
           ) : null}
+          {!quoteResult && deskIsEquity && deskEquity ? (
+            <p className="quote-desk__focus">
+              Main desk: <strong>{deskEquity.symbol}</strong> lean · chart · last 10 · arrow
+              {" · "}
+              <button
+                type="button"
+                className="quote-desk__spy-btn"
+                onClick={() => setDeskSymbol("SPY")}
+              >
+                Back to SPY
+              </button>
+            </p>
+          ) : null}
         </section>
+
+        {signal.mag7.length ? (
+          <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
+            <h2 id="mag7-title">Magnificent 7</h2>
+            <p className="panel-lede">
+              Tap a name to fill the main ArrowBeat slots below — same graph, arrow, probability, and
+              last 10 days as SPY, from that stock&apos;s own history.
+            </p>
+            <ul className="mag7-grid">
+              {signal.mag7.map((row) => {
+                const leanUp = row.bias === "up";
+                const isFocus = deskSymbol === row.symbol && deskIsEquity;
+                return (
+                  <li key={row.symbol}>
+                    <button
+                      type="button"
+                      className={`mag7-card ${
+                        !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
+                      }${isFocus ? " is-focus" : ""}${deskSymbol === "SPY" ? "" : ""}`}
+                      onClick={() => setDeskSymbol(row.available ? row.symbol : deskSymbol)}
+                      disabled={!row.available}
+                      aria-pressed={isFocus}
+                      aria-label={`${row.symbol} ${row.name}${
+                        row.available
+                          ? `, ${leanUp ? "higher" : "lower"} ${row.probabilityHigher.toFixed(1)} percent`
+                          : ", data unavailable"
+                      }`}
+                    >
+                      <div className="mag7-card__top">
+                        <span className="mag7-card__symbol">{row.symbol}</span>
+                        {row.available ? (
+                          <span className="mag7-card__chev" aria-hidden="true">
+                            {leanUp ? "▲" : "▼"}
+                          </span>
+                        ) : (
+                          <span className="mag7-card__chev is-na" aria-hidden="true">
+                            —
+                          </span>
+                        )}
+                      </div>
+                      <p className="mag7-card__name">{row.name}</p>
+                      <p className="mag7-card__bias">
+                        {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
+                      </p>
+                      <p className="mag7-card__prob">
+                        {row.available ? (
+                          <>
+                            {row.probabilityHigher.toFixed(1)}
+                            <span>%</span>
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </p>
+                      {row.available ? (
+                        <p
+                          className="mag7-card__stars"
+                          aria-label={`${row.confidence} of 5 stars`}
+                        >
+                          {stars(row.confidence)}
+                        </p>
+                      ) : null}
+                      <p className="mag7-card__quote">
+                        <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
+                        <span
+                          className={
+                            row.changePct == null
+                              ? ""
+                              : row.changePct >= 0
+                                ? "is-up"
+                                : "is-down"
+                          }
+                        >
+                          {row.changePct == null
+                            ? "—"
+                            : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
+                        </span>
+                      </p>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mag7-desk-switch">
+              <button
+                type="button"
+                className={`mag7-spy-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
+                onClick={() => setDeskSymbol("SPY")}
+                aria-pressed={deskSymbol === "SPY"}
+              >
+                SPY desk
+              </button>
+              {deskIsEquity && deskEquity ? (
+                <span className="mag7-desk-switch__hint">
+                  Showing <strong>{deskEquity.symbol}</strong> in the main arrow &amp; chart
+                </span>
+              ) : (
+                <span className="mag7-desk-switch__hint">Showing S&amp;P (SPY) in the main desk</span>
+              )}
+            </div>
+          </section>
+        ) : null}
 
         <div className="desk-top">
           <div className="desk-stack desk-stack--day">
-            {dayBars.length > 1 ? (
+            {!deskIsEquity && dayBars.length > 1 ? (
               <section className="panel panel--day" aria-labelledby="spy-day-title">
                 <h2 id="spy-day-title">S&amp;P 500 today</h2>
                 <p className="panel-lede">
@@ -903,12 +1031,16 @@ export default function App() {
               </section>
             ) : null}
 
-            {signal.lastSessions.length ? (
+            {sessionStrip.length ? (
               <section className="panel panel--sessions" aria-labelledby="recent-title">
                 <h2 id="recent-title">Last 10 trading days</h2>
-                <p className="panel-lede">SPY close vs prior close — green up, red down.</p>
+                <p className="panel-lede">
+                  {deskIsEquity && deskEquity
+                    ? `${deskEquity.symbol} close vs prior close — green up, red down. Hist % is this name’s weekday higher-close rate.`
+                    : "SPY close vs prior close — green up, red down."}
+                </p>
                 <ol className="session-strip">
-                  {signal.lastSessions.map((day) => {
+                  {sessionStrip.map((day) => {
                     const dateLabel = new Intl.DateTimeFormat("en-US", {
                       timeZone: "America/New_York",
                       month: "short",
@@ -942,6 +1074,7 @@ export default function App() {
               </section>
             ) : null}
 
+            {!deskIsEquity ? (
             <section className="panel panel--stat" aria-labelledby="decade-title">
               <h2 id="decade-title">Market stat of the day</h2>
               <p className="market-stat">{signal.marketStat}</p>
@@ -958,6 +1091,38 @@ export default function App() {
                 </div>
               </div>
             </section>
+            ) : (
+            <section className="panel panel--stat" aria-labelledby="equity-stat-title">
+              <h2 id="equity-stat-title">{deskEquity?.symbol} desk</h2>
+              <p className="market-stat">
+                ArrowBeat lean for {deskEquity?.name ?? deskEquity?.symbol} uses this name&apos;s own
+                ~1y higher-close rate, weekday/month/day edges, streaks, vs SPY, and shared ES/VIX
+                tone — not the SPY market base rate.
+              </p>
+              {deskEquity?.last != null ? (
+                <div className="decade">
+                  <div>
+                    <p className="decade-label">Last</p>
+                    <p className="decade-value">{deskEquity.last.toFixed(2)}</p>
+                    <p className="decade-sub">~15m delayed</p>
+                  </div>
+                  <div>
+                    <p className="decade-label">Day</p>
+                    <p
+                      className={`decade-value ${
+                        (deskEquity.changePct ?? 0) >= 0 ? "up" : "down"
+                      }`}
+                    >
+                      {deskEquity.changePct == null
+                        ? "—"
+                        : `${deskEquity.changePct >= 0 ? "+" : ""}${deskEquity.changePct.toFixed(2)}%`}
+                    </p>
+                    <p className="decade-sub">vs prior close</p>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+            )}
           </div>
 
           <section className="hero" aria-labelledby="bias-title">
@@ -1008,7 +1173,10 @@ export default function App() {
               <p className="arrow-score-label">ArrowBeat Score</p>
 
               <div className="arrow-stage">
-                <MarketArrow bias={primary.bias} />
+                <MarketArrow
+                  bias={primary.bias}
+                  idSuffix={deskIsEquity && deskEquity ? deskEquity.symbol : "spy"}
+                />
               </div>
 
               <div className="bias-share-row">
@@ -1289,19 +1457,22 @@ export default function App() {
             </aside>
           </section>
 
-          {signal.forwardLeans?.length ? (
+          {forwardStrip?.length ? (
             <section
               className="panel panel--forward desk-row"
               aria-labelledby="forward-lean-title"
             >
-              <h2 id="forward-lean-title">Next 5 sessions</h2>
+              <h2 id="forward-lean-title">
+                Next 5 sessions
+                {deskIsEquity && deskEquity ? ` · ${deskEquity.symbol}` : ""}
+              </h2>
               <p className="panel-lede">
-                Calendar &amp; historical higher-close lean for the next five Mon–Fri sessions
-                (weekends skipped). Same family of edges as the tomorrow card — thinner than the
-                live SPY day signal; holidays not modeled.
+                {deskIsEquity && deskEquity
+                  ? `Calendar & historical higher-close lean for ${deskEquity.symbol} over the next five Mon–Fri sessions.`
+                  : "Calendar & historical higher-close lean for the next five Mon–Fri sessions (weekends skipped). Same family of edges as the tomorrow card — thinner than the live SPY day signal; holidays not modeled."}
               </p>
               <ol className="forward-strip" aria-label="Next five trading session projections">
-                {signal.forwardLeans.map((day, idx) => {
+                {forwardStrip.map((day, idx) => {
                   const lead =
                     day.bias === "up" ? day.probabilityHigher : day.probabilityLower;
                   const dateLabel = new Intl.DateTimeFormat("en-US", {

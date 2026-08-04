@@ -413,9 +413,6 @@ export default function App() {
         void hydrateDeskHistory(sym);
       }
     }
-    window.requestAnimationFrame(() => {
-      document.getElementById("desk-top")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   }
 
   /** Silent history hydrate so Mag7 taps fill the SPY chart slot with that name's graph. */

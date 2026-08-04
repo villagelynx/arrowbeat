@@ -1,6 +1,7 @@
 export type AppView =
   | "home"
   | "about"
+  | "model"
   | "streaks"
   | "correction"
   | "crash"
@@ -29,6 +30,13 @@ export function AppNav({ view, onNavigate, onGoScorecard }: AppNavProps) {
             Scorecard
           </button>
         ) : null}
+        <button
+          type="button"
+          className={`app-nav__link ${view === "model" ? "is-active" : ""}`}
+          onClick={() => onNavigate("model")}
+        >
+          Model
+        </button>
         <button
           type="button"
           className={`app-nav__link ${view === "streaks" ? "is-active" : ""}`}

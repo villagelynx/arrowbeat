@@ -108,55 +108,80 @@ function roundPct(n: number): number {
 
 /**
  * Map a headline clock time to the session whose open–close is used for "same session".
- * After ~16:00 America/New_York (or no print that calendar day), use the next bar.
+ * After ~16:00 America/New_York, the same-session print is still that day (if a bar exists);
+ * "next session" is the following bar when history has it.
  */
-function resolveEventIndex(bars: Bar[], publishDate: string, publishHour: number): number {
-  if (!bars.length) return -1;
-  const afterClose = publishHour >= 16;
-  if (afterClose) {
-    return bars.findIndex((b) => b.date > publishDate);
+function resolveSessionIndices(
+  bars: Bar[],
+  publishDate: string,
+  publishHour: number,
+): { sameIdx: number; nextIdx: number } {
+  if (!bars.length) return { sameIdx: -1, nextIdx: -1 };
+
+  let sameIdx = bars.findIndex((b) => b.date === publishDate);
+  if (sameIdx < 0) {
+    // Weekend / holiday: first session after the publish calendar day.
+    sameIdx = bars.findIndex((b) => b.date > publishDate);
   }
-  const exact = bars.findIndex((b) => b.date === publishDate);
-  if (exact >= 0) return exact;
-  return bars.findIndex((b) => b.date > publishDate);
+
+  // Late-day / after-close news: co-locate same-session with the completed day when present,
+  // and point "next" at the following session (may be unavailable until markets reopen).
+  if (sameIdx >= 0) {
+    const afterClose = publishHour >= 16;
+    const nextIdx = afterClose
+      ? sameIdx + 1 < bars.length
+        ? sameIdx + 1
+        : -1
+      : sameIdx + 1 < bars.length
+        ? sameIdx + 1
+        : -1;
+    return { sameIdx, nextIdx };
+  }
+
+  // News is newer than the tip of history (e.g. today's story before Yahoo posts the bar).
+  return { sameIdx: -1, nextIdx: -1 };
 }
 
-function impactAtIndex(bars: Bar[], i: number): {
+function impactAtIndex(
+  bars: Bar[],
+  sameIdx: number,
+  nextIdx: number,
+): {
   eventDate: string;
   sameSessionPct: number | null;
   nextSessionPct: number | null;
   window3Pct: number | null;
 } | null {
-  if (i < 0 || i >= bars.length) return null;
-  const cur = bars[i].close;
+  if (sameIdx < 0 || sameIdx >= bars.length) return null;
+  const cur = bars[sameIdx].close;
   if (!Number.isFinite(cur) || cur <= 0) return null;
 
   let sameSessionPct: number | null = null;
-  if (i > 0) {
-    const prev = bars[i - 1].close;
+  if (sameIdx > 0) {
+    const prev = bars[sameIdx - 1].close;
     if (Number.isFinite(prev) && prev > 0) {
       sameSessionPct = roundPct(((cur - prev) / prev) * 100);
     }
   }
 
   let nextSessionPct: number | null = null;
-  if (i + 1 < bars.length) {
-    const next = bars[i + 1].close;
+  if (nextIdx >= 0 && nextIdx < bars.length) {
+    const next = bars[nextIdx].close;
     if (Number.isFinite(next) && next > 0) {
       nextSessionPct = roundPct(((next - cur) / cur) * 100);
     }
   }
 
   let window3Pct: number | null = null;
-  if (i + 3 < bars.length) {
-    const later = bars[i + 3].close;
+  if (sameIdx + 3 < bars.length) {
+    const later = bars[sameIdx + 3].close;
     if (Number.isFinite(later) && later > 0) {
       window3Pct = roundPct(((later - cur) / cur) * 100);
     }
   }
 
   return {
-    eventDate: bars[i].date,
+    eventDate: bars[sameIdx].date,
     sameSessionPct,
     nextSessionPct,
     window3Pct,
@@ -195,8 +220,8 @@ export async function buildNewsPriceImpact(rawSymbol: string): Promise<NewsPrice
     if (ts == null || !Number.isFinite(ts) || ts <= 0) continue;
 
     const { date: publishDate, hour } = nyParts(ts);
-    const eventIdx = resolveEventIndex(bars, publishDate, hour);
-    const impact = impactAtIndex(bars, eventIdx);
+    const { sameIdx, nextIdx } = resolveSessionIndices(bars, publishDate, hour);
+    const impact = impactAtIndex(bars, sameIdx, nextIdx);
 
     items.push({
       id,

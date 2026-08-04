@@ -7,7 +7,6 @@ import { CpiOddsPage } from "./components/CpiOddsPage";
 import { CpiOddsPanel } from "./components/CpiOddsPanel";
 import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
-import { EquitySignalDesk } from "./components/EquitySignalDesk";
 import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
@@ -171,7 +170,8 @@ export default function App() {
   const [quoteResult, setQuoteResult] = useState<StockQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
-  const [mag7Focus, setMag7Focus] = useState<string | null>(null);
+  /** Main desk focus: SPY (default) or a ticker that fills hero + chart + last-10 slots. */
+  const [deskSymbol, setDeskSymbol] = useState<string>("SPY");
   const [view, setView] = useState<AppView>(() => readViewFromLocation() ?? "home");
   const [sharedScore, setSharedScore] = useState<SharedScoreSnapshot | null>(null);
   const [scoreFocus, setScoreFocus] = useState(false);
@@ -378,6 +378,7 @@ export default function App() {
     try {
       const q = await fetchStockQuote(symbol);
       setQuoteResult(q);
+      setDeskSymbol(q.symbol);
     } catch (e) {
       setQuoteResult(null);
       setQuoteError(e instanceof Error ? e.message : "Quote lookup failed.");
@@ -411,14 +412,22 @@ export default function App() {
     );
   }, [quoteResult, signal, spyBars]);
 
-  /** Mag7 desk: selected card, or first available name so a full SPY-style surface is always up. */
-  const activeMag7 = useMemo(() => {
-    if (!signal?.mag7.length) return null;
-    if (mag7Focus) {
-      return signal.mag7.find((r) => r.symbol === mag7Focus) ?? null;
+  /**
+   * Selected name for the main SPY slots (arrow, last 10, YTD chart, factors).
+   * Null when desk is on SPY or the name has no usable lean yet.
+   */
+  const deskEquity: EquitySignal | null = useMemo(() => {
+    const sym = deskSymbol.trim().toUpperCase();
+    if (!sym || sym === "SPY") return null;
+    if (quoteSignal && quoteSignal.symbol === sym) {
+      return quoteSignal.available ? quoteSignal : null;
     }
-    return signal.mag7.find((r) => r.available) ?? signal.mag7[0] ?? null;
-  }, [signal, mag7Focus]);
+    const mag = signal?.mag7.find((r) => r.symbol === sym);
+    if (mag?.available) return mag;
+    return null;
+  }, [deskSymbol, quoteSignal, signal]);
+
+  const deskIsEquity = deskEquity != null;
 
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
@@ -595,39 +604,92 @@ export default function App() {
       ? tomorrow.probabilityHigher
       : tomorrow.probabilityLower
     : null;
-  /** After regular close, promote locked next-session lean into the hero. */
+  /** After regular close, promote locked next-session lean into the hero (SPY desk). */
   const tomorrowAsPrimary =
-    marketClock.phase === "closed" && tomorrow != null && tmrLeadPct != null;
+    !deskIsEquity &&
+    marketClock.phase === "closed" &&
+    tomorrow != null &&
+    tmrLeadPct != null;
 
-  const primary = tomorrowAsPrimary
-    ? {
-        bias: tomorrow.bias,
-        probabilityHigher: tomorrow.probabilityHigher,
-        probabilityLower: tomorrow.probabilityLower,
-        confidence: tomorrow.confidence,
-        confidenceLabel: tomorrow.confidenceLabel,
-        sessionLabel: tomorrow.sessionLabel,
-        factors: tomorrow.factors,
-        calendarEdge: tomorrow.calendarEdge,
-        title: tomorrow.skippedWeekend ? "Next session lean" : "Tomorrow's market bias",
-        kicker: tomorrow.kicker,
-      }
-    : {
-        bias: signal.bias,
-        probabilityHigher: signal.probabilityHigher,
-        probabilityLower: signal.probabilityLower,
-        confidence: signal.confidence,
-        confidenceLabel: signal.confidenceLabel,
-        sessionLabel: signal.sessionLabel,
-        factors: signal.factors,
-        calendarEdge: signal.calendarEdge,
-        title: "Today's market bias",
-        kicker: null as string | null,
-      };
+  /** Equity next-session promotion after close (same idea as SPY tomorrow hero). */
+  const equityTomorrowAsPrimary =
+    deskIsEquity &&
+    deskEquity != null &&
+    marketClock.phase === "closed" &&
+    deskEquity.tomorrow != null;
+
+  const equityTmr = deskEquity?.tomorrow ?? null;
+
+  const primary = deskIsEquity && deskEquity
+    ? equityTomorrowAsPrimary && equityTmr
+      ? {
+          bias: equityTmr.bias,
+          probabilityHigher: equityTmr.probabilityHigher,
+          probabilityLower: equityTmr.probabilityLower,
+          confidence: equityTmr.confidence,
+          confidenceLabel: equityTmr.confidenceLabel,
+          sessionLabel: equityTmr.sessionLabel,
+          factors: equityTmr.factors,
+          calendarEdge: equityTmr.calendarEdge,
+          title: `${deskEquity.symbol} · next session lean`,
+          kicker: equityTmr.kicker,
+        }
+      : {
+          bias: deskEquity.bias,
+          probabilityHigher: deskEquity.probabilityHigher,
+          probabilityLower: deskEquity.probabilityLower,
+          confidence: deskEquity.confidence,
+          confidenceLabel: deskEquity.confidenceLabel,
+          sessionLabel: signal.sessionLabel,
+          factors: deskEquity.factors,
+          calendarEdge: deskEquity.calendarEdge,
+          title: `${deskEquity.symbol} · today's lean`,
+          kicker: deskEquity.name !== deskEquity.symbol ? deskEquity.name : null,
+        }
+    : tomorrowAsPrimary
+      ? {
+          bias: tomorrow.bias,
+          probabilityHigher: tomorrow.probabilityHigher,
+          probabilityLower: tomorrow.probabilityLower,
+          confidence: tomorrow.confidence,
+          confidenceLabel: tomorrow.confidenceLabel,
+          sessionLabel: tomorrow.sessionLabel,
+          factors: tomorrow.factors,
+          calendarEdge: tomorrow.calendarEdge,
+          title: tomorrow.skippedWeekend ? "Next session lean" : "Tomorrow's market bias",
+          kicker: tomorrow.kicker,
+        }
+      : {
+          bias: signal.bias,
+          probabilityHigher: signal.probabilityHigher,
+          probabilityLower: signal.probabilityLower,
+          confidence: signal.confidence,
+          confidenceLabel: signal.confidenceLabel,
+          sessionLabel: signal.sessionLabel,
+          factors: signal.factors,
+          calendarEdge: signal.calendarEdge,
+          title: "Today's market bias",
+          kicker: null as string | null,
+        };
   const up = primary.bias === "up";
   const leadPct = up ? primary.probabilityHigher : primary.probabilityLower;
-  const todayUp = signal.bias === "up";
-  const todayLeadPct = todayUp ? signal.probabilityHigher : signal.probabilityLower;
+  const todayUp = deskIsEquity && deskEquity ? deskEquity.bias === "up" : signal.bias === "up";
+  const todayLeadPct =
+    deskIsEquity && deskEquity
+      ? todayUp
+        ? deskEquity.probabilityHigher
+        : deskEquity.probabilityLower
+      : todayUp
+        ? signal.probabilityHigher
+        : signal.probabilityLower;
+
+  const sessionStrip = deskIsEquity && deskEquity ? deskEquity.lastSessions : signal.lastSessions;
+  const chartBars = deskIsEquity && deskEquity?.bars.length ? deskEquity.bars : spyBars;
+  const chartSymbol = deskIsEquity && deskEquity ? deskEquity.symbol : "SPY";
+  const forwardStrip =
+    deskIsEquity && deskEquity?.forwardLeans?.length
+      ? deskEquity.forwardLeans
+      : signal.forwardLeans;
 
   const signalSharePayload: SignalSharePayload = {
     bias: primary.bias,

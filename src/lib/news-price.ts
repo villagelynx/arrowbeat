@@ -5,6 +5,8 @@ export type NewsImpactItem = {
   title: string;
   publisher: string;
   link: string;
+  /** Short story lede / first-paragraph teaser when available. */
+  summary: string | null;
   publishedAt: string;
   publishDate: string;
   eventDate: string | null;

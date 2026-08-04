@@ -51,6 +51,7 @@ function NewsRow({ item }: { item: NewsImpactItem }) {
         </span>
       </div>
       {headline}
+      {item.summary ? <p className="news-impact__summary">{item.summary}</p> : null}
       <div className="news-impact__moves" aria-label="Session moves around headline">
         <span className="news-impact__move">
           <span className="news-impact__move-label">Session</span>
@@ -84,8 +85,8 @@ export function NewsPricePanel({ symbol, payload, loading, error }: NewsPricePan
     <section className="panel panel--news desk-row" aria-labelledby="news-price-title">
       <h2 id="news-price-title">News around price · {symbol}</h2>
       <p className="panel-lede">
-        Recent Yahoo headlines for this name with same-session, next-session, and +3-session close
-        moves. Co-movement only — not causal proof.
+        Recent Yahoo headlines and a short story teaser, with same-session, next-session, and
+        +3-session close moves. Co-movement only — not causal proof; full text lives on Yahoo.
       </p>
 
       {loading ? <p className="news-impact__status">Loading headlines…</p> : null}

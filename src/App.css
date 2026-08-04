@@ -3684,6 +3684,17 @@ a.news-impact__title:hover {
   text-underline-offset: 0.12em;
 }
 
+.news-impact__summary {
+  margin: 0.35rem 0 0;
+  color: rgba(232, 238, 245, 0.82);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
 .news-impact__moves {
   display: flex;
   flex-wrap: wrap;

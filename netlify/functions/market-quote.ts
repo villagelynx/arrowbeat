@@ -26,7 +26,12 @@ function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-  // Soft Mag7 may still be in flight under free-tier deadline — tolerate a bit longer.
+/** Single-symbol delayed quote + ~1y bars for equity signals. */
+export async function handler(event: NetlifyEvent): Promise<NetlifyResult> {
+  const symbol = event.queryStringParameters?.symbol ?? "";
+  try {
+    // 1y history is heavier than 5d quote-only; stay under free-tier wall clock.
+    const payload = await withDeadline(buildStockQuote(symbol), 9000);
     return {
       statusCode: 200,
       headers: {

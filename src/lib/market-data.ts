@@ -110,15 +110,18 @@ export type StockQuote = {
   previousClose: number | null;
   change: number | null;
   changePct: number | null;
+  /** ~1y daily closes when available (for per-ticker ArrowBeat lean). */
+  bars?: Bar[];
   error?: string;
 };
 
-/** On-demand delayed Yahoo quote via Netlify / Vite proxy. */
+/** On-demand delayed Yahoo quote + history via Netlify / Vite proxy. */
 export async function fetchStockQuote(symbol: string): Promise<StockQuote> {
   const ticker = symbol.trim().toUpperCase();
   if (!ticker) throw new Error("Enter a ticker symbol.");
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 6000);
+  // Quote now pulls ~1y bars for equity signals — give Yahoo more time.
+  const timer = window.setTimeout(() => controller.abort(), 12_000);
   try {
     const res = await fetch(`/api/market/quote?symbol=${encodeURIComponent(ticker)}`, {
       signal: controller.signal,
@@ -128,7 +131,10 @@ export async function fetchStockQuote(symbol: string): Promise<StockQuote> {
     if (!res.ok || data.last == null) {
       throw new Error(data.error || `No quote for ${ticker}.`);
     }
-    return data;
+    return {
+      ...data,
+      bars: Array.isArray(data.bars) ? data.bars : [],
+    };
   } finally {
     window.clearTimeout(timer);
   }

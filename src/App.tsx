@@ -22,6 +22,7 @@ import {
 } from "./lib/market-data";
 import {
   buildDemoSignal,
+  buildEquitySignal,
   buildLiveSignal,
   weekdayIndexForIso,
   monthIndexForIso,
@@ -30,6 +31,7 @@ import {
   taxSeasonKindForMonth,
   type DailySignal,
   type CalendarEdgeSlice,
+  type EquitySignal,
 } from "./lib/signal";
 import { applySignalFavicon } from "./lib/favicon";
 import { getMarketClock, type MarketClock } from "./lib/market-hours";
@@ -168,6 +170,7 @@ export default function App() {
   const [quoteResult, setQuoteResult] = useState<StockQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [mag7Focus, setMag7Focus] = useState<string | null>(null);
   const [view, setView] = useState<AppView>(() => readViewFromLocation() ?? "home");
   const [sharedScore, setSharedScore] = useState<SharedScoreSnapshot | null>(null);
   const [scoreFocus, setScoreFocus] = useState(false);
@@ -381,6 +384,31 @@ export default function App() {
       setQuoteLoading(false);
     }
   }
+
+  /** Per-ticker ArrowBeat lean for the quote desk (same family as Mag7 / SPY-style edges). */
+  const quoteSignal: EquitySignal | null = useMemo(() => {
+    if (!quoteResult) return null;
+    const tone = signal
+      ? {
+          futuresChg: null as number | null,
+          futuresPositive: signal.bias === "up",
+          vixChg: null as number | null,
+          vixFalling: false,
+          spyBars,
+        }
+      : { spyBars };
+    return buildEquitySignal(
+      {
+        symbol: quoteResult.symbol,
+        name: quoteResult.symbol,
+        last: quoteResult.last,
+        previousClose: quoteResult.previousClose,
+        bars: quoteResult.bars ?? [],
+      },
+      signal?.asOfDate,
+      tone,
+    );
+  }, [quoteResult, signal, spyBars]);
 
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
@@ -748,36 +776,149 @@ export default function App() {
           </div>
           {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
           {quoteResult ? (
-            <div
-              className={`quote-result ${
-                quoteResult.changePct == null
-                  ? ""
-                  : quoteResult.changePct >= 0
-                    ? "is-up"
-                    : "is-down"
-              }`}
-            >
-              <p className="quote-result__symbol">{quoteResult.symbol}</p>
-              <p className="quote-result__last">
-                {quoteResult.last != null ? quoteResult.last.toFixed(2) : "—"}
-              </p>
-              <p className="quote-result__chg">
-                {quoteResult.change != null
-                  ? `${quoteResult.change >= 0 ? "+" : ""}${quoteResult.change.toFixed(2)}`
-                  : "—"}{" "}
-                (
-                {quoteResult.changePct != null
-                  ? `${quoteResult.changePct >= 0 ? "+" : ""}${quoteResult.changePct.toFixed(2)}%`
-                  : "—"}
-                )
-              </p>
-              <p className="quote-result__meta">
-                Prev close{" "}
-                {quoteResult.previousClose != null
-                  ? quoteResult.previousClose.toFixed(2)
-                  : "—"}{" "}
-                · {quoteResult.delayNote}
-              </p>
+            <div className="quote-desk">
+              <div
+                className={`quote-result ${
+                  quoteResult.changePct == null
+                    ? ""
+                    : quoteResult.changePct >= 0
+                      ? "is-up"
+                      : "is-down"
+                }`}
+              >
+                <p className="quote-result__symbol">{quoteResult.symbol}</p>
+                <p className="quote-result__last">
+                  {quoteResult.last != null ? quoteResult.last.toFixed(2) : "—"}
+                </p>
+                <p className="quote-result__chg">
+                  {quoteResult.change != null
+                    ? `${quoteResult.change >= 0 ? "+" : ""}${quoteResult.change.toFixed(2)}`
+                    : "—"}{" "}
+                  (
+                  {quoteResult.changePct != null
+                    ? `${quoteResult.changePct >= 0 ? "+" : ""}${quoteResult.changePct.toFixed(2)}%`
+                    : "—"}
+                  )
+                </p>
+                <p className="quote-result__meta">
+                  Prev close{" "}
+                  {quoteResult.previousClose != null
+                    ? quoteResult.previousClose.toFixed(2)
+                    : "—"}{" "}
+                  · {quoteResult.delayNote}
+                </p>
+              </div>
+
+              {quoteSignal ? (
+                <div
+                  className={`quote-lean ${
+                    !quoteSignal.available
+                      ? "is-muted"
+                      : quoteSignal.bias === "up"
+                        ? "is-up"
+                        : "is-down"
+                  }`}
+                >
+                  <p className="quote-lean__kicker">ArrowBeat lean · {quoteSignal.symbol}</p>
+                  {quoteSignal.available ? (
+                    <>
+                      <div className="quote-lean__row">
+                        <span className="quote-lean__arrow" aria-hidden="true">
+                          {quoteSignal.bias === "up" ? "▲" : "▼"}
+                        </span>
+                        <span className="quote-lean__title">
+                          {quoteSignal.bias === "up" ? "Higher" : "Lower"}
+                        </span>
+                        <span className="quote-lean__pct">
+                          {(quoteSignal.bias === "up"
+                            ? quoteSignal.probabilityHigher
+                            : quoteSignal.probabilityLower
+                          ).toFixed(1)}
+                          <span>%</span>
+                        </span>
+                      </div>
+                      <p className="quote-lean__split">
+                        Higher {quoteSignal.probabilityHigher.toFixed(1)}% · Lower{" "}
+                        {quoteSignal.probabilityLower.toFixed(1)}%
+                      </p>
+                      <p
+                        className="quote-lean__stars"
+                        aria-label={`${quoteSignal.confidence} of 5 stars`}
+                      >
+                        {stars(quoteSignal.confidence)}{" "}
+                        <span>
+                          {quoteSignal.confidenceLabel} · {quoteSignal.confidence}/5
+                        </span>
+                      </p>
+                      {quoteSignal.tomorrow ? (
+                        <p className="quote-lean__next">
+                          Next session{" "}
+                          <strong>
+                            {quoteSignal.tomorrow.bias === "up" ? "▲ Higher" : "▼ Lower"}{" "}
+                            {(quoteSignal.tomorrow.bias === "up"
+                              ? quoteSignal.tomorrow.probabilityHigher
+                              : quoteSignal.tomorrow.probabilityLower
+                            ).toFixed(1)}
+                            %
+                          </strong>
+                        </p>
+                      ) : null}
+                      {quoteSignal.forwardLeans.length ? (
+                        <ol
+                          className="forward-strip forward-strip--compact"
+                          aria-label={`${quoteSignal.symbol} next five sessions`}
+                        >
+                          {quoteSignal.forwardLeans.map((day, idx) => {
+                            const lead =
+                              day.bias === "up" ? day.probabilityHigher : day.probabilityLower;
+                            const dayName = new Intl.DateTimeFormat("en-US", {
+                              timeZone: "America/New_York",
+                              weekday: "short",
+                            }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
+                            return (
+                              <li
+                                key={day.asOfDate}
+                                className={day.bias === "up" ? "is-up" : "is-down"}
+                              >
+                                <span className="forward-strip__ord">
+                                  {idx === 0 ? "Next" : `+${idx + 1}`}
+                                </span>
+                                <span className="forward-strip__day">{dayName}</span>
+                                <span className="forward-strip__arrow" aria-hidden="true">
+                                  {day.bias === "up" ? "▲" : "▼"}
+                                </span>
+                                <span className="forward-strip__pct">
+                                  {lead.toFixed(1)}
+                                  <span>%</span>
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      ) : null}
+                      {quoteSignal.factors.length ? (
+                        <ul className="quote-lean__factors">
+                          {quoteSignal.factors.slice(0, 5).map((f) => (
+                            <li
+                              key={f.id}
+                              className={f.supports === "up" ? "is-up" : "is-down"}
+                              title={f.detail}
+                            >
+                              <span aria-hidden="true">{f.supports === "up" ? "▲" : "▼"}</span>{" "}
+                              {f.label}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="quote-lean__na">
+                      Not enough daily history for a full lean (need ~40+ sessions). Quote still
+                      shown above.
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </section>
@@ -1298,63 +1439,134 @@ export default function App() {
           <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
             <h2 id="mag7-title">Magnificent 7</h2>
             <p className="panel-lede">
-              Ranked highest → lowest by P(higher close). Day % vs prior close · ~15m delayed.
+              Full ArrowBeat lean per name — each ticker&apos;s own ~1y history, weekday/month edges,
+              streaks, vs SPY, plus ES/VIX tone. Tap a name for factors. Ranked by P(higher close).
             </p>
             <ul className="mag7-grid">
               {signal.mag7.map((row) => {
                 const leanUp = row.bias === "up";
+                const isFocus = mag7Focus === row.symbol;
                 return (
-                  <li
-                    key={row.symbol}
-                    className={`mag7-card ${
-                      !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
-                    }`}
-                  >
-                    <div className="mag7-card__top">
-                      <span className="mag7-card__symbol">{row.symbol}</span>
+                  <li key={row.symbol}>
+                    <button
+                      type="button"
+                      className={`mag7-card ${
+                        !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
+                      }${isFocus ? " is-focus" : ""}`}
+                      onClick={() =>
+                        setMag7Focus((cur) => (cur === row.symbol ? null : row.symbol))
+                      }
+                      aria-pressed={isFocus}
+                      aria-label={`${row.symbol} ${row.name}${
+                        row.available
+                          ? `, ${leanUp ? "higher" : "lower"} ${row.probabilityHigher.toFixed(1)} percent`
+                          : ", data unavailable"
+                      }`}
+                    >
+                      <div className="mag7-card__top">
+                        <span className="mag7-card__symbol">{row.symbol}</span>
+                        {row.available ? (
+                          <span className="mag7-card__chev" aria-hidden="true">
+                            {leanUp ? "▲" : "▼"}
+                          </span>
+                        ) : (
+                          <span className="mag7-card__chev is-na" aria-hidden="true">
+                            —
+                          </span>
+                        )}
+                      </div>
+                      <p className="mag7-card__name">{row.name}</p>
+                      <p className="mag7-card__bias">
+                        {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
+                      </p>
+                      <p className="mag7-card__prob">
+                        {row.available ? (
+                          <>
+                            {row.probabilityHigher.toFixed(1)}
+                            <span>%</span>
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </p>
                       {row.available ? (
-                        <span className="mag7-card__chev" aria-hidden="true">
-                          {leanUp ? "▲" : "▼"}
+                        <p
+                          className="mag7-card__stars"
+                          aria-label={`${row.confidence} of 5 stars`}
+                        >
+                          {stars(row.confidence)}
+                        </p>
+                      ) : null}
+                      {row.available && row.tomorrow ? (
+                        <p className="mag7-card__next">
+                          nxt{" "}
+                          {row.tomorrow.bias === "up" ? "▲" : "▼"}
+                          {(row.tomorrow.bias === "up"
+                            ? row.tomorrow.probabilityHigher
+                            : row.tomorrow.probabilityLower
+                          ).toFixed(0)}
+                          %
+                        </p>
+                      ) : null}
+                      {row.available && row.forwardLeans?.length ? (
+                        <div className="mag7-card__trail" aria-hidden="true">
+                          {row.forwardLeans.map((d) => (
+                            <span
+                              key={d.asOfDate}
+                              className={d.bias === "up" ? "is-up" : "is-down"}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                      <p className="mag7-card__quote">
+                        <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
+                        <span
+                          className={
+                            row.changePct == null
+                              ? ""
+                              : row.changePct >= 0
+                                ? "is-up"
+                                : "is-down"
+                          }
+                        >
+                          {row.changePct == null
+                            ? "—"
+                            : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
                         </span>
-                      ) : (
-                        <span className="mag7-card__chev is-na" aria-hidden="true">
-                          —
-                        </span>
-                      )}
-                    </div>
-                    <p className="mag7-card__bias">
-                      {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
-                    </p>
-                    <p className="mag7-card__prob">
-                      {row.available ? (
-                        <>
-                          {row.probabilityHigher.toFixed(1)}
-                          <span>%</span>
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </p>
-                    <p className="mag7-card__quote">
-                      <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
-                      <span
-                        className={
-                          row.changePct == null
-                            ? ""
-                            : row.changePct >= 0
-                              ? "is-up"
-                              : "is-down"
-                        }
-                      >
-                        {row.changePct == null
-                          ? "—"
-                          : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
-                      </span>
-                    </p>
+                      </p>
+                    </button>
                   </li>
                 );
               })}
             </ul>
+            {(() => {
+              const focused = signal.mag7.find((r) => r.symbol === mag7Focus);
+              if (!focused?.available || !focused.factors.length) return null;
+              return (
+                <div
+                  className={`mag7-focus ${focused.bias === "up" ? "is-up" : "is-down"}`}
+                >
+                  <p className="mag7-focus__head">
+                    <strong>
+                      {focused.symbol} · {focused.name}
+                    </strong>{" "}
+                    — {focused.confidenceLabel} · Higher {focused.probabilityHigher.toFixed(1)}% /
+                    Lower {focused.probabilityLower.toFixed(1)}%
+                  </p>
+                  <ul className="mag7-focus__factors">
+                    {focused.factors.map((f) => (
+                      <li key={f.id} className={f.supports === "up" ? "is-up" : "is-down"}>
+                        <span aria-hidden="true">{f.supports === "up" ? "▲" : "▼"}</span>
+                        <span>
+                          {f.label}
+                          <small>{f.detail}</small>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
           </section>
         ) : null}
 

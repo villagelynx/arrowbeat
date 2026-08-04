@@ -28,6 +28,7 @@ type NavItem = {
 /** Always visible across the top strip. */
 const PRIMARY_ITEMS: NavItem[] = [
   { id: "home", label: "Home", view: "home" },
+  { id: "about", label: "About", view: "about" },
   { id: "brief", label: "Morning brief", view: "brief" },
   { id: "model", label: "Financial model", view: "model" },
   { id: "stock-corrections", label: "Stock corrections", view: "stock-corrections" },
@@ -41,7 +42,6 @@ const MORE_ITEMS: NavItem[] = [
   { id: "correction", label: "Correction odds", view: "correction" },
   { id: "crash", label: "Crash odds", view: "crash" },
   { id: "cpi", label: "CPI odds", view: "cpi" },
-  { id: "about", label: "About", view: "about" },
 ];
 
 export function AppNav({ view, onNavigate, onGoScorecard }: AppNavProps) {

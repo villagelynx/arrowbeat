@@ -157,6 +157,8 @@ export type DailySignal = {
   factors: Factor[];
   /** Next-session lean from calendar/historical edges known today. */
   tomorrow: TomorrowSignal | null;
+  /** Next 5 trading-session calendar leans (includes tomorrow as [0]). */
+  forwardLeans: TomorrowSignal[];
   /** Most recent completed SPY sessions, newest → oldest (usually 10). */
   lastSessions: SessionDay[];
   /** Weekdays ranked by historical higher-close rate (~10y SPY). */
@@ -820,6 +822,52 @@ export function buildTomorrowSignal(
   };
 }
 
+/**
+ * Next N session leans (Mon–Fri only) from pure calendar / historical slices.
+ * Day 0 = next session after `asOfDate` (same as buildTomorrowSignal).
+ */
+export function buildForwardSessionLeans(
+  asOfDate: string,
+  count: number,
+  opts: {
+    decadeUpPct: number;
+    weekdayOdds: WeekdayOdds[];
+    monthOdds: MonthOdds[];
+    dayOfMonthOdds: DayOfMonthOdds[];
+    streaks?: { up: number; down: number };
+    afterDownWinRate?: number;
+    afterDownN?: number;
+    /** SPY session returns for CPI-window historical odds. */
+    spyReturns: { date: string; ret: number }[];
+  },
+): TomorrowSignal[] {
+  const out: TomorrowSignal[] = [];
+  let cursor = asOfDate;
+  const n = Math.max(0, Math.min(10, Math.floor(count)));
+  for (let i = 0; i < n; i++) {
+    const nextIso = nextTradingDayIso(cursor);
+    const cpiWindow = buildCpiWindowInsight(opts.spyReturns, nextIso);
+    const cashflowCycle = buildCashflowCycleInsight(opts.dayOfMonthOdds, nextIso);
+    const taxSeason = buildTaxSeasonInsight(opts.monthOdds, nextIso);
+    out.push(
+      buildTomorrowSignal(cursor, {
+        decadeUpPct: opts.decadeUpPct,
+        weekdayOdds: opts.weekdayOdds,
+        monthOdds: opts.monthOdds,
+        dayOfMonthOdds: opts.dayOfMonthOdds,
+        cashflowCycle,
+        taxSeason,
+        cpiWindow,
+        streaks: opts.streaks,
+        afterDownWinRate: opts.afterDownWinRate,
+        afterDownN: opts.afterDownN,
+      }),
+    );
+    cursor = nextIso;
+  }
+  return out;
+}
+
 export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso()): DailySignal {
   const dow = weekdayInNy(dateIso);
   const spyBars = snapshot.spy.bars.length ? snapshot.spy.bars : snapshot.spy.recentBars;
@@ -1100,6 +1148,16 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
     afterDownWinRate: afterDown.winRate,
     afterDownN: afterDown.n,
   });
+  const forwardLeans = buildForwardSessionLeans(dateIso, 5, {
+    decadeUpPct: decade.upPct,
+    weekdayOdds,
+    monthOdds,
+    dayOfMonthOdds,
+    streaks,
+    afterDownWinRate: afterDown.winRate,
+    afterDownN: afterDown.n,
+    spyReturns: spyRets,
+  });
 
   return {
     asOfDate: dateIso,
@@ -1111,6 +1169,7 @@ export function buildLiveSignal(snapshot: MarketSnapshot, dateIso = nyDateIso())
     confidenceLabel,
     factors,
     tomorrow,
+    forwardLeans,
     lastSessions,
     weekdayOdds,
     monthOdds,
@@ -1196,6 +1255,30 @@ export function buildDemoSignal(dateIso = nyDateIso()): DailySignal {
       skippedWeekend,
       calendarEdge: null,
     },
+    forwardLeans: (() => {
+      const leans: TomorrowSignal[] = [];
+      let cursor = dateIso;
+      for (let i = 0; i < 5; i++) {
+        const next = nextTradingDayIso(cursor);
+        const skip = next !== shiftIsoDays(cursor, 1);
+        leans.push({
+          asOfDate: next,
+          sessionLabel: formatSession(next),
+          label: skip ? "Next session lean" : i === 0 ? "Tomorrow's lean" : formatSession(next),
+          kicker: `Into ${longWeekdayNy(next)}`,
+          bias: "up",
+          probabilityHigher: 52,
+          probabilityLower: 48,
+          confidence: 1,
+          confidenceLabel: "Tentative",
+          factors: [],
+          skippedWeekend: skip,
+          calendarEdge: null,
+        });
+        cursor = next;
+      }
+      return leans;
+    })(),
     lastSessions: [],
     weekdayOdds: [],
     monthOdds: [],

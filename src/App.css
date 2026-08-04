@@ -2643,8 +2643,123 @@ main {
 }
 
 .tomorrow-lean--settled {
+  order: 11;
   opacity: 0.88;
   border-style: dashed;
+}
+
+/* Next 5 session calendar projections */
+.panel--forward {
+  margin-top: 0.25rem;
+}
+
+.forward-strip {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.forward-strip li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  margin: 0;
+  padding: 0.65rem 0.7rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+
+.forward-strip li.is-up {
+  border-color: rgba(18, 212, 107, 0.28);
+  background: rgba(18, 212, 107, 0.06);
+}
+
+.forward-strip li.is-down {
+  border-color: rgba(239, 51, 64, 0.28);
+  background: rgba(239, 51, 64, 0.06);
+}
+
+.forward-strip__ord {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.forward-strip__day {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.forward-strip__date {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.forward-strip__arrow {
+  margin-top: 0.2rem;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.forward-strip li.is-up .forward-strip__arrow,
+.forward-strip li.is-up .forward-strip__pct {
+  color: #12d46b;
+}
+
+.forward-strip li.is-down .forward-strip__arrow,
+.forward-strip li.is-down .forward-strip__pct {
+  color: #ef3340;
+}
+
+.forward-strip__pct {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.forward-strip__pct span {
+  font-size: 0.72em;
+  margin-left: 0.05em;
+  opacity: 0.9;
+}
+
+.forward-strip__chip {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.forward-strip__stars {
+  color: #f0c24b;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 900px) {
+  .forward-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .forward-strip {
+    grid-template-columns: 1fr;
+  }
 }
 
 .confidence-label,

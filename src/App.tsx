@@ -1180,6 +1180,64 @@ export default function App() {
             </aside>
           </section>
 
+          {signal.forwardLeans?.length ? (
+            <section
+              className="panel panel--forward desk-row"
+              aria-labelledby="forward-lean-title"
+            >
+              <h2 id="forward-lean-title">Next 5 sessions</h2>
+              <p className="panel-lede">
+                Calendar &amp; historical higher-close lean for the next five Mon–Fri sessions
+                (weekends skipped). Same family of edges as the tomorrow card — thinner than the
+                live SPY day signal; holidays not modeled.
+              </p>
+              <ol className="forward-strip" aria-label="Next five trading session projections">
+                {signal.forwardLeans.map((day, idx) => {
+                  const lead =
+                    day.bias === "up" ? day.probabilityHigher : day.probabilityLower;
+                  const dateLabel = new Intl.DateTimeFormat("en-US", {
+                    timeZone: "America/New_York",
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
+                  const dayName = new Intl.DateTimeFormat("en-US", {
+                    timeZone: "America/New_York",
+                    weekday: "short",
+                  }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
+                  return (
+                    <li
+                      key={day.asOfDate}
+                      className={day.bias === "up" ? "is-up" : "is-down"}
+                    >
+                      <span className="forward-strip__ord">
+                        {idx === 0 ? "Next" : `+${idx + 1}`}
+                      </span>
+                      <span className="forward-strip__day">{dayName}</span>
+                      <span className="forward-strip__date">{dateLabel}</span>
+                      <span className="forward-strip__arrow" aria-hidden="true">
+                        {day.bias === "up" ? "▲" : "▼"}
+                      </span>
+                      <span className="forward-strip__pct">
+                        {lead.toFixed(1)}
+                        <span>%</span>
+                      </span>
+                      <span className="forward-strip__chip">
+                        {day.bias === "up" ? "Higher" : "Lower"}
+                      </span>
+                      <span
+                        className="forward-strip__stars"
+                        aria-label={`${day.confidence} of 5 stars`}
+                      >
+                        {stars(day.confidence)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ) : null}
+
           <div className="desk-stack desk-stack--factors">
             <section className="panel panel--factors" aria-labelledby="factors-title">
               <h2 id="factors-title">Why this signal</h2>
@@ -1407,8 +1465,10 @@ export default function App() {
               </div>
             </div>
             <p className="panel-lede">
-              Live leans saved on this device, graded when SPY&apos;s close vs prior is known. Hit =
-              direction correct. Brier = probability calibration (lower better; coin flip ≈ 0.25).
+              Live leans saved on this device, graded when a later SPY daily bar freezes that
+              session&apos;s official close vs prior (not the unfinished Yahoo bar during the day).
+              Hit = direction correct. Brier = probability calibration (lower better; coin flip ≈
+              0.25).
             </p>
 
             {sharedScore ? (

@@ -1899,21 +1899,40 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0.06rem;
-  flex: 0 0 5.1rem;
-  width: 5.1rem;
-  min-width: 5.1rem;
+  width: 100%;
+  min-width: 0;
   min-height: 100%;
   box-sizing: border-box;
   padding: 0.28rem 0.32rem 0.32rem;
   border-radius: 0.4rem;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
-  scroll-snap-align: start;
+}
+
+button.mag7-card {
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
   appearance: none;
+}
+
+/* Mag7 tap-targets fill the list cell; alts keep li.mag7-card sizing. */
+.mag7-grid > li:not(.mag7-card) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 5.1rem;
+  width: 5.1rem;
+  min-width: 5.1rem;
+  scroll-snap-align: start;
+}
+
+.mag7-grid > li.mag7-card {
+  flex: 0 0 5.1rem;
+  width: 5.1rem;
+  min-width: 5.1rem;
+  scroll-snap-align: start;
 }
 
 .mag7-card.is-focus {
@@ -3669,9 +3688,16 @@ main {
     scroll-snap-type: none;
   }
 
-  .mag7-card {
+  .mag7-grid > li:not(.mag7-card),
+  .mag7-grid > li.mag7-card {
     flex: unset;
     width: auto;
+    min-width: 0;
+  }
+
+  .mag7-card {
+    flex: unset;
+    width: 100%;
     min-width: 0;
     padding: 0.32rem 0.38rem 0.36rem;
   }

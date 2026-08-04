@@ -13,8 +13,9 @@ export const MAG7_META: { symbol: Mag7Symbol; name: string }[] = [
   { symbol: "TSLA", name: "Tesla" },
 ];
 
-export type Mag7Signal = {
-  symbol: Mag7Symbol;
+/** Any-ticker lean (quote desk / Mag7) — SPY-style surface where history allows. */
+export type EquitySignal = {
+  symbol: string;
   name: string;
   bias: Bias;
   probabilityHigher: number;
@@ -34,24 +35,14 @@ export type Mag7Signal = {
   tomorrow: TomorrowSignal | null;
   /** Next five trading sessions for this ticker. */
   forwardLeans: TomorrowSignal[];
+  /** Last ~10 completed sessions (newest first) for the session strip. */
+  lastSessions: SessionDay[];
+  /** Daily closes used for chart + edges (~1y when available). */
+  bars: Bar[];
 };
 
-/** Any-ticker lean (quote desk / Mag7). */
-export type EquitySignal = {
-  symbol: string;
-  name: string;
-  bias: Bias;
-  probabilityHigher: number;
-  probabilityLower: number;
-  confidence: 1 | 2 | 3 | 4 | 5;
-  confidenceLabel: string;
-  last: number | null;
-  changePct: number | null;
-  available: boolean;
-  factors: Factor[];
-  calendarEdge: CalendarEdge | null;
-  tomorrow: TomorrowSignal | null;
-  forwardLeans: TomorrowSignal[];
+export type Mag7Signal = EquitySignal & {
+  symbol: Mag7Symbol;
 };
 
 export type MarketTone = {
@@ -1362,6 +1353,7 @@ export function buildEquitySignal(
   dateIso = nyDateIso(),
   tone?: Partial<MarketTone>,
 ): EquitySignal {
+  const bars = input.bars;
   const empty: EquitySignal = {
     symbol: input.symbol,
     name: input.name,
@@ -1377,10 +1369,11 @@ export function buildEquitySignal(
     calendarEdge: null,
     tomorrow: null,
     forwardLeans: [],
+    lastSessions: [],
+    bars,
   };
 
   let changePct: number | null = null;
-  const bars = input.bars;
   const previousClose = input.previousClose ?? null;
   {
     const raw = pctChange(input.last, previousClose);
@@ -1409,6 +1402,8 @@ export function buildEquitySignal(
 
   const dow = weekdayInNy(dateIso);
   const weekdayOdds = weekdayOddsFromReturns(rets);
+  const weekdayMap = new Map(weekdayOdds.map((w) => [w.weekdayIndex, w]));
+  const lastSessions = lastSessionsFromReturns(rets, 10, weekdayMap);
   const monthOdds = monthOddsFromReturns(rets);
   const dayOfMonthOdds = dayOfMonthOddsFromReturns(rets);
   const cashflowCycle = buildCashflowCycleInsight(dayOfMonthOdds, dateIso);
@@ -1590,6 +1585,8 @@ export function buildEquitySignal(
     calendarEdge,
     tomorrow,
     forwardLeans,
+    lastSessions,
+    bars,
   };
 }
 

@@ -7,6 +7,7 @@ import { CpiOddsPage } from "./components/CpiOddsPage";
 import { CpiOddsPanel } from "./components/CpiOddsPanel";
 import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
+import { EquitySignalDesk } from "./components/EquitySignalDesk";
 import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
@@ -410,6 +411,15 @@ export default function App() {
     );
   }, [quoteResult, signal, spyBars]);
 
+  /** Mag7 desk: selected card, or first available name so a full SPY-style surface is always up. */
+  const activeMag7 = useMemo(() => {
+    if (!signal?.mag7.length) return null;
+    if (mag7Focus) {
+      return signal.mag7.find((r) => r.symbol === mag7Focus) ?? null;
+    }
+    return signal.mag7.find((r) => r.available) ?? signal.mag7[0] ?? null;
+  }, [signal, mag7Focus]);
+
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
     const hit =
@@ -810,114 +820,10 @@ export default function App() {
               </div>
 
               {quoteSignal ? (
-                <div
-                  className={`quote-lean ${
-                    !quoteSignal.available
-                      ? "is-muted"
-                      : quoteSignal.bias === "up"
-                        ? "is-up"
-                        : "is-down"
-                  }`}
-                >
-                  <p className="quote-lean__kicker">ArrowBeat lean · {quoteSignal.symbol}</p>
-                  {quoteSignal.available ? (
-                    <>
-                      <div className="quote-lean__row">
-                        <span className="quote-lean__arrow" aria-hidden="true">
-                          {quoteSignal.bias === "up" ? "▲" : "▼"}
-                        </span>
-                        <span className="quote-lean__title">
-                          {quoteSignal.bias === "up" ? "Higher" : "Lower"}
-                        </span>
-                        <span className="quote-lean__pct">
-                          {(quoteSignal.bias === "up"
-                            ? quoteSignal.probabilityHigher
-                            : quoteSignal.probabilityLower
-                          ).toFixed(1)}
-                          <span>%</span>
-                        </span>
-                      </div>
-                      <p className="quote-lean__split">
-                        Higher {quoteSignal.probabilityHigher.toFixed(1)}% · Lower{" "}
-                        {quoteSignal.probabilityLower.toFixed(1)}%
-                      </p>
-                      <p
-                        className="quote-lean__stars"
-                        aria-label={`${quoteSignal.confidence} of 5 stars`}
-                      >
-                        {stars(quoteSignal.confidence)}{" "}
-                        <span>
-                          {quoteSignal.confidenceLabel} · {quoteSignal.confidence}/5
-                        </span>
-                      </p>
-                      {quoteSignal.tomorrow ? (
-                        <p className="quote-lean__next">
-                          Next session{" "}
-                          <strong>
-                            {quoteSignal.tomorrow.bias === "up" ? "▲ Higher" : "▼ Lower"}{" "}
-                            {(quoteSignal.tomorrow.bias === "up"
-                              ? quoteSignal.tomorrow.probabilityHigher
-                              : quoteSignal.tomorrow.probabilityLower
-                            ).toFixed(1)}
-                            %
-                          </strong>
-                        </p>
-                      ) : null}
-                      {quoteSignal.forwardLeans.length ? (
-                        <ol
-                          className="forward-strip forward-strip--compact"
-                          aria-label={`${quoteSignal.symbol} next five sessions`}
-                        >
-                          {quoteSignal.forwardLeans.map((day, idx) => {
-                            const lead =
-                              day.bias === "up" ? day.probabilityHigher : day.probabilityLower;
-                            const dayName = new Intl.DateTimeFormat("en-US", {
-                              timeZone: "America/New_York",
-                              weekday: "short",
-                            }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
-                            return (
-                              <li
-                                key={day.asOfDate}
-                                className={day.bias === "up" ? "is-up" : "is-down"}
-                              >
-                                <span className="forward-strip__ord">
-                                  {idx === 0 ? "Next" : `+${idx + 1}`}
-                                </span>
-                                <span className="forward-strip__day">{dayName}</span>
-                                <span className="forward-strip__arrow" aria-hidden="true">
-                                  {day.bias === "up" ? "▲" : "▼"}
-                                </span>
-                                <span className="forward-strip__pct">
-                                  {lead.toFixed(1)}
-                                  <span>%</span>
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      ) : null}
-                      {quoteSignal.factors.length ? (
-                        <ul className="quote-lean__factors">
-                          {quoteSignal.factors.slice(0, 5).map((f) => (
-                            <li
-                              key={f.id}
-                              className={f.supports === "up" ? "is-up" : "is-down"}
-                              title={f.detail}
-                            >
-                              <span aria-hidden="true">{f.supports === "up" ? "▲" : "▼"}</span>{" "}
-                              {f.label}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p className="quote-lean__na">
-                      Not enough daily history for a full lean (need ~40+ sessions). Quote still
-                      shown above.
-                    </p>
-                  )}
-                </div>
+                <EquitySignalDesk
+                  lean={quoteSignal}
+                  asOfDate={signal?.asOfDate ?? new Date().toISOString().slice(0, 10)}
+                />
               ) : null}
             </div>
           ) : null}
@@ -1439,13 +1345,13 @@ export default function App() {
           <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
             <h2 id="mag7-title">Magnificent 7</h2>
             <p className="panel-lede">
-              Full ArrowBeat lean per name — each ticker&apos;s own ~1y history, weekday/month edges,
-              streaks, vs SPY, plus ES/VIX tone. Tap a name for factors. Ranked by P(higher close).
+              Full ArrowBeat lean per name — YTD chart, probability, direction arrow, last 10
+              sessions. Tap a name to open its desk. Ranked by P(higher close).
             </p>
             <ul className="mag7-grid">
               {signal.mag7.map((row) => {
                 const leanUp = row.bias === "up";
-                const isFocus = mag7Focus === row.symbol;
+                const isFocus = activeMag7?.symbol === row.symbol;
                 return (
                   <li key={row.symbol}>
                     <button
@@ -1453,9 +1359,7 @@ export default function App() {
                       className={`mag7-card ${
                         !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
                       }${isFocus ? " is-focus" : ""}`}
-                      onClick={() =>
-                        setMag7Focus((cur) => (cur === row.symbol ? null : row.symbol))
-                      }
+                      onClick={() => setMag7Focus(row.symbol)}
                       aria-pressed={isFocus}
                       aria-label={`${row.symbol} ${row.name}${
                         row.available
@@ -1539,34 +1443,11 @@ export default function App() {
                 );
               })}
             </ul>
-            {(() => {
-              const focused = signal.mag7.find((r) => r.symbol === mag7Focus);
-              if (!focused?.available || !focused.factors.length) return null;
-              return (
-                <div
-                  className={`mag7-focus ${focused.bias === "up" ? "is-up" : "is-down"}`}
-                >
-                  <p className="mag7-focus__head">
-                    <strong>
-                      {focused.symbol} · {focused.name}
-                    </strong>{" "}
-                    — {focused.confidenceLabel} · Higher {focused.probabilityHigher.toFixed(1)}% /
-                    Lower {focused.probabilityLower.toFixed(1)}%
-                  </p>
-                  <ul className="mag7-focus__factors">
-                    {focused.factors.map((f) => (
-                      <li key={f.id} className={f.supports === "up" ? "is-up" : "is-down"}>
-                        <span aria-hidden="true">{f.supports === "up" ? "▲" : "▼"}</span>
-                        <span>
-                          {f.label}
-                          <small>{f.detail}</small>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })()}
+            {activeMag7 ? (
+              <div className="mag7-desk-wrap" id="mag7-desk">
+                <EquitySignalDesk lean={activeMag7} asOfDate={signal.asOfDate} />
+              </div>
+            ) : null}
           </section>
         ) : null}
 

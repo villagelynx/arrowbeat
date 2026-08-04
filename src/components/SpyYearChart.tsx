@@ -4,6 +4,10 @@ import { monthTicks, spyYtdStats, ytdBarsFrom } from "../lib/spy-ytd";
 type Props = {
   bars: Bar[];
   year: number;
+  /** Display symbol (SPY, AAPL, …) on the chart kicker. */
+  symbol?: string;
+  /** CSS-safe unique gradient id when more than one chart is on the page. */
+  gradientId?: string;
 };
 
 const W = 400;
@@ -12,11 +16,20 @@ const PAD = { top: 12, right: 8, bottom: 26, left: 8 };
 const INNER_W = W - PAD.left - PAD.right;
 const INNER_H = H - PAD.top - PAD.bottom;
 
-export function SpyYearChart({ bars, year }: Props) {
+/** Year-to-date daily-close chart — SPY hero or any liquid name with history. */
+export function SpyYearChart({
+  bars,
+  year,
+  symbol = "SPY",
+  gradientId,
+}: Props) {
+  const fillId = gradientId ?? `ytd-area-${symbol.replace(/[^A-Za-z0-9_-]/g, "")}`;
   const stats = spyYtdStats(bars, year);
   if (!stats) {
     return (
-      <p className="spy-chart__empty">Not enough SPY history for a {year} chart yet.</p>
+      <p className="spy-chart__empty">
+        Not enough {symbol} history for a {year} chart yet.
+      </p>
     );
   }
 
@@ -35,13 +48,19 @@ export function SpyYearChart({ bars, year }: Props) {
 
   const up = stats.changePct >= 0;
   const ticks = monthTicks(ytdBars);
+  const price =
+    stats.last >= 1000
+      ? stats.last.toLocaleString(undefined, { maximumFractionDigits: 0 })
+      : stats.last.toFixed(2);
 
   return (
     <div className={`spy-chart ${up ? "is-up" : "is-down"}`}>
       <div className="spy-chart__head">
         <div>
-          <p className="spy-chart__kicker">SPY · {year} YTD</p>
-          <p className="spy-chart__price">${stats.last.toFixed(2)}</p>
+          <p className="spy-chart__kicker">
+            {symbol} · {year} YTD
+          </p>
+          <p className="spy-chart__price">${price}</p>
         </div>
         <div className="spy-chart__chg">
           <p className={`spy-chart__pct ${up ? "is-up" : "is-down"}`}>
@@ -56,10 +75,10 @@ export function SpyYearChart({ bars, year }: Props) {
         className="spy-chart__svg"
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={`SPY year-to-date chart ${year}, ${stats.changePct >= 0 ? "up" : "down"} ${Math.abs(stats.changePct).toFixed(2)} percent`}
+        aria-label={`${symbol} year-to-date chart ${year}, ${stats.changePct >= 0 ? "up" : "down"} ${Math.abs(stats.changePct).toFixed(2)} percent`}
       >
         <defs>
-          <linearGradient id="spy-area" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={up ? "var(--up)" : "var(--down)"} stopOpacity="0.35" />
             <stop offset="100%" stopColor={up ? "var(--up)" : "var(--down)"} stopOpacity="0.02" />
           </linearGradient>
@@ -79,7 +98,7 @@ export function SpyYearChart({ bars, year }: Props) {
           );
         })}
 
-        <path d={areaPath} fill="url(#spy-area)" />
+        <path d={areaPath} fill={`url(#${fillId})`} />
         <path d={linePath} className="spy-chart__line" fill="none" />
 
         {ticks.map((t) => (
@@ -97,10 +116,10 @@ export function SpyYearChart({ bars, year }: Props) {
 
       <div className="spy-chart__range">
         <span>
-          Low <strong>${stats.low.toFixed(2)}</strong>
+          Low <strong>${stats.low >= 1000 ? stats.low.toFixed(0) : stats.low.toFixed(2)}</strong>
         </span>
         <span>
-          High <strong>${stats.high.toFixed(2)}</strong>
+          High <strong>${stats.high >= 1000 ? stats.high.toFixed(0) : stats.high.toFixed(2)}</strong>
         </span>
       </div>
     </div>

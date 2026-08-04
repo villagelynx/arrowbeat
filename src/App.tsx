@@ -777,7 +777,8 @@ export default function App() {
       : signal.forwardLeans;
 
   /** Top snapshot: active name quote + next-5-session leans (SPY or Mag7 / quote desk). */
-  const deskSnapshot = useMemo(() => {
+  // Plain object (not useMemo) — this sits after early returns for !signal / share view.
+  const deskSnapshot = (() => {
     const symbol =
       deskIsEquity && deskEquity
         ? deskEquity.symbol
@@ -820,23 +821,7 @@ export default function App() {
       forward,
       live: signal.dataMode === "live",
     };
-  }, [
-    deskIsEquity,
-    deskEquity,
-    deskSymbol,
-    quoteResult,
-    signal.quotes?.spy,
-    signal.dataMode,
-    spyBars,
-    dayBars,
-    dayPrevClose,
-    sessionStrip,
-    primary.bias,
-    primary.probabilityHigher,
-    primary.probabilityLower,
-    primary.confidence,
-    forwardStrip,
-  ]);
+  })();
 
   const signalSharePayload: SignalSharePayload = {
     bias: primary.bias,

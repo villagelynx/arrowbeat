@@ -16,6 +16,7 @@ import { SpyYearChart } from "./components/SpyYearChart";
 import {
   fetchMarketSnapshot,
   fetchStockQuote,
+  MAG7_SYMBOLS,
   type Bar,
   type IntradayBar,
   type StockQuote,
@@ -396,6 +397,36 @@ export default function App() {
       setQuoteError(e instanceof Error ? e.message : "Quote lookup failed.");
     } finally {
       setQuoteLoading(false);
+    }
+  }
+
+  function focusDeskSymbol(symbol: string) {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym) return;
+    setDeskSymbol(sym);
+    setQuoteInput(sym);
+    setQuoteError(null);
+    if (sym !== "SPY") {
+      const mag = signal?.mag7.find((r) => r.symbol === sym);
+      const hasBars = Boolean(mag?.bars && mag.bars.length >= 40);
+      if (!hasBars || !quoteResult || quoteResult.symbol !== sym) {
+        void hydrateDeskHistory(sym);
+      }
+    }
+    window.requestAnimationFrame(() => {
+      document.getElementById("desk-top")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  /** Silent history hydrate so Mag7 taps fill the SPY chart slot with that name's graph. */
+  async function hydrateDeskHistory(symbol: string) {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym || sym === "SPY") return;
+    try {
+      const q = await fetchStockQuote(sym);
+      setQuoteResult(q);
+    } catch {
+      // Keep any Mag7 bars already on the snapshot.
     }
   }
 
@@ -974,7 +1005,7 @@ export default function App() {
             <div className="quote-top__head">
               <h2 id="quote-title">Desk snapshot</h2>
               <p className="panel-lede">
-                Active name quote + next 5 session leans · ~15m delayed · type a ticker
+                Active name quote + next 5 session leans · ~15m delayed · pick a name or type a ticker
               </p>
             </div>
             <form
@@ -1003,6 +1034,33 @@ export default function App() {
                 </button>
               </div>
             </form>
+            <div className="quote-chips" role="group" aria-label="Quick select">
+              {MAG7_SYMBOLS.map((sym) => (
+                <button
+                  key={sym}
+                  type="button"
+                  className={`quote-chip${deskSymbol === sym ? " is-on" : ""}`}
+                  onClick={() => focusDeskSymbol(sym)}
+                >
+                  {sym}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`quote-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
+                onClick={() => focusDeskSymbol("SPY")}
+              >
+                SPY
+              </button>
+              <button
+                type="button"
+                className="quote-chip"
+                onClick={() => void lookupQuote("BTC-USD")}
+                disabled={quoteLoading}
+              >
+                BTC
+              </button>
+            </div>
           </div>
           {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
 
@@ -1562,6 +1620,64 @@ export default function App() {
             </aside>
           </section>
 
+          <div className="desk-stack desk-stack--factors">
+            <section className="panel panel--factors" aria-labelledby="factors-title">
+              <h2 id="factors-title">Why this signal</h2>
+              <p className="panel-lede">
+                {deskIsEquity && deskEquity
+                  ? `Factors for ${deskEquity.symbol} from its own history, calendar edges, streaks, relative vs SPY, and market tone.`
+                  : tomorrowAsPrimary
+                    ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
+                    : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
+              </p>
+              <ul className="factor-list">
+                {primary.factors?.map((f) => {
+                  const good = f.supports === primary.bias;
+                  return (
+                    <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
+                      <span className="factor-mark" aria-hidden="true">
+                        {good ? "✓" : "✗"}
+                      </span>
+                      <div>
+                        <p className="factor-label">{f.label}</p>
+                        <p className="factor-detail">{f.detail}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <aside
+              className="panel panel--cashflow-edu"
+              aria-labelledby="cashflow-edu-title"
+            >
+              <p id="cashflow-edu-title" className="cashflow-edu__kicker">
+                Did you know?
+              </p>
+              <p className="cashflow-edu__body">
+                Historically, the <strong>30th and 31st</strong> rank among SPY&apos;s
+                softer days — rent and bills coming due. The{" "}
+                <strong>1st and 15th</strong> rank among the stronger ones — classic
+                payday windows. When money leaves accounts, the market has tended to
+                struggle more; when paychecks land, it has tended to firm up.
+              </p>
+              {signal.cashflowCycle ? (
+                <p className="cashflow-edu__cite">
+                  Based on ~10y SPY · payday window beats late-month by{" "}
+                  <strong>
+                    {signal.cashflowCycle.spreadPts >= 0 ? "+" : ""}
+                    {signal.cashflowCycle.spreadPts.toFixed(1)} pts
+                  </strong>{" "}
+                  historically.
+                </p>
+              ) : signal.dayOfMonthOdds.length ? (
+                <p className="cashflow-edu__cite">Based on ~10y SPY by calendar day.</p>
+              ) : null}
+            </aside>
+          </div>
+        </div>
+
           {forwardStrip?.length ? (
             <section
               className="panel panel--forward desk-row"
@@ -1622,64 +1738,6 @@ export default function App() {
               </ol>
             </section>
           ) : null}
-
-          <div className="desk-stack desk-stack--factors">
-            <section className="panel panel--factors" aria-labelledby="factors-title">
-              <h2 id="factors-title">Why this signal</h2>
-              <p className="panel-lede">
-                {deskIsEquity && deskEquity
-                  ? `Factors for ${deskEquity.symbol} from its own history, calendar edges, streaks, relative vs SPY, and market tone.`
-                  : tomorrowAsPrimary
-                    ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
-                    : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
-              </p>
-              <ul className="factor-list">
-                {primary.factors?.map((f) => {
-                  const good = f.supports === primary.bias;
-                  return (
-                    <li key={f.id} className={good ? "is-aligned" : "is-contrary"}>
-                      <span className="factor-mark" aria-hidden="true">
-                        {good ? "✓" : "✗"}
-                      </span>
-                      <div>
-                        <p className="factor-label">{f.label}</p>
-                        <p className="factor-detail">{f.detail}</p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-
-            <aside
-              className="panel panel--cashflow-edu"
-              aria-labelledby="cashflow-edu-title"
-            >
-              <p id="cashflow-edu-title" className="cashflow-edu__kicker">
-                Did you know?
-              </p>
-              <p className="cashflow-edu__body">
-                Historically, the <strong>30th and 31st</strong> rank among SPY&apos;s
-                softer days — rent and bills coming due. The{" "}
-                <strong>1st and 15th</strong> rank among the stronger ones — classic
-                payday windows. When money leaves accounts, the market has tended to
-                struggle more; when paychecks land, it has tended to firm up.
-              </p>
-              {signal.cashflowCycle ? (
-                <p className="cashflow-edu__cite">
-                  Based on ~10y SPY · payday window beats late-month by{" "}
-                  <strong>
-                    {signal.cashflowCycle.spreadPts >= 0 ? "+" : ""}
-                    {signal.cashflowCycle.spreadPts.toFixed(1)} pts
-                  </strong>{" "}
-                  historically.
-                </p>
-              ) : signal.dayOfMonthOdds.length ? (
-                <p className="cashflow-edu__cite">Based on ~10y SPY by calendar day.</p>
-              ) : null}
-            </aside>
-          </div>
-        </div>
 
         {signal.alts.length ? (
           <section className="panel panel--alts desk-row desk-row--alts" aria-labelledby="alts-title">

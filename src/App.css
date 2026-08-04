@@ -1541,7 +1541,7 @@ main {
 }
 
 .panel--factors {
-  order: 7;
+  order: 2;
 }
 
 .panel--cashflow-edu {
@@ -3574,8 +3574,9 @@ button.mag7-card {
   border-style: dashed;
 }
 
-/* Next 5 session calendar projections */
+/* Next 5 session calendar projections — full width under arrow + factors */
 .panel--forward {
+  order: 3;
   margin-top: 0.25rem;
 }
 
@@ -4101,6 +4102,7 @@ button.mag7-card {
   .panel--score,
   .panel--factors,
   .panel--cashflow-edu,
+  .panel--forward,
   .panel--correction,
   .panel--mag7,
   .panel--alts,
@@ -4112,7 +4114,7 @@ button.mag7-card {
     order: unset;
   }
 
-  /* Top band: today chart + last sessions | arrow+signal | why this signal */
+  /* Top band: chart/sessions | arrow + score | why this signal — then Next 5 full width below */
   .desk-top {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.95fr) minmax(0, 1fr);
@@ -4146,6 +4148,11 @@ button.mag7-card {
 
   .panel--day .panel-lede {
     margin-bottom: 0.55rem;
+  }
+
+  .panel--forward {
+    margin-top: 1rem;
+    width: 100%;
   }
 
   .hero {

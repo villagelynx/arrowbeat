@@ -33,12 +33,12 @@ const PRIMARY_ITEMS: NavItem[] = [
   { id: "about", label: "About", view: "about" },
   { id: "brief", label: "Morning brief", view: "brief" },
   { id: "model", label: "Financial model", view: "model" },
+  { id: "session-brief", label: "Stock session brief", view: "session-brief" },
   { id: "stock-corrections", label: "Stock corrections", view: "stock-corrections" },
 ];
 
 /** Overflow / secondary — hamburger drawer. */
 const MORE_ITEMS: NavItem[] = [
-  { id: "session-brief", label: "Stock session brief", view: "session-brief" },
   { id: "scorecard", label: "Scorecard", action: "scorecard" },
   { id: "widget", label: "Widget", view: "widget" },
   { id: "streaks", label: "Streaks", view: "streaks" },

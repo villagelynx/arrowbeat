@@ -1,6 +1,7 @@
 import type { Plugin } from "vite";
 import { buildMarketSnapshot, buildStockQuote } from "./server/market-snapshot.ts";
 import { buildStockCorrectionsScan } from "./server/stock-corrections.ts";
+import { buildNewsPriceImpact } from "./server/news-price.ts";
 import { fetchLatestSportsBulletin } from "./server/sports-bulletin.ts";
 
 function json(res: import("http").ServerResponse, status: number, body: unknown) {
@@ -31,6 +32,19 @@ async function handleApi(
         json(res, 404, {
           error: error instanceof Error ? error.message : "Quote fetch failed",
           symbol,
+        });
+      }
+      return;
+    }
+    if (path === "/api/market/news") {
+      const symbol = new URL(req.url!, "http://localhost").searchParams.get("symbol") ?? "";
+      try {
+        json(res, 200, await buildNewsPriceImpact(symbol));
+      } catch (error) {
+        json(res, 404, {
+          error: error instanceof Error ? error.message : "News fetch failed",
+          symbol,
+          items: [],
         });
       }
       return;

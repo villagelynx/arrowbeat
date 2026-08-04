@@ -58,7 +58,9 @@ export function AboutPage({ onGoDashboard }: AboutPageProps) {
           </li>
           <li>
             <strong>Why this signal</strong> — ES futures, VIX, breadth, yields, seasonality,
-            calendar edges, and more when they fire.
+            calendar edges, and more when they fire. On the desk,{" "}
+            <strong>News around price</strong> pairs free Yahoo headlines with same/next-session
+            closes (co-movement only).
           </li>
           <li>
             <strong>Cashflow calendar</strong> — payday vs rent-due windows and other real-life

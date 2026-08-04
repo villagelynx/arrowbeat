@@ -1,4 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  fetchMarketSnapshot,
+  fetchStockQuote,
+  fetchNewsPriceImpact,
+  MAG7_SYMBOLS,
+  type Bar,
+  type IntradayBar,
+  type StockQuote,
+} from "./lib/market-data";
+import type { NewsPricePayload } from "./lib/news-price";
+import { NewsPricePanel } from "./components/NewsPricePanel";
 import { AboutPage } from "./components/AboutPage";
 import { AppNav, type AppView } from "./components/AppNav";
 import { CorrectionOddsPage } from "./components/CorrectionOddsPage";
@@ -14,14 +25,6 @@ import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
 import { SpyYearChart } from "./components/SpyYearChart";
-import {
-  fetchMarketSnapshot,
-  fetchStockQuote,
-  MAG7_SYMBOLS,
-  type Bar,
-  type IntradayBar,
-  type StockQuote,
-} from "./lib/market-data";
 import {
   buildDemoSignal,
   buildEquitySignal,
@@ -186,6 +189,9 @@ export default function App() {
   const [quoteLoading, setQuoteLoading] = useState(false);
   /** Main desk focus: SPY (default) or a ticker that fills hero + chart + last-10 slots. */
   const [deskSymbol, setDeskSymbol] = useState<string>("SPY");
+  const [newsPrice, setNewsPrice] = useState<NewsPricePayload | null>(null);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState<string | null>(null);
   const [view, setView] = useState<AppView>(() => readViewFromLocation() ?? "home");
   const [sharedScore, setSharedScore] = useState<SharedScoreSnapshot | null>(null);
   const [scoreFocus, setScoreFocus] = useState(false);
@@ -532,6 +538,36 @@ export default function App() {
   }, [deskSymbol, deskEquity, quoteResult, signal]);
 
   const deskShowEquityChart = deskSymbol.trim().toUpperCase() !== "SPY";
+
+  /** Yahoo headlines + session co-movement for the active desk ticker. */
+  useEffect(() => {
+    if (view !== "home") return;
+    const sym = deskSymbol.trim().toUpperCase() || "SPY";
+    let cancelled = false;
+    setNewsLoading(true);
+    setNewsError(null);
+    void fetchNewsPriceImpact(sym)
+      .then((payload) => {
+        if (cancelled) return;
+        setNewsPrice(payload);
+        if (payload.error && !payload.items.length) {
+          setNewsError(payload.error);
+        } else {
+          setNewsError(null);
+        }
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setNewsPrice(null);
+        setNewsError(e instanceof Error ? e.message : "News unavailable.");
+      })
+      .finally(() => {
+        if (!cancelled) setNewsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [deskSymbol, view]);
 
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
@@ -1767,6 +1803,13 @@ export default function App() {
               </ol>
             </section>
           ) : null}
+
+          <NewsPricePanel
+            symbol={deskSymbol.trim().toUpperCase() || "SPY"}
+            payload={newsPrice}
+            loading={newsLoading}
+            error={newsError}
+          />
 
         {signal.alts.length ? (
           <section className="panel panel--alts desk-row desk-row--alts" aria-labelledby="alts-title">

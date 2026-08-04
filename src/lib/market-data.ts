@@ -1,4 +1,5 @@
 import type { StockCorrectionsScan } from "./stock-corrections";
+import type { NewsPricePayload } from "./news-price";
 
 export type Bar = { date: string; close: number };
 
@@ -154,6 +155,33 @@ export async function fetchStockCorrectionsScan(): Promise<StockCorrectionsScan>
       throw new Error(data.error || `Corrections scan unavailable (${res.status}).`);
     }
     return data;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+/** Yahoo headlines + session close co-movement for a desk ticker. */
+export async function fetchNewsPriceImpact(symbol: string): Promise<NewsPricePayload> {
+  const ticker = symbol.trim().toUpperCase();
+  if (!ticker) throw new Error("Enter a ticker symbol.");
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const res = await fetch(`/api/market/news?symbol=${encodeURIComponent(ticker)}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const data = (await res.json()) as NewsPricePayload & { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || `News unavailable for ${ticker}.`);
+    }
+    return {
+      ...data,
+      items: Array.isArray(data.items) ? data.items : [],
+      disclaimer:
+        data.disclaimer ||
+        "Educational co-location only. Free Yahoo data — not investment advice.",
+    };
   } finally {
     window.clearTimeout(timer);
   }

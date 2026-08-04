@@ -21,6 +21,8 @@ import { CrashOddsPanel } from "./components/CrashOddsPanel";
 import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { StreaksPage } from "./components/StreaksPage";
 import { FinancialModelPage } from "./components/FinancialModelPage";
+import { MorningBriefPage } from "./components/MorningBriefPage";
+import { WidgetPage } from "./components/WidgetPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -69,6 +71,8 @@ function readViewFromLocation(): AppView | null {
   if (hash === "stock-corrections") return "stock-corrections";
   if (hash === "streaks") return "streaks";
   if (hash === "model") return "model";
+  if (hash === "brief" || hash === "morning-brief") return "brief";
+  if (hash === "widget" || hash === "embed-docs") return "widget";
   if (hash === "about") return "about";
   return null;
 }
@@ -89,6 +93,10 @@ function syncViewHash(view: AppView) {
     url.hash = "streaks";
   } else if (view === "model") {
     url.hash = "model";
+  } else if (view === "brief") {
+    url.hash = "brief";
+  } else if (view === "widget") {
+    url.hash = "widget";
   } else if (view === "about") {
     url.hash = "about";
   } else if (
@@ -98,6 +106,10 @@ function syncViewHash(view: AppView) {
     currentHash === "stock-corrections" ||
     currentHash === "streaks" ||
     currentHash === "model" ||
+    currentHash === "brief" ||
+    currentHash === "morning-brief" ||
+    currentHash === "widget" ||
+    currentHash === "embed-docs" ||
     currentHash === "about"
   ) {
     url.hash = "";
@@ -238,6 +250,8 @@ export default function App() {
         current === "stock-corrections" ||
         current === "streaks" ||
         current === "model" ||
+        current === "brief" ||
+        current === "widget" ||
         current === "about"
           ? "home"
           : current,
@@ -671,7 +685,7 @@ export default function App() {
 
   if (!signal) {
     const pageClass =
-      view === "about" || view === "streaks" || view === "model"
+      view === "about" || view === "streaks" || view === "model" || view === "brief" || view === "widget"
         ? " app--about"
         : view === "correction" ||
             view === "crash" ||
@@ -694,6 +708,18 @@ export default function App() {
         {view === "about" ? (
           <main className="about-main">
             <AboutPage onGoDashboard={() => navigateTo("home")} />
+          </main>
+        ) : view === "brief" ? (
+          <main className="about-main">
+            <MorningBriefPage
+              signal={null}
+              loading={loading}
+              onGoHome={() => navigateTo("home")}
+            />
+          </main>
+        ) : view === "widget" ? (
+          <main className="about-main">
+            <WidgetPage onGoHome={() => navigateTo("home")} />
           </main>
         ) : view === "model" ? (
           <main className="about-main">
@@ -907,7 +933,7 @@ export default function App() {
   };
 
   const pageClass =
-    view === "about" || view === "streaks" || view === "model"
+    view === "about" || view === "streaks" || view === "model" || view === "brief" || view === "widget"
       ? " app--about"
       : view === "correction" ||
           view === "crash" ||
@@ -1006,6 +1032,18 @@ export default function App() {
       {view === "about" ? (
         <main className="about-main">
           <AboutPage onGoDashboard={() => navigateTo("home")} />
+        </main>
+      ) : view === "brief" ? (
+        <main className="about-main">
+          <MorningBriefPage
+            signal={signal}
+            loading={loading || refreshing}
+            onGoHome={() => navigateTo("home")}
+          />
+        </main>
+      ) : view === "widget" ? (
+        <main className="about-main">
+          <WidgetPage onGoHome={() => navigateTo("home")} />
         </main>
       ) : view === "model" ? (
         <main className="about-main">

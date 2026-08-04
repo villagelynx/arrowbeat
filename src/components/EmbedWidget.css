@@ -1,0 +1,137 @@
+/* Standalone embed styles — keep small for iframe paint. */
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: transparent;
+}
+
+.embed-widget {
+  --ew-up: #12d46b;
+  --ew-down: #ef3340;
+  --ew-paper: #e8eef5;
+  --ew-muted: rgba(232, 238, 245, 0.62);
+  --ew-line: rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--ew-paper);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(18, 212, 107, 0.18), transparent 55%),
+    linear-gradient(165deg, #071018 0%, #0b1520 100%);
+  border: 1px solid var(--ew-line);
+  border-radius: 0.75rem;
+  padding: 0.85rem 0.95rem 0.75rem;
+  min-height: 100%;
+}
+
+.embed-widget.is-down {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(239, 51, 64, 0.18), transparent 55%),
+    linear-gradient(165deg, #071018 0%, #0b1520 100%);
+}
+
+.embed-widget *,
+.embed-widget *::before,
+.embed-widget *::after {
+  box-sizing: border-box;
+}
+
+.embed-widget.is-compact {
+  padding: 0.55rem 0.7rem 0.5rem;
+}
+
+.embed-widget__brand {
+  display: inline-block;
+  margin: 0;
+  color: var(--ew-paper);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.embed-widget__brand span {
+  color: var(--ew-up);
+}
+
+.embed-widget.is-down .embed-widget__brand span {
+  color: var(--ew-down);
+}
+
+.embed-widget__name {
+  margin: 0.35rem 0 0;
+  color: var(--ew-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.embed-widget__lean {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.embed-widget__arrow {
+  font-size: 1.35rem;
+  color: var(--ew-up);
+}
+
+.embed-widget.is-down .embed-widget__arrow {
+  color: var(--ew-down);
+}
+
+.embed-widget__pct {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ew-up);
+}
+
+.embed-widget.is-down .embed-widget__pct {
+  color: var(--ew-down);
+}
+
+.embed-widget__pct span {
+  font-size: 0.9rem;
+  margin-left: 0.05em;
+}
+
+.embed-widget.is-compact .embed-widget__pct {
+  font-size: 1.45rem;
+}
+
+.embed-widget__chip {
+  margin: 0.25rem 0 0;
+  color: var(--ew-muted);
+  font-size: 0.75rem;
+}
+
+.embed-widget__loading {
+  margin: 0.75rem 0;
+  color: var(--ew-muted);
+  font-size: 0.85rem;
+}
+
+.embed-widget__note {
+  margin: 0.35rem 0 0;
+  color: #ffb4ae;
+  font-size: 0.68rem;
+}
+
+.embed-widget__disc {
+  margin: 0.65rem 0 0;
+  color: var(--ew-muted);
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.embed-widget__disc a {
+  color: var(--ew-paper);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}

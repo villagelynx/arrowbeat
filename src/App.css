@@ -1634,6 +1634,71 @@ main.correction-main {
   color: var(--muted);
 }
 
+.score-more {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.score-more__btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 1.45rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.score-more__btn:hover,
+.score-more__btn:focus-visible {
+  border-color: color-mix(in srgb, var(--up) 45%, var(--line));
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.score-more__btn:active {
+  transform: scale(0.96);
+}
+
+.score-more__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.score-history__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.score-history__secondary {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.score-history__secondary:hover,
+.score-history__secondary:focus-visible {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--text) 35%, var(--line));
+  outline: none;
+}
+
 .odds-rank {
   list-style: none;
   margin: 0;

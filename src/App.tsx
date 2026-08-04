@@ -22,6 +22,8 @@ import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { StreaksPage } from "./components/StreaksPage";
 import { FinancialModelPage } from "./components/FinancialModelPage";
 import { MorningBriefPage } from "./components/MorningBriefPage";
+import { ScoreHistoryPage } from "./components/ScoreHistoryPage";
+import { ScorePredictionList } from "./components/ScorePredictionList";
 import { WidgetPage } from "./components/WidgetPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
@@ -46,7 +48,15 @@ import {
   resolveDisplayedTomorrowLean,
   type DisplayedTomorrowLean,
 } from "./lib/tomorrow-lean-publish";
-import { emptyScorecard, syncScorecard, buildScoreShareUrl, decodeShareSnapshot, type ScorecardSummary, type SharedScoreSnapshot } from "./lib/scorecard";
+import {
+  emptyScorecard,
+  syncScorecard,
+  buildScoreShareUrl,
+  decodeShareSnapshot,
+  settledHistoryRows,
+  type ScorecardSummary,
+  type SharedScoreSnapshot,
+} from "./lib/scorecard";
 import {
   formatShareUpdated,
   readSignalShareFromLocation,
@@ -74,6 +84,7 @@ function readViewFromLocation(): AppView | null {
   if (hash === "brief" || hash === "morning-brief") return "brief";
   if (hash === "widget" || hash === "embed-docs") return "widget";
   if (hash === "about") return "about";
+  if (hash === "score-history" || hash === "scorecard-100") return "score-history";
   return null;
 }
 
@@ -99,6 +110,8 @@ function syncViewHash(view: AppView) {
     url.hash = "widget";
   } else if (view === "about") {
     url.hash = "about";
+  } else if (view === "score-history") {
+    url.hash = "score-history";
   } else if (
     currentHash === "correction" ||
     currentHash === "crash" ||
@@ -110,7 +123,9 @@ function syncViewHash(view: AppView) {
     currentHash === "morning-brief" ||
     currentHash === "widget" ||
     currentHash === "embed-docs" ||
-    currentHash === "about"
+    currentHash === "about" ||
+    currentHash === "score-history" ||
+    currentHash === "scorecard-100"
   ) {
     url.hash = "";
   }
@@ -252,7 +267,8 @@ export default function App() {
         current === "model" ||
         current === "brief" ||
         current === "widget" ||
-        current === "about"
+        current === "about" ||
+        current === "score-history"
           ? "home"
           : current,
       );
@@ -687,7 +703,12 @@ export default function App() {
 
   if (!signal) {
     const pageClass =
-      view === "about" || view === "streaks" || view === "model" || view === "brief" || view === "widget"
+      view === "about" ||
+      view === "streaks" ||
+      view === "model" ||
+      view === "brief" ||
+      view === "widget" ||
+      view === "score-history"
         ? " app--about"
         : view === "correction" ||
             view === "crash" ||
@@ -769,6 +790,16 @@ export default function App() {
               onGoDashboard={() => navigateTo("home")}
               onOpenCorrection={() => navigateTo("correction")}
               onOpenCrash={() => navigateTo("crash")}
+            />
+          </main>
+        ) : view === "score-history" ? (
+          <main className="about-main">
+            <ScoreHistoryPage
+              rows={settledHistoryRows(scorecard.records)}
+              hitRate100={scorecard.hitRate100}
+              brier={scorecard.brier}
+              onGoHome={() => navigateTo("home")}
+              onGoScorecard={goScorecard}
             />
           </main>
         ) : null}
@@ -936,7 +967,12 @@ export default function App() {
   };
 
   const pageClass =
-    view === "about" || view === "streaks" || view === "model" || view === "brief" || view === "widget"
+    view === "about" ||
+    view === "streaks" ||
+    view === "model" ||
+    view === "brief" ||
+    view === "widget" ||
+    view === "score-history"
       ? " app--about"
       : view === "correction" ||
           view === "crash" ||
@@ -1060,6 +1096,16 @@ export default function App() {
       ) : view === "streaks" ? (
         <main className="about-main">
           <StreaksPage onGoHome={() => navigateTo("home")} />
+        </main>
+      ) : view === "score-history" ? (
+        <main className="about-main">
+          <ScoreHistoryPage
+            rows={settledHistoryRows(scorecard.records)}
+            hitRate100={scorecard.hitRate100}
+            brier={scorecard.brier}
+            onGoHome={() => navigateTo("home")}
+            onGoScorecard={goScorecard}
+          />
         </main>
       ) : view === "correction" ? (
         <main className="correction-main">
@@ -2080,51 +2126,26 @@ export default function App() {
             )}
 
             {scorecard.recent.length ? (
-              <ol className="score-list" aria-label="Last 10 settled predictions">
-                {scorecard.recent.map((row) => {
-                  const dateLabel = new Intl.DateTimeFormat("en-US", {
-                    timeZone: "America/New_York",
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  }).format(new Date(`${row.date}T12:00:00-04:00`));
-                  const verdict =
-                    row.outcome === "flat"
-                      ? "flat"
-                      : row.correct
-                        ? "hit"
-                        : "miss";
-                  // |P(higher) − realized|: realized = 100 if close was higher, else 0.
-                  const errorPct =
-                    row.outcome === "up" || row.outcome === "down"
-                      ? Math.abs(row.probabilityHigher - (row.outcome === "up" ? 100 : 0))
-                      : null;
-                  return (
-                    <li
-                      key={row.date}
-                      className={
-                        verdict === "hit" ? "is-hit" : verdict === "miss" ? "is-miss" : "is-flat"
-                      }
+              <>
+                <ScorePredictionList
+                  rows={scorecard.recent}
+                  ariaLabel="Last 10 settled predictions"
+                />
+                {scorecard.hitRate100.settled > scorecard.recent.length ? (
+                  <div className="score-more">
+                    <button
+                      type="button"
+                      className="score-more__btn"
+                      aria-label="Show last 100 settled sessions"
+                      title="Show last 100 settled sessions"
+                      onClick={() => navigateTo("score-history")}
                     >
-                      <span className="score-list__date">{dateLabel}</span>
-                      <span className="score-list__pred">
-                        Pred {row.bias === "up" ? "▲" : "▼"}
-                      </span>
-                      <span className="score-list__act">
-                        {row.outcome === "flat"
-                          ? "Flat"
-                          : `${row.outcome === "up" ? "▲" : "▼"} ${
-                              row.changePct != null && row.changePct >= 0 ? "+" : ""
-                            }${row.changePct?.toFixed(2) ?? "—"}%`}
-                      </span>
-                      <span className="score-list__err" title="Absolute error vs P(higher) and outcome">
-                        {errorPct != null ? `Err ${errorPct.toFixed(0)}%` : "Err —"}
-                      </span>
-                      <span className="score-list__verdict">{verdict}</span>
-                    </li>
-                  );
-                })}
-              </ol>
+                      <span aria-hidden="true">+</span>
+                    </button>
+                    <p className="score-more__hint">Last 100 sessions</p>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <p className="score-list-empty">No settled days yet — recent hits and misses will show here.</p>
             )}

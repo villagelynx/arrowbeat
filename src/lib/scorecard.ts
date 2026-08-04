@@ -208,6 +208,17 @@ function summarize(records: PredictionRecord[], asOfDate: string): ScorecardSumm
   };
 }
 
+/** Newest-first settled rows for the history page (includes flats). */
+export function settledHistoryRows(
+  records: PredictionRecord[],
+  limit = HIT_WINDOW_100,
+): PredictionRecord[] {
+  return [...records]
+    .filter((r) => r.outcome != null)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit);
+}
+
 /**
  * Ensure recent SPY sessions have a lean even if nobody opened ArrowBeat that day.
  * Uses prior-close reconstruction (no same-day peek). Does not overwrite existing rows.

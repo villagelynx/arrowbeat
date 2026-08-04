@@ -10,7 +10,8 @@ export type AppView =
   | "correction"
   | "crash"
   | "cpi"
-  | "stock-corrections";
+  | "stock-corrections"
+  | "score-history";
 
 type AppNavProps = {
   view: AppView;

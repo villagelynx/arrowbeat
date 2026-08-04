@@ -720,6 +720,68 @@ export default function App() {
       ? deskEquity.forwardLeans
       : signal.forwardLeans;
 
+  /** Top snapshot: active name quote + next-5-session leans (SPY or Mag7 / quote desk). */
+  const deskSnapshot = useMemo(() => {
+    const symbol =
+      deskIsEquity && deskEquity
+        ? deskEquity.symbol
+        : deskSymbol === "SPY"
+          ? "SPY"
+          : deskSymbol.trim().toUpperCase() || "SPY";
+
+    let last: number | null = null;
+    let changePct: number | null = null;
+    if (quoteResult && quoteResult.symbol === symbol) {
+      last = quoteResult.last;
+      changePct = quoteResult.changePct;
+    } else if (deskIsEquity && deskEquity) {
+      last = deskEquity.last;
+      changePct = deskEquity.changePct;
+    } else {
+      last = signal.quotes?.spy ?? (spyBars.length ? spyBars[spyBars.length - 1].close : null);
+      if (dayBars.length && dayPrevClose != null && dayPrevClose > 0) {
+        const tip = dayBars[dayBars.length - 1].close;
+        changePct = Math.round(((tip - dayPrevClose) / dayPrevClose) * 10000) / 100;
+        last = tip;
+      } else if (sessionStrip.length) {
+        changePct = sessionStrip[0].changePct;
+      }
+    }
+
+    const leanUp = primary.bias === "up";
+    const forward = (forwardStrip ?? []).slice(0, 5);
+
+    return {
+      symbol,
+      name: deskIsEquity && deskEquity ? deskEquity.name : "S&P 500",
+      last,
+      changePct,
+      bias: primary.bias,
+      leadPct: leanUp ? primary.probabilityHigher : primary.probabilityLower,
+      probabilityHigher: primary.probabilityHigher,
+      probabilityLower: primary.probabilityLower,
+      confidence: primary.confidence,
+      forward,
+      live: signal.dataMode === "live",
+    };
+  }, [
+    deskIsEquity,
+    deskEquity,
+    deskSymbol,
+    quoteResult,
+    signal.quotes?.spy,
+    signal.dataMode,
+    spyBars,
+    dayBars,
+    dayPrevClose,
+    sessionStrip,
+    primary.bias,
+    primary.probabilityHigher,
+    primary.probabilityLower,
+    primary.confidence,
+    forwardStrip,
+  ]);
+
   const signalSharePayload: SignalSharePayload = {
     bias: primary.bias,
     probability: leadPct,
@@ -757,13 +819,75 @@ export default function App() {
             turns historical stats into daily market probability
           </p>
           {view === "home" ? (
-            <p className={`data-pill ${signal.dataMode === "live" ? "is-live" : "is-demo"}`}>
-              {pillBusy
-                ? "Refreshing…"
-                : signal.dataMode === "live"
-                  ? "Live · SPY · Mag7 · ES · VIX"
-                  : "Demo fallback"}
-            </p>
+            <div
+              className={`snapshot-pill ${deskSnapshot.live ? "is-live" : "is-demo"} ${
+                deskSnapshot.bias === "up" ? "is-up" : "is-down"
+              }`}
+              role="status"
+              aria-label={`${deskSnapshot.symbol} snapshot: last quote and next five session leans`}
+            >
+              <div className="snapshot-pill__quote">
+                <span className="snapshot-pill__symbol">{deskSnapshot.symbol}</span>
+                <span className="snapshot-pill__last">
+                  {deskSnapshot.last != null
+                    ? deskSnapshot.last >= 1000
+                      ? deskSnapshot.last.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                      : deskSnapshot.last.toFixed(2)
+                    : "—"}
+                </span>
+                <span
+                  className={`snapshot-pill__chg ${
+                    deskSnapshot.changePct == null
+                      ? ""
+                      : deskSnapshot.changePct >= 0
+                        ? "is-up"
+                        : "is-down"
+                  }`}
+                >
+                  {deskSnapshot.changePct == null
+                    ? "—"
+                    : `${deskSnapshot.changePct >= 0 ? "+" : ""}${deskSnapshot.changePct.toFixed(2)}%`}
+                </span>
+              </div>
+              <div className="snapshot-pill__lean">
+                <span className="snapshot-pill__arrow" aria-hidden="true">
+                  {deskSnapshot.bias === "up" ? "▲" : "▼"}
+                </span>
+                <span className="snapshot-pill__pct">
+                  {deskSnapshot.leadPct.toFixed(1)}%
+                </span>
+                <span className="snapshot-pill__lean-label">
+                  {deskSnapshot.bias === "up" ? "Higher" : "Lower"}
+                </span>
+              </div>
+              {deskSnapshot.forward.length ? (
+                <ol className="snapshot-pill__forward" aria-label="Next five sessions">
+                  {deskSnapshot.forward.map((day, idx) => {
+                    const lead =
+                      day.bias === "up" ? day.probabilityHigher : day.probabilityLower;
+                    const dayName = new Intl.DateTimeFormat("en-US", {
+                      timeZone: "America/New_York",
+                      weekday: "short",
+                    }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
+                    return (
+                      <li
+                        key={day.asOfDate}
+                        className={day.bias === "up" ? "is-up" : "is-down"}
+                        title={`${day.asOfDate}: ${day.bias === "up" ? "Higher" : "Lower"} ${lead.toFixed(1)}%`}
+                      >
+                        <span className="snapshot-pill__fwd-day">
+                          {idx === 0 ? "Next" : dayName}
+                        </span>
+                        <span className="snapshot-pill__fwd-arrow" aria-hidden="true">
+                          {day.bias === "up" ? "▲" : "▼"}
+                        </span>
+                        <span className="snapshot-pill__fwd-pct">{lead.toFixed(0)}%</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : null}
+            </div>
           ) : null}
         </div>
         <AppNav view={view} onNavigate={navigateTo} onGoScorecard={goScorecard} />
@@ -816,8 +940,10 @@ export default function App() {
         <section className="panel panel--quote desk-row desk-row--quote" aria-labelledby="quote-title">
           <div className="quote-top">
             <div className="quote-top__head">
-              <h2 id="quote-title">Stock quote</h2>
-              <p className="panel-lede">~15m delayed Yahoo free quotes</p>
+              <h2 id="quote-title">Desk snapshot</h2>
+              <p className="panel-lede">
+                Active name quote + next 5 session leans · ~15m delayed · pick a Mag7 or type a ticker
+              </p>
             </div>
             <form
               className="quote-lookup"
@@ -874,74 +1000,89 @@ export default function App() {
             </div>
           </div>
           {quoteError ? <p className="quote-lookup__error">{quoteError}</p> : null}
-          {quoteResult ? (
-            <div className="quote-desk">
-              <div
-                className={`quote-result ${
-                  quoteResult.changePct == null
+
+          <div
+            className={`desk-snapshot ${deskSnapshot.bias === "up" ? "is-up" : "is-down"}`}
+            aria-label={`${deskSnapshot.symbol} quote and next five session predictions`}
+          >
+            <div className="desk-snapshot__now">
+              <p className="desk-snapshot__kicker">
+                {pillBusy ? "Refreshing…" : deskSnapshot.live ? "Live snapshot" : "Demo snapshot"}
+                {deskSnapshot.name && deskSnapshot.name !== deskSnapshot.symbol
+                  ? ` · ${deskSnapshot.name}`
+                  : ""}
+              </p>
+              <p className="desk-snapshot__symbol">{deskSnapshot.symbol}</p>
+              <p className="desk-snapshot__last">
+                {deskSnapshot.last != null
+                  ? deskSnapshot.last >= 1000
+                    ? `$${deskSnapshot.last.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                    : `$${deskSnapshot.last.toFixed(2)}`
+                  : "—"}
+              </p>
+              <p
+                className={`desk-snapshot__chg ${
+                  deskSnapshot.changePct == null
                     ? ""
-                    : quoteResult.changePct >= 0
+                    : deskSnapshot.changePct >= 0
                       ? "is-up"
                       : "is-down"
                 }`}
               >
-                <p className="quote-result__symbol">{quoteResult.symbol}</p>
-                <p className="quote-result__last">
-                  {quoteResult.last != null ? quoteResult.last.toFixed(2) : "—"}
-                </p>
-                <p className="quote-result__chg">
-                  {quoteResult.change != null
-                    ? `${quoteResult.change >= 0 ? "+" : ""}${quoteResult.change.toFixed(2)}`
-                    : "—"}{" "}
-                  (
-                  {quoteResult.changePct != null
-                    ? `${quoteResult.changePct >= 0 ? "+" : ""}${quoteResult.changePct.toFixed(2)}%`
-                    : "—"}
-                  )
-                </p>
-                <p className="quote-result__meta">
-                  Prev close{" "}
-                  {quoteResult.previousClose != null
-                    ? quoteResult.previousClose.toFixed(2)
-                    : "—"}{" "}
-                  · {quoteResult.delayNote}
-                </p>
-              </div>
-
-              {quoteResult && deskSymbol === quoteResult.symbol && !deskIsEquity ? (
-                <p className="quote-lookup__error">
-                  {quoteResult.symbol}: not enough history for a full lean yet. Quote shown; main desk stays
-                  on SPY until more sessions load.
-                </p>
-              ) : null}
-              {deskIsEquity && deskEquity && deskSymbol !== "SPY" ? (
-                <p className="quote-desk__focus">
-                  Main desk: <strong>{deskEquity.symbol}</strong> lean · chart · last 10 · arrow
-                  {" · "}
-                  <button
-                    type="button"
-                    className="quote-desk__spy-btn"
-                    onClick={() => focusDeskSymbol("SPY")}
-                  >
-                    Back to SPY
-                  </button>
-                </p>
-              ) : null}
+                {deskSnapshot.changePct == null
+                  ? "Day —"
+                  : `Day ${deskSnapshot.changePct >= 0 ? "+" : ""}${deskSnapshot.changePct.toFixed(2)}%`}
+              </p>
+              <p className="desk-snapshot__lean">
+                <span className="desk-snapshot__lean-arrow" aria-hidden="true">
+                  {deskSnapshot.bias === "up" ? "▲" : "▼"}
+                </span>
+                {deskSnapshot.leadPct.toFixed(1)}%{" "}
+                {deskSnapshot.bias === "up" ? "higher" : "lower"} close lean
+              </p>
             </div>
-          ) : null}
-          {!quoteResult && deskIsEquity && deskEquity ? (
-            <p className="quote-desk__focus">
-              Main desk: <strong>{deskEquity.symbol}</strong> lean · chart · last 10 · arrow
-              {" · "}
-              <button
-                type="button"
-                className="quote-desk__spy-btn"
-                onClick={() => focusDeskSymbol("SPY")}
-              >
-                Back to SPY
-              </button>
-            </p>
-          ) : null}
+            <div className="desk-snapshot__forward-wrap">
+              <p className="desk-snapshot__forward-title">Next 5 sessions</p>
+              {deskSnapshot.forward.length ? (
+                <ol className="desk-snapshot__forward">
+                  {deskSnapshot.forward.map((day, idx) => {
+                    const lead =
+                      day.bias === "up" ? day.probabilityHigher : day.probabilityLower;
+                    const dayName = new Intl.DateTimeFormat("en-US", {
+                      timeZone: "America/New_York",
+                      weekday: "short",
+                    }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
+                    const dateLabel = new Intl.DateTimeFormat("en-US", {
+                      timeZone: "America/New_York",
+                      month: "short",
+                      day: "numeric",
+                    }).format(new Date(`${day.asOfDate}T12:00:00-04:00`));
+                    return (
+                      <li key={day.asOfDate} className={day.bias === "up" ? "is-up" : "is-down"}>
+                        <span className="desk-snapshot__fwd-ord">
+                          {idx === 0 ? "Next" : `+${idx + 1}`}
+                        </span>
+                        <span className="desk-snapshot__fwd-day">{dayName}</span>
+                        <span className="desk-snapshot__fwd-date">{dateLabel}</span>
+                        <span className="desk-snapshot__fwd-arrow" aria-hidden="true">
+                          {day.bias === "up" ? "▲" : "▼"}
+                        </span>
+                        <span className="desk-snapshot__fwd-pct">
+                          {lead.toFixed(1)}
+                          <span>%</span>
+                        </span>
+                        <span className="desk-snapshot__fwd-chip">
+                          {day.bias === "up" ? "Higher" : "Lower"}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <p className="desk-snapshot__empty">No forward leans yet — wait for live history.</p>
+              )}
+            </div>
+          </div>
         </section>
 
         {signal.mag7.length ? (

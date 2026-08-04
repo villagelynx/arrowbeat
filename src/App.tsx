@@ -821,17 +821,24 @@ export default function App() {
                 <button
                   key={sym}
                   type="button"
-                  className="quote-chip"
-                  onClick={() => void lookupQuote(sym)}
-                  disabled={quoteLoading}
+                  className={`quote-chip${deskSymbol === sym && deskIsEquity ? " is-on" : ""}`}
+                  onClick={() => {
+                    setDeskSymbol(sym);
+                    window.requestAnimationFrame(() => {
+                      document
+                        .getElementById("bias-title")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                  }}
+                  disabled={quoteLoading || !signal.mag7.some((r) => r.symbol === sym && r.available)}
                 >
                   {sym}
                 </button>
               ))}
               <button
                 type="button"
-                className="quote-chip"
-                onClick={() => void lookupQuote("SPY")}
+                className={`quote-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
+                onClick={() => setDeskSymbol("SPY")}
                 disabled={quoteLoading}
               >
                 SPY
@@ -935,8 +942,15 @@ export default function App() {
                       className={`mag7-card ${
                         !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
                       }${isFocus ? " is-focus" : ""}${deskSymbol === "SPY" ? "" : ""}`}
-                      onClick={() => setDeskSymbol(row.available ? row.symbol : deskSymbol)}
-                      disabled={!row.available}
+                      onClick={() => {
+                        if (!row.available) return;
+                        setDeskSymbol(row.symbol);
+                        window.requestAnimationFrame(() => {
+                          document
+                            .getElementById("bias-title")
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        });
+                      }}
                       aria-pressed={isFocus}
                       aria-label={`${row.symbol} ${row.name}${
                         row.available
@@ -1522,9 +1536,11 @@ export default function App() {
             <section className="panel panel--factors" aria-labelledby="factors-title">
               <h2 id="factors-title">Why this signal</h2>
               <p className="panel-lede">
-                {tomorrowAsPrimary
-                  ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
-                  : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
+                {deskIsEquity && deskEquity
+                  ? `Factors for ${deskEquity.symbol} from its own history, calendar edges, streaks, relative vs SPY, and market tone.`
+                  : tomorrowAsPrimary
+                    ? "Calendar & historical factors for the next session — thinner than a live-session lean (no tomorrow quotes yet)."
+                    : "Factors from SPY, ES, VIX, breadth, yields, breakevens / real rates, and (when they move) oil & gold — still a probability lean, not a crystal ball."}
               </p>
               <ul className="factor-list">
                 {primary.factors.map((f) => {
@@ -1573,116 +1589,6 @@ export default function App() {
             </aside>
           </div>
         </div>
-
-        {signal.mag7.length ? (
-          <section className="panel panel--mag7 desk-row desk-row--mag7" aria-labelledby="mag7-title">
-            <h2 id="mag7-title">Magnificent 7</h2>
-            <p className="panel-lede">
-              Full ArrowBeat lean per name — YTD chart, probability, direction arrow, last 10
-              sessions. Tap a name to open its desk. Ranked by P(higher close).
-            </p>
-            <ul className="mag7-grid">
-              {signal.mag7.map((row) => {
-                const leanUp = row.bias === "up";
-                const isFocus = activeMag7?.symbol === row.symbol;
-                return (
-                  <li key={row.symbol}>
-                    <button
-                      type="button"
-                      className={`mag7-card ${
-                        !row.available ? "is-muted" : leanUp ? "is-up" : "is-down"
-                      }${isFocus ? " is-focus" : ""}`}
-                      onClick={() => setMag7Focus(row.symbol)}
-                      aria-pressed={isFocus}
-                      aria-label={`${row.symbol} ${row.name}${
-                        row.available
-                          ? `, ${leanUp ? "higher" : "lower"} ${row.probabilityHigher.toFixed(1)} percent`
-                          : ", data unavailable"
-                      }`}
-                    >
-                      <div className="mag7-card__top">
-                        <span className="mag7-card__symbol">{row.symbol}</span>
-                        {row.available ? (
-                          <span className="mag7-card__chev" aria-hidden="true">
-                            {leanUp ? "▲" : "▼"}
-                          </span>
-                        ) : (
-                          <span className="mag7-card__chev is-na" aria-hidden="true">
-                            —
-                          </span>
-                        )}
-                      </div>
-                      <p className="mag7-card__name">{row.name}</p>
-                      <p className="mag7-card__bias">
-                        {row.available ? (leanUp ? "Higher" : "Lower") : "n/a"}
-                      </p>
-                      <p className="mag7-card__prob">
-                        {row.available ? (
-                          <>
-                            {row.probabilityHigher.toFixed(1)}
-                            <span>%</span>
-                          </>
-                        ) : (
-                          "—"
-                        )}
-                      </p>
-                      {row.available ? (
-                        <p
-                          className="mag7-card__stars"
-                          aria-label={`${row.confidence} of 5 stars`}
-                        >
-                          {stars(row.confidence)}
-                        </p>
-                      ) : null}
-                      {row.available && row.tomorrow ? (
-                        <p className="mag7-card__next">
-                          nxt{" "}
-                          {row.tomorrow.bias === "up" ? "▲" : "▼"}
-                          {(row.tomorrow.bias === "up"
-                            ? row.tomorrow.probabilityHigher
-                            : row.tomorrow.probabilityLower
-                          ).toFixed(0)}
-                          %
-                        </p>
-                      ) : null}
-                      {row.available && row.forwardLeans?.length ? (
-                        <div className="mag7-card__trail" aria-hidden="true">
-                          {row.forwardLeans.map((d) => (
-                            <span
-                              key={d.asOfDate}
-                              className={d.bias === "up" ? "is-up" : "is-down"}
-                            />
-                          ))}
-                        </div>
-                      ) : null}
-                      <p className="mag7-card__quote">
-                        <span>{row.last != null ? row.last.toFixed(2) : "—"}</span>
-                        <span
-                          className={
-                            row.changePct == null
-                              ? ""
-                              : row.changePct >= 0
-                                ? "is-up"
-                                : "is-down"
-                          }
-                        >
-                          {row.changePct == null
-                            ? "—"
-                            : `${row.changePct >= 0 ? "+" : ""}${row.changePct.toFixed(2)}%`}
-                        </span>
-                      </p>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            {activeMag7 ? (
-              <div className="mag7-desk-wrap" id="mag7-desk">
-                <EquitySignalDesk lean={activeMag7} asOfDate={signal.asOfDate} />
-              </div>
-            ) : null}
-          </section>
-        ) : null}
 
         {signal.alts.length ? (
           <section className="panel panel--alts desk-row desk-row--alts" aria-labelledby="alts-title">
@@ -1759,11 +1665,24 @@ export default function App() {
         ) : null}
 
         <div className="desk-grid desk-grid--ytd desk-row desk-row--ytd">
-          {spyBars.length ? (
+          {chartBars.length ? (
             <section className="panel panel--ytd" aria-labelledby="spy-chart-title">
-              <h2 id="spy-chart-title">S&amp;P 500 this year</h2>
-              <p className="panel-lede">SPY daily closes — year to date.</p>
-              <SpyYearChart bars={spyBars} year={yearFromIso(signal.asOfDate)} />
+              <h2 id="spy-chart-title">
+                {deskIsEquity && deskEquity
+                  ? `${deskEquity.symbol} this year`
+                  : "S&P 500 this year"}
+              </h2>
+              <p className="panel-lede">
+                {deskIsEquity && deskEquity
+                  ? `${deskEquity.symbol} daily closes — year to date.`
+                  : "SPY daily closes — year to date."}
+              </p>
+              <SpyYearChart
+                bars={chartBars}
+                year={yearFromIso(signal.asOfDate)}
+                symbol={chartSymbol}
+                gradientId={`ytd-main-${chartSymbol}`}
+              />
             </section>
           ) : null}
 

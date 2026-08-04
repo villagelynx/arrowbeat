@@ -1407,9 +1407,7 @@ export function buildEquitySignal(
   const monthOdds = monthOddsFromReturns(rets);
   const dayOfMonthOdds = dayOfMonthOddsFromReturns(rets);
   const cashflowCycle = buildCashflowCycleInsight(dayOfMonthOdds, dateIso);
-  const taxSeason = buildTaxSeasonInsight(monthOdds, dateIso);
   const calendarEdge = buildCalendarEdge(dateIso, weekdayOdds, monthOdds, dayOfMonthOdds);
-  const cpiWindow = buildCpiWindowInsight(rets, dateIso);
   const streaks = streakFromReturns(rets);
   const afterDown = afterDownDayStats(bars);
 

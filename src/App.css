@@ -2421,6 +2421,74 @@ button.mag7-card {
   gap: 0.55rem;
 }
 
+.quote-desk__focus {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.quote-desk__focus strong {
+  color: var(--text);
+}
+
+.quote-desk__spy-btn {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  cursor: pointer;
+}
+
+.quote-chip.is-on {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mag7-desk-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  margin-top: 0.65rem;
+}
+
+.mag7-spy-chip {
+  margin: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mag7-spy-chip.is-on {
+  border-color: rgba(18, 212, 107, 0.4);
+  background: rgba(18, 212, 107, 0.1);
+  color: var(--up);
+}
+
+.mag7-desk-switch__hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.mag7-desk-switch__hint strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
 .quote-lean {
   padding: 0.55rem 0.65rem;
   border-radius: 0.45rem;

@@ -6,6 +6,7 @@ export type AppView =
   | "model"
   | "streaks"
   | "brief"
+  | "session-brief"
   | "widget"
   | "correction"
   | "crash"
@@ -37,6 +38,7 @@ const PRIMARY_ITEMS: NavItem[] = [
 
 /** Overflow / secondary — hamburger drawer. */
 const MORE_ITEMS: NavItem[] = [
+  { id: "session-brief", label: "Stock session brief", view: "session-brief" },
   { id: "scorecard", label: "Scorecard", action: "scorecard" },
   { id: "widget", label: "Widget", view: "widget" },
   { id: "streaks", label: "Streaks", view: "streaks" },

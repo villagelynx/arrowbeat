@@ -22,6 +22,7 @@ import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
 import { StreaksPage } from "./components/StreaksPage";
 import { FinancialModelPage } from "./components/FinancialModelPage";
 import { MorningBriefPage } from "./components/MorningBriefPage";
+import { SessionBriefPage } from "./components/SessionBriefPage";
 import { ScoreHistoryPage } from "./components/ScoreHistoryPage";
 import { ScorePredictionList } from "./components/ScorePredictionList";
 import { WidgetPage } from "./components/WidgetPage";
@@ -82,6 +83,7 @@ function readViewFromLocation(): AppView | null {
   if (hash === "streaks") return "streaks";
   if (hash === "model") return "model";
   if (hash === "brief" || hash === "morning-brief") return "brief";
+  if (hash === "session-brief" || hash === "stock-session-brief") return "session-brief";
   if (hash === "widget" || hash === "embed-docs") return "widget";
   if (hash === "about") return "about";
   if (hash === "score-history" || hash === "scorecard-100") return "score-history";
@@ -106,6 +108,8 @@ function syncViewHash(view: AppView) {
     url.hash = "model";
   } else if (view === "brief") {
     url.hash = "brief";
+  } else if (view === "session-brief") {
+    url.hash = "session-brief";
   } else if (view === "widget") {
     url.hash = "widget";
   } else if (view === "about") {
@@ -121,6 +125,8 @@ function syncViewHash(view: AppView) {
     currentHash === "model" ||
     currentHash === "brief" ||
     currentHash === "morning-brief" ||
+    currentHash === "session-brief" ||
+    currentHash === "stock-session-brief" ||
     currentHash === "widget" ||
     currentHash === "embed-docs" ||
     currentHash === "about" ||
@@ -266,6 +272,7 @@ export default function App() {
         current === "streaks" ||
         current === "model" ||
         current === "brief" ||
+        current === "session-brief" ||
         current === "widget" ||
         current === "about" ||
         current === "score-history"
@@ -707,6 +714,7 @@ export default function App() {
       view === "streaks" ||
       view === "model" ||
       view === "brief" ||
+      view === "session-brief" ||
       view === "widget" ||
       view === "score-history"
         ? " app--about"
@@ -739,6 +747,18 @@ export default function App() {
               loading={loading}
               initialSymbol={deskSymbol}
               onGoHome={() => navigateTo("home")}
+            />
+          </main>
+        ) : view === "session-brief" ? (
+          <main className="about-main">
+            <SessionBriefPage
+              signal={null}
+              scorecard={scorecard}
+              loading={loading}
+              spyBars={spyBars}
+              initialSymbol={deskSymbol}
+              onGoHome={() => navigateTo("home")}
+              onGoScorecard={goScorecard}
             />
           </main>
         ) : view === "widget" ? (
@@ -971,6 +991,7 @@ export default function App() {
     view === "streaks" ||
     view === "model" ||
     view === "brief" ||
+    view === "session-brief" ||
     view === "widget" ||
     view === "score-history"
       ? " app--about"
@@ -1080,6 +1101,18 @@ export default function App() {
             spyBars={spyBars}
             initialSymbol={deskSymbol}
             onGoHome={() => navigateTo("home")}
+          />
+        </main>
+      ) : view === "session-brief" ? (
+        <main className="about-main">
+          <SessionBriefPage
+            signal={signal}
+            scorecard={scorecard}
+            loading={loading || refreshing}
+            spyBars={spyBars}
+            initialSymbol={deskSymbol}
+            onGoHome={() => navigateTo("home")}
+            onGoScorecard={goScorecard}
           />
         </main>
       ) : view === "widget" ? (

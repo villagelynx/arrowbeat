@@ -1699,6 +1699,76 @@ main.correction-main {
   outline: none;
 }
 
+.session-brief__card {
+  border-left: 3px solid var(--line);
+}
+
+.session-brief__card.is-up {
+  border-left-color: color-mix(in srgb, var(--up) 70%, var(--line));
+}
+
+.session-brief__card.is-down {
+  border-left-color: color-mix(in srgb, var(--down) 70%, var(--line));
+}
+
+.session-brief__date {
+  margin: 0 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.session-brief__headline {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  font-weight: 760;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.session-brief__card.is-up .session-brief__headline {
+  color: var(--up);
+}
+
+.session-brief__card.is-down .session-brief__headline {
+  color: var(--down);
+}
+
+.session-brief__lede,
+.session-brief__body,
+.session-brief__counter {
+  margin: 0 0 0.85rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.session-brief__counter {
+  color: var(--muted);
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px dashed var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.session-brief__sub {
+  margin: 1.1rem 0 0.45rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.session-brief__drivers {
+  margin-bottom: 0.75rem;
+}
+
+.session-brief__closing {
+  margin-top: 1.25rem;
+}
+
 .odds-rank {
   list-style: none;
   margin: 0;

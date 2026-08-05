@@ -1028,7 +1028,7 @@ main.correction-main {
 
 .snapshot-pill__quote {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.35rem;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -1158,6 +1158,9 @@ main.correction-main {
 
 .desk-snapshot__symbol {
   margin: 0.2rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 800;
@@ -3567,6 +3570,9 @@ button.mag7-card {
 }
 
 .quote-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.28rem 0.55rem;
   border-radius: 0.45rem;
   border: 1px solid var(--line);

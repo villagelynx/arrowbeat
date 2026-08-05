@@ -29,6 +29,16 @@
 [functions."og"]
   timeout = 4
 
+# Correct MIME for SEO files (must exist in dist from /public)
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=utf-8"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
 # Inject per-share og:image meta for ?view=share crawlers / link previews
 [[edge_functions]]
   function = "share-meta"
@@ -77,7 +87,20 @@
   status = 200
   force = true
 
-# SPA / PWA client routes
+# Never rewrite SEO files to the SPA shell
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap.xml"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+  force = false
+
+# SPA / PWA client routes (static files in dist win when present)
 [[redirects]]
   from = "/*"
   to = "/index.html"

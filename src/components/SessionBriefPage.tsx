@@ -298,7 +298,8 @@ export function SessionBriefPage({
         >
           <p className="session-brief__date">{formatDay(brief.asOfDate)}</p>
           <h2 id="session-brief-headline" className="session-brief__headline">
-            {brief.headline}
+            <CompanyIcon symbol={brief.symbol} size={32} className="session-brief__icon" />
+            <span>{brief.headline}</span>
           </h2>
           <p className="session-brief__lede">{brief.lede}</p>
 

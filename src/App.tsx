@@ -2068,7 +2068,10 @@ export default function App() {
                     }`}
                   >
                     <div className="mag7-card__top">
-                      <span className="mag7-card__symbol">{row.name}</span>
+                      <span className="mag7-card__symbol">
+                        <CompanyIcon symbol={row.symbol || row.id} size={18} />
+                        <span>{row.name}</span>
+                      </span>
                       {row.available ? (
                         <span className="mag7-card__chev" aria-hidden="true">
                           {leanUp ? "▲" : "▼"}

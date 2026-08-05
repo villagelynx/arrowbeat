@@ -7,6 +7,7 @@ import {
 } from "../lib/signal";
 import { buildSessionBrief } from "../lib/session-brief";
 import type { ScorecardSummary } from "../lib/scorecard";
+import { CompanyIcon } from "./CompanyIcon";
 
 type SessionBriefPageProps = {
   signal: DailySignal | null;
@@ -48,7 +49,8 @@ function SymbolPicker({
           disabled={disabled}
           onClick={() => onPick("SPY")}
         >
-          SPY
+          <CompanyIcon symbol="SPY" size={15} />
+          <span>SPY</span>
         </button>
         {MAG7_SYMBOLS.map((sym) => (
           <button
@@ -58,7 +60,8 @@ function SymbolPicker({
             disabled={disabled}
             onClick={() => onPick(sym)}
           >
-            {sym}
+            <CompanyIcon symbol={sym} size={15} />
+            <span>{sym}</span>
           </button>
         ))}
       </div>

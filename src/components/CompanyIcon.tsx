@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   faviconUrlForSymbol,
   lettermarkForSymbol,
@@ -14,6 +14,8 @@ type CompanyIconProps = {
   decorative?: boolean;
 };
 
+type Stage = "logo" | "favicon" | "letter";
+
 /**
  * Corporate icon for a ticker. Free CDN logos with favicon + lettermark fallbacks.
  */
@@ -23,8 +25,14 @@ export function CompanyIcon({
   className = "",
   decorative = true,
 }: CompanyIconProps) {
-  const [stage, setStage] = useState<"logo" | "favicon" | "letter">("logo");
   const label = symbol.trim().toUpperCase() || "?";
+  const [stage, setStage] = useState<Stage>("logo");
+
+  // Re-try Parqet whenever the desk ticker changes (failed lookups must not stick).
+  useEffect(() => {
+    setStage("logo");
+  }, [label]);
+
   const favicon = faviconUrlForSymbol(label, Math.max(64, size * 2));
 
   if (stage === "letter" || !label) {
@@ -45,6 +53,7 @@ export function CompanyIcon({
 
   return (
     <img
+      key={`${label}-${stage}`}
       className={`company-icon ${className}`.trim()}
       src={src}
       alt={decorative ? "" : `${label} logo`}
@@ -55,8 +64,10 @@ export function CompanyIcon({
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => {
-        if (stage === "logo" && favicon) setStage("favicon");
-        else setStage("letter");
+        setStage((prev) => {
+          if (prev === "logo" && favicon) return "favicon";
+          return "letter";
+        });
       }}
     />
   );

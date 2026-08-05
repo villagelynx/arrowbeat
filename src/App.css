@@ -1029,7 +1029,7 @@ main.correction-main {
 .snapshot-pill__quote {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -1160,7 +1160,7 @@ main.correction-main {
   margin: 0.2rem 0 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.6rem;
   font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 800;
@@ -1726,7 +1726,7 @@ main.correction-main {
   margin: 0 0 0.65rem;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.8rem;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 2.4vw, 1.85rem);
   font-weight: 760;
@@ -2823,7 +2823,7 @@ button.mag7-card {
   margin: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   font-family: var(--font-display);
   font-size: 0.68rem;
   letter-spacing: -0.02em;
@@ -3615,7 +3615,7 @@ button.mag7-card {
 .quote-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   padding: 0.28rem 0.55rem;
   border-radius: 0.45rem;
   border: 1px solid var(--line);

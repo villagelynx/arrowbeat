@@ -17,6 +17,7 @@ import { CorrectionOddsPanel } from "./components/CorrectionOddsPanel";
 import { CpiOddsPanel } from "./components/CpiOddsPanel";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
 import { ScorePredictionList } from "./components/ScorePredictionList";
+import { CompanyIcon } from "./components/CompanyIcon";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -1122,6 +1123,7 @@ export default function App() {
               aria-label={`${deskSnapshot.symbol} snapshot: last quote and next five session leans`}
             >
               <div className="snapshot-pill__quote">
+                <CompanyIcon symbol={deskSnapshot.symbol} size={18} className="snapshot-pill__icon" />
                 <span className="snapshot-pill__symbol">{deskSnapshot.symbol}</span>
                 <span className="snapshot-pill__last">
                   {deskSnapshot.last != null
@@ -1329,7 +1331,8 @@ export default function App() {
                   className={`quote-chip${deskSymbol === sym ? " is-on" : ""}`}
                   onClick={() => focusDeskSymbol(sym)}
                 >
-                  {sym}
+                  <CompanyIcon symbol={sym} size={16} />
+                  <span>{sym}</span>
                 </button>
               ))}
               <button
@@ -1337,7 +1340,8 @@ export default function App() {
                 className={`quote-chip${deskSymbol === "SPY" ? " is-on" : ""}`}
                 onClick={() => focusDeskSymbol("SPY")}
               >
-                SPY
+                <CompanyIcon symbol="SPY" size={16} />
+                <span>SPY</span>
               </button>
               <button
                 type="button"
@@ -1345,7 +1349,8 @@ export default function App() {
                 onClick={() => void lookupQuote("BTC-USD")}
                 disabled={quoteLoading}
               >
-                BTC
+                <CompanyIcon symbol="BTC-USD" size={16} />
+                <span>BTC</span>
               </button>
             </div>
           </div>
@@ -1362,7 +1367,10 @@ export default function App() {
                   ? ` · ${deskSnapshot.name}`
                   : ""}
               </p>
-              <p className="desk-snapshot__symbol">{deskSnapshot.symbol}</p>
+              <p className="desk-snapshot__symbol">
+                <CompanyIcon symbol={deskSnapshot.symbol} size={28} className="desk-snapshot__icon" />
+                <span>{deskSnapshot.symbol}</span>
+              </p>
               <p className="desk-snapshot__last">
                 {deskSnapshot.last != null
                   ? deskSnapshot.last >= 1000

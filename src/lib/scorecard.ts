@@ -257,23 +257,32 @@ function backfillMissingSessions(
 }
 
 /**
- * Persist today's live lean (Mon–Fri only), backfill recent sessions from SPY history,
+ * Persist today's live lean (Mon–Fri only), optionally backfill recent sessions from SPY history,
  * and settle days once a *later* SPY bar exists (official close is frozen).
  * Never grade unfinished same-day Yahoo bars.
+ *
+ * Pass `{ backfill: false }` on first paint so the hero isn't blocked by reconstructing
+ * ~100 session leans; call again with backfill on idle.
  */
-export function syncScorecard(signal: DailySignal, spyBars: Bar[]): ScorecardSummary {
+export function syncScorecard(
+  signal: DailySignal,
+  spyBars: Bar[],
+  opts?: { backfill?: boolean },
+): ScorecardSummary {
   if (signal.dataMode !== "live") {
     return summarize(loadRecords(), signal.asOfDate);
   }
 
+  const doBackfill = opts?.backfill !== false;
   const returns = dailyReturns(spyBars);
   let records = settleRecords(loadRecords(), returns, spyBars);
 
   const date = signal.asOfDate;
   const readyToSettle = isSessionReadyToSettle(date, spyBars);
 
-  // Fill gaps for recent sessions (visit not required).
-  records = backfillMissingSessions(records, spyBars, date);
+  if (doBackfill) {
+    records = backfillMissingSessions(records, spyBars, date);
+  }
 
   // Keep updating the open session lean from the live desk until the close is final.
   if (isWeekday(date) && !readyToSettle) {

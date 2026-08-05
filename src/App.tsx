@@ -1,31 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchMarketSnapshot,
+  fetchStaticMarketSnapshot,
   fetchStockQuote,
   fetchNewsPriceImpact,
   MAG7_SYMBOLS,
   type Bar,
   type IntradayBar,
+  type MarketSnapshot,
   type StockQuote,
 } from "./lib/market-data";
 import type { NewsPricePayload } from "./lib/news-price";
 import { NewsPricePanel } from "./components/NewsPricePanel";
-import { AboutPage } from "./components/AboutPage";
 import { AppNav, type AppView } from "./components/AppNav";
-import { CorrectionOddsPage } from "./components/CorrectionOddsPage";
 import { CorrectionOddsPanel } from "./components/CorrectionOddsPanel";
-import { CpiOddsPage } from "./components/CpiOddsPage";
 import { CpiOddsPanel } from "./components/CpiOddsPanel";
-import { CrashOddsPage } from "./components/CrashOddsPage";
 import { CrashOddsPanel } from "./components/CrashOddsPanel";
-import { StockCorrectionsPage } from "./components/StockCorrectionsPage";
-import { StreaksPage } from "./components/StreaksPage";
-import { FinancialModelPage } from "./components/FinancialModelPage";
-import { MorningBriefPage } from "./components/MorningBriefPage";
-import { SessionBriefPage } from "./components/SessionBriefPage";
-import { ScoreHistoryPage } from "./components/ScoreHistoryPage";
 import { ScorePredictionList } from "./components/ScorePredictionList";
-import { WidgetPage } from "./components/WidgetPage";
 import { MarketArrow } from "./components/MarketArrow";
 import { SportsBulletinPromo } from "./components/SportsBulletinPromo";
 import { SpyDayChart } from "./components/SpyDayChart";
@@ -64,14 +55,70 @@ import {
   shareSignalCard,
   type SignalSharePayload,
 } from "./lib/signal-share";
-import { buildCorrectionOdds } from "./lib/correction-probability";
-import { buildCrashOdds } from "./lib/crash-probability";
+import { buildCorrectionOdds, type CorrectionOdds } from "./lib/correction-probability";
+import { buildCrashOdds, type CrashOdds } from "./lib/crash-probability";
 import { yearFromIso } from "./lib/spy-ytd";
 import { SharePreviewModal, ShareView } from "./components/ShareView";
 import "./App.css";
 
+const AboutPage = lazy(() =>
+  import("./components/AboutPage").then((m) => ({ default: m.AboutPage })),
+);
+const CorrectionOddsPage = lazy(() =>
+  import("./components/CorrectionOddsPage").then((m) => ({ default: m.CorrectionOddsPage })),
+);
+const CpiOddsPage = lazy(() =>
+  import("./components/CpiOddsPage").then((m) => ({ default: m.CpiOddsPage })),
+);
+const CrashOddsPage = lazy(() =>
+  import("./components/CrashOddsPage").then((m) => ({ default: m.CrashOddsPage })),
+);
+const StockCorrectionsPage = lazy(() =>
+  import("./components/StockCorrectionsPage").then((m) => ({ default: m.StockCorrectionsPage })),
+);
+const StreaksPage = lazy(() =>
+  import("./components/StreaksPage").then((m) => ({ default: m.StreaksPage })),
+);
+const FinancialModelPage = lazy(() =>
+  import("./components/FinancialModelPage").then((m) => ({ default: m.FinancialModelPage })),
+);
+const MorningBriefPage = lazy(() =>
+  import("./components/MorningBriefPage").then((m) => ({ default: m.MorningBriefPage })),
+);
+const SessionBriefPage = lazy(() =>
+  import("./components/SessionBriefPage").then((m) => ({ default: m.SessionBriefPage })),
+);
+const ScoreHistoryPage = lazy(() =>
+  import("./components/ScoreHistoryPage").then((m) => ({ default: m.ScoreHistoryPage })),
+);
+const WidgetPage = lazy(() =>
+  import("./components/WidgetPage").then((m) => ({ default: m.WidgetPage })),
+);
+
 /** Aligns with Yahoo free delayed quotes (~15 minutes). */
 const REFRESH_MS = 15 * 60 * 1000;
+
+function runWhenIdle(fn: () => void, timeoutMs = 2200): () => void {
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    const id = window.requestIdleCallback(() => fn(), { timeout: timeoutMs });
+    return () => window.cancelIdleCallback(id);
+  }
+  const id = window.setTimeout(fn, Math.min(400, timeoutMs));
+  return () => window.clearTimeout(id);
+}
+
+function PageFallback() {
+  return (
+    <main className="about-main">
+      <article className="about">
+        <header className="about__hero">
+          <p className="about__kicker">ArrowBeat</p>
+          <h1 className="about__title">Loading…</h1>
+        </header>
+      </article>
+    </main>
+  );
+}
 
 function readViewFromLocation(): AppView | null {
   if (typeof window === "undefined") return null;
@@ -335,22 +382,34 @@ export default function App() {
     };
   }, [sharePreviewUrl]);
 
-  const correctionOdds = useMemo(() => {
-    if (!spyBars.length) return null;
-    try {
-      return buildCorrectionOdds(spyBars, vixBars, vixLast);
-    } catch {
-      return null;
-    }
-  }, [spyBars, vixBars, vixLast]);
+  const [correctionOdds, setCorrectionOdds] = useState<CorrectionOdds | null>(null);
+  const [crashOdds, setCrashOdds] = useState<CrashOdds | null>(null);
+  const hasSignalRef = useRef(false);
 
-  const crashOdds = useMemo(() => {
-    if (!spyBars.length) return null;
-    try {
-      return buildCrashOdds(spyBars, vixBars, vixLast);
-    } catch {
-      return null;
+  useEffect(() => {
+    if (!spyBars.length) {
+      setCorrectionOdds(null);
+      setCrashOdds(null);
+      return;
     }
+    let cancelled = false;
+    const cancelIdle = runWhenIdle(() => {
+      if (cancelled) return;
+      try {
+        setCorrectionOdds(buildCorrectionOdds(spyBars, vixBars, vixLast));
+      } catch {
+        setCorrectionOdds(null);
+      }
+      try {
+        setCrashOdds(buildCrashOdds(spyBars, vixBars, vixLast));
+      } catch {
+        setCrashOdds(null);
+      }
+    }, 2800);
+    return () => {
+      cancelled = true;
+      cancelIdle();
+    };
   }, [spyBars, vixBars, vixLast]);
 
   useEffect(() => {
@@ -358,33 +417,59 @@ export default function App() {
     // Local to this effect instance so React Strict Mode remounts can still load
     // (a shared ref + cancelled first mount used to leave the UI stuck on loading).
     let inFlight = false;
+    let cancelScoreIdle: (() => void) | null = null;
+
+    function applySnapshot(snap: MarketSnapshot, opts?: { lightScorecard?: boolean }) {
+      const live = buildLiveSignal(snap);
+      const bars = snap.spy.bars.length ? snap.spy.bars : snap.spy.recentBars;
+      setSignal(live);
+      setSpyBars(bars);
+      setVixBars(snap.vix.bars ?? []);
+      setVixLast(snap.vix.last ?? null);
+      setDayBars(snap.spy.dayBars ?? []);
+      setDayPrevClose(snap.spy.dayPrevClose ?? null);
+      setScorecard(syncScorecard(live, bars, { backfill: !opts?.lightScorecard }));
+      hasSignalRef.current = true;
+
+      if (opts?.lightScorecard) {
+        cancelScoreIdle?.();
+        cancelScoreIdle = runWhenIdle(() => {
+          if (cancelled) return;
+          setScorecard(syncScorecard(live, bars, { backfill: true }));
+        }, 2500);
+      }
+    }
 
     async function load(opts: { silent?: boolean } = {}) {
       const silent = opts.silent === true;
       if (inFlight) return;
       inFlight = true;
       if (silent) setRefreshing(true);
-      else {
+      else if (!hasSignalRef.current) {
         setLoading(true);
         setError(null);
       }
       try {
+        // Instant paint from build-time JSON, then upgrade to live.
+        if (!silent && !hasSignalRef.current) {
+          try {
+            const cached = await fetchStaticMarketSnapshot();
+            if (cancelled) return;
+            applySnapshot(cached, { lightScorecard: true });
+            setLoading(false);
+          } catch {
+            // Continue to live path.
+          }
+        }
+
         const snap = await fetchMarketSnapshot();
         if (cancelled) return;
-        const live = buildLiveSignal(snap);
-        const bars = snap.spy.bars.length ? snap.spy.bars : snap.spy.recentBars;
-        setSignal(live);
-        setSpyBars(bars);
-        setVixBars(snap.vix.bars ?? []);
-        setVixLast(snap.vix.last ?? null);
-        setDayBars(snap.spy.dayBars ?? []);
-        setDayPrevClose(snap.spy.dayPrevClose ?? null);
-        setScorecard(syncScorecard(live, bars));
+        applySnapshot(snap, { lightScorecard: true });
         setError(null);
         lastFetchAt.current = Date.now();
       } catch (e) {
         if (cancelled) return;
-        if (!silent) {
+        if (!silent && !hasSignalRef.current) {
           setError(e instanceof Error ? e.message : "Could not load market data.");
           const demo = buildDemoSignal();
           setSignal(demo);
@@ -394,6 +479,7 @@ export default function App() {
           setDayBars([]);
           setDayPrevClose(null);
           setScorecard(syncScorecard(demo, []));
+          hasSignalRef.current = true;
         }
       } finally {
         inFlight = false;
@@ -419,6 +505,7 @@ export default function App() {
 
     return () => {
       cancelled = true;
+      cancelScoreIdle?.();
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -576,35 +663,41 @@ export default function App() {
 
   const deskShowEquityChart = deskSymbol.trim().toUpperCase() !== "SPY";
 
-  /** Yahoo headlines + session co-movement for the active desk ticker. */
+  /** Yahoo headlines + session co-movement for the active desk ticker (deferred off critical path). */
   useEffect(() => {
-    if (view !== "home") return;
+    if (view !== "home" || !signal) return;
     const sym = deskSymbol.trim().toUpperCase() || "SPY";
     let cancelled = false;
     setNewsLoading(true);
     setNewsError(null);
-    void fetchNewsPriceImpact(sym)
-      .then((payload) => {
-        if (cancelled) return;
-        setNewsPrice(payload);
-        if (payload.error && !payload.items.length) {
-          setNewsError(payload.error);
-        } else {
-          setNewsError(null);
-        }
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        setNewsPrice(null);
-        setNewsError(e instanceof Error ? e.message : "News unavailable.");
-      })
-      .finally(() => {
-        if (!cancelled) setNewsLoading(false);
-      });
+
+    const cancelIdle = runWhenIdle(() => {
+      if (cancelled) return;
+      void fetchNewsPriceImpact(sym)
+        .then((payload) => {
+          if (cancelled) return;
+          setNewsPrice(payload);
+          if (payload.error && !payload.items.length) {
+            setNewsError(payload.error);
+          } else {
+            setNewsError(null);
+          }
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          setNewsPrice(null);
+          setNewsError(e instanceof Error ? e.message : "News unavailable.");
+        })
+        .finally(() => {
+          if (!cancelled) setNewsLoading(false);
+        });
+    }, 3500);
+
     return () => {
       cancelled = true;
+      cancelIdle();
     };
-  }, [deskSymbol, view]);
+  }, [deskSymbol, view, signal]);
 
   async function shareScorecard() {
     const url = buildScoreShareUrl(scorecard);
@@ -736,6 +829,7 @@ export default function App() {
           </div>
           <AppNav view={view} onNavigate={navigateTo} />
         </header>
+        <Suspense fallback={<PageFallback />}>
         {view === "about" ? (
           <main className="about-main">
             <AboutPage onGoDashboard={() => navigateTo("home")} />

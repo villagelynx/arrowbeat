@@ -91,14 +91,28 @@ async function fetchJson(url: string, timeoutMs: number): Promise<MarketSnapshot
 }
 
 /**
+ * Build-time snapshot (fast CDN/static). Use for first paint.
+ */
+export async function fetchStaticMarketSnapshot(): Promise<MarketSnapshot> {
+  return fetchJson("/market-snapshot.json", 6000);
+}
+
+/**
+ * Live Netlify function snapshot (Yahoo/FRED). Can be slow or fail from function IPs.
+ */
+export async function fetchLiveMarketSnapshot(): Promise<MarketSnapshot> {
+  return fetchJson("/api/market/snapshot", 9000);
+}
+
+/**
  * Prefer live Netlify function; fall back to build-time JSON if Yahoo is blocked
  * from function IPs (common on free Netlify).
  */
 export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
   try {
-    return await fetchJson("/api/market/snapshot", 9000);
+    return await fetchLiveMarketSnapshot();
   } catch {
-    return await fetchJson("/market-snapshot.json", 8000);
+    return await fetchStaticMarketSnapshot();
   }
 }
 

@@ -1724,11 +1724,20 @@ main.correction-main {
 
 .session-brief__headline {
   margin: 0 0 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   font-family: var(--font-display);
   font-size: clamp(1.35rem, 2.4vw, 1.85rem);
   font-weight: 760;
   letter-spacing: -0.02em;
   line-height: 1.2;
+}
+
+.session-brief__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 0.45rem;
 }
 
 .session-brief__card.is-up .session-brief__headline {
@@ -2812,6 +2821,9 @@ button.mag7-card {
 
 .mag7-card__symbol {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-family: var(--font-display);
   font-size: 0.68rem;
   letter-spacing: -0.02em;
@@ -3567,6 +3579,37 @@ button.mag7-card {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin: 0;
+}
+
+.company-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1.1em;
+  height: 1.1em;
+  border-radius: 0.28rem;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.company-icon--letter {
+  display: inline-grid;
+  place-items: center;
+  color: #0b1220;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.snapshot-pill__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.desk-snapshot__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 0.4rem;
 }
 
 .quote-chip {

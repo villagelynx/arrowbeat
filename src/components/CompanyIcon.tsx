@@ -50,6 +50,7 @@ export function CompanyIcon({
       alt={decorative ? "" : `${label} logo`}
       width={size}
       height={size}
+      style={{ width: size, height: size }}
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer"

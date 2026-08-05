@@ -99,9 +99,13 @@ const WidgetPage = lazy(() =>
 const REFRESH_MS = 15 * 60 * 1000;
 
 function runWhenIdle(fn: () => void, timeoutMs = 2200): () => void {
-  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-    const id = window.requestIdleCallback(() => fn(), { timeout: timeoutMs });
-    return () => window.cancelIdleCallback(id);
+  const w = window as Window & {
+    requestIdleCallback?: (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+  if (typeof w.requestIdleCallback === "function") {
+    const id = w.requestIdleCallback(() => fn(), { timeout: timeoutMs });
+    return () => w.cancelIdleCallback?.(id);
   }
   const id = window.setTimeout(fn, Math.min(400, timeoutMs));
   return () => window.clearTimeout(id);
@@ -917,6 +921,7 @@ export default function App() {
             />
           </main>
         ) : null}
+        </Suspense>
       </div>
     );
   }
@@ -1183,6 +1188,7 @@ export default function App() {
         <AppNav view={view} onNavigate={navigateTo} onGoScorecard={goScorecard} />
       </header>
 
+      <Suspense fallback={<PageFallback />}>
       {view === "about" ? (
         <main className="about-main">
           <AboutPage onGoDashboard={() => navigateTo("home")} />
@@ -2591,6 +2597,7 @@ export default function App() {
         <p className="disclaimer">{signal.disclaimer}</p>
       </main>
       )}
+      </Suspense>
 
       <footer className="footer">
         <p>ArrowBeat · Free Yahoo Finance quotes · Before the opening bell</p>

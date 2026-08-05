@@ -83,7 +83,8 @@ html.is-embed #root {
   min-height: 100%;
   min-width: 0;
   overflow: hidden;
-  background: transparent;
+  /* Solid ink so parent iframes never flash a white canvas under the widget. */
+  background: #071018;
 }
 
 html.is-embed body {

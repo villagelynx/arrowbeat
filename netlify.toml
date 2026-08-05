@@ -11,6 +11,9 @@
   # Free tier max is typically 10s; stay under that in code too.
   timeout = 10
 
+[functions."market-lean"]
+  timeout = 10
+
 [functions."market-quote"]
   timeout = 6
 
@@ -35,6 +38,12 @@
 [[redirects]]
   from = "/api/market/snapshot"
   to = "/.netlify/functions/market-snapshot"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/market/lean"
+  to = "/.netlify/functions/market-lean"
   status = 200
   force = true
 

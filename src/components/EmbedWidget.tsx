@@ -1,16 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchMarketSnapshot, fetchStockQuote, MAG7_SYMBOLS } from "../lib/market-data";
-import { buildDemoSignal, buildEquitySignal, buildLiveSignal, type DailySignal, type EquitySignal } from "../lib/signal";
+import {
+  buildDemoSignal,
+  buildEquitySignal,
+  buildLiveSignal,
+  type DailySignal,
+  type EquitySignal,
+  type TomorrowSignal,
+} from "../lib/signal";
 import "./EmbedWidget.css";
 
 function readEmbedParams() {
   if (typeof window === "undefined") {
-    return { symbol: "SPY", compact: false };
+    return { symbol: "SPY", compact: false, horizon: "next" as const };
   }
   const q = new URLSearchParams(window.location.search);
   const symbol = (q.get("symbol") || q.get("s") || "SPY").trim().toUpperCase() || "SPY";
   const compact = q.get("compact") === "1" || q.get("size") === "sm";
-  return { symbol: symbol.slice(0, 16), compact };
+  const horizonRaw = (q.get("horizon") || "next").trim().toLowerCase();
+  const horizon = horizonRaw === "today" || horizonRaw === "session" ? "today" : "next";
+  return { symbol: symbol.slice(0, 16), compact, horizon };
 }
 
 function originLink(symbol: string): string {
@@ -18,12 +27,22 @@ function originLink(symbol: string): string {
   return symbol === "SPY" ? `${origin}/` : `${origin}/#?focus=${encodeURIComponent(symbol)}`;
 }
 
+function pickTomorrow(
+  signal: DailySignal | null,
+  equity: EquitySignal | null,
+  symbol: string,
+): TomorrowSignal | null {
+  if (symbol === "SPY") return signal?.tomorrow ?? null;
+  return equity?.tomorrow ?? null;
+}
+
 /**
  * Standalone embed surface: lean + % for SPY or a single ticker.
  * Loaded via `?embed=1&symbol=SPY` (no full site chrome).
+ * Default `horizon=next` shows tomorrow / next-session predicted probability.
  */
 export function EmbedWidgetApp() {
-  const { symbol, compact } = useMemo(() => readEmbedParams(), []);
+  const { symbol, compact, horizon } = useMemo(() => readEmbedParams(), []);
   const [signal, setSignal] = useState<DailySignal | null>(null);
   const [equity, setEquity] = useState<EquitySignal | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +110,27 @@ export function EmbedWidgetApp() {
     bias: "up" | "down";
     lead: number;
     confidenceLabel: string;
+    chip: string;
   } | null = useMemo(() => {
+    if (horizon === "next") {
+      const tmr = pickTomorrow(signal, equity, symbol);
+      if (!tmr) return null;
+      const up = tmr.bias === "up";
+      const name =
+        symbol === "SPY"
+          ? "S&P 500 · SPY"
+          : equity
+            ? `${equity.name} · ${equity.symbol}`
+            : symbol;
+      return {
+        name,
+        bias: tmr.bias,
+        lead: up ? tmr.probabilityHigher : tmr.probabilityLower,
+        confidenceLabel: tmr.confidenceLabel,
+        chip: `${tmr.kicker} · ${up ? "Higher-close" : "Lower-close"} · ${tmr.confidenceLabel}`,
+      };
+    }
+
     if (symbol === "SPY" && signal) {
       const up = signal.bias === "up";
       return {
@@ -99,6 +138,7 @@ export function EmbedWidgetApp() {
         bias: signal.bias,
         lead: up ? signal.probabilityHigher : signal.probabilityLower,
         confidenceLabel: signal.confidenceLabel,
+        chip: `${up ? "Higher-close lean" : "Lower-close lean"} · ${signal.confidenceLabel}`,
       };
     }
     if (equity) {
@@ -108,10 +148,11 @@ export function EmbedWidgetApp() {
         bias: equity.bias,
         lead: up ? equity.probabilityHigher : equity.probabilityLower,
         confidenceLabel: equity.confidenceLabel,
+        chip: `${up ? "Higher-close lean" : "Lower-close lean"} · ${equity.confidenceLabel}`,
       };
     }
     return null;
-  }, [symbol, signal, equity]);
+  }, [symbol, signal, equity, horizon]);
 
   const up = desk?.bias === "up";
 
@@ -132,9 +173,7 @@ export function EmbedWidgetApp() {
               <span>%</span>
             </span>
           </div>
-          <p className="embed-widget__chip">
-            {up ? "Higher-close lean" : "Lower-close lean"} · {desk.confidenceLabel}
-          </p>
+          <p className="embed-widget__chip">{desk.chip}</p>
         </>
       ) : (
         <p className="embed-widget__loading">{error || "Loading lean…"}</p>
